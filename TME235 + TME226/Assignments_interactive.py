@@ -304,18 +304,5 @@ v = sp.diff(X, t)
 print('v, Eulerian:')
 display(v)
 
-x1_sym, x2_sym, x3_sym = sp.symbols('x1 x2 x3')
-
-x1_expr = X1 + X2 * v0 * t / h0
-x2_expr = X2 + X1 * v0 * t / h0
-x3_expr = X3
-
-v_x = v.subs({x1_sym: x1_expr, x2_sym: x2_expr})
-display(v_x)
-
-# F = sp.diff(x, [X1, X2, X3])
-# display(F)
-
-
 
 # %%
