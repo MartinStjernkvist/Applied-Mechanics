@@ -152,7 +152,7 @@ sigma_ij = np.array([[200, 100, -50],
 # sigma_prim_ij = einsum('ji, ij -> ij',l_ij.evalf(),sigma_ij.evalf())
 sigma_prim_ij = l_ij.T @ sigma_ij @ l_ij
 
-print('sigma_prim_ij:')
+print('sigma_prim_ij (MPa):')
 print(sigma_prim_ij)
 
 
@@ -213,13 +213,13 @@ grad_Phi_f_x2 = sp.lambdify([x1, x2], grad_Phi[1])
 print('confirm solution:')
 print(grad_Phi_f_x1(10,100), grad_Phi_f_x2(10,100))
 
-fig, axes = plt.subplots(1,2, figsize = figsize, squeeze=False)
-ax1 = axes[0,0]
-ax2 = axes[0,1]
-ax1.contourf(x1_range, x2_range, grad_Phi_f_x1(x1_range, x2_range), levels = 50, cmap = 'inferno')
-ax2.contourf(x1_range, x2_range, grad_Phi_f_x2(x1_range, x2_range), levels = 50, cmap = 'inferno')
-plt.tight_layout()
-plt.show()
+# fig, axes = plt.subplots(1,2, figsize = figsize, squeeze=False)
+# ax1 = axes[0,0]
+# ax2 = axes[0,1]
+# ax1.contourf(x1_range, x2_range, grad_Phi_f_x1(x1_range, x2_range), levels = 50, cmap = 'inferno')
+# ax2.contourf(x1_range, x2_range, grad_Phi_f_x2(x1_range, x2_range), levels = 50, cmap = 'inferno')
+# plt.tight_layout()
+# plt.show()
 
 hess_Phi = sp.hessian(Phi, (x1, x2))
 print('hessian:')
@@ -242,30 +242,6 @@ fig.colorbar(cp, ax=ax1)
 plt.tight_layout()
 plt.show()
 
-
-##################################################
-# A7
-##################################################
-new_prob(7)
-
-def sympy_2_numpy(tensor_func, *dims):
-    shape = dims
-    result = np.zeros(shape)
-    
-    for idx in np.ndindex(*shape):
-        value = tensor_func(*idx)
-        result[idx] = float(value)
-    
-    return result
-
-e_ijk = sympy_2_numpy(sp.LeviCivita, 3,3,3)
-delta_ij = sympy_2_numpy(sp.KroneckerDelta, 4,4)
-
-print(e_ijk)
-print(delta_ij)
-
-
-
 ##################################################
 # A8
 ##################################################
@@ -277,9 +253,22 @@ sigma_ij = np.array([[30, 0, 10],
 
 sigma_m = np.trace(sigma_ij) / 3
 deviatoric_sigma_ij = sigma_ij - sigma_m * np.identity(3)
+print('sigma_ij (dev):')
 print(deviatoric_sigma_ij)
 
+eval, evect = np.linalg.eig(deviatoric_sigma_ij)
+print('principal stresses (eigenvalues):')
+print(eval)
+print('principal directions (eigenvectors):')
+print(evect)
 
+n = np.array([[-3 / np.sqrt(45)],
+              [-6 / np.sqrt(45)],
+              [0]])
+
+t = deviatoric_sigma_ij @ n
+print('stress vector on plane:')
+print(t)
 
 ##################################################
 # A9
@@ -326,5 +315,9 @@ display(v_x)
 
 # F = sp.diff(x, [X1, X2, X3])
 # display(F)
+
+print(np.sqrt(9+36))
+
+
 
 # %%
