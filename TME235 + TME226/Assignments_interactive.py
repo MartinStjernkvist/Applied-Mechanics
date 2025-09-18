@@ -1,4 +1,5 @@
 #%%
+# !pip install ipympl
 %matplotlib widget
 # %matplotlib inline
 from scipy.optimize import fsolve
@@ -43,18 +44,22 @@ F_AC = lambda z: F_AB(z) * 4 * np.sqrt(11) /13 * z / np.sqrt(z**2 - 6*z +34) - 2
 
 z_range = np.linspace(-20, 10, 100)
 
-title = 'upg1.png'
+title = 'A2'
 
-# fig = plt.figure(figsize=(10,10))
-# plt.plot(z_range, f(z_range), label = 'f(z)')
-# plt.plot(z_range,F_AB(z_range), 'red', label = 'F_AB(z)')
-# plt.plot(z_range,F_AC(z_range), 'green', label = 'F_AC(z)')
-# plt.axvline(x=solution, color='black', linestyle='--')
-# plt.xlim (-12, 2)
-# plt.ylim(-400, 400)
-# plt.grid()
-# plt.legend()
-# fig.savefig(title, bbox_inches = 'tight')
+fig = plt.figure()
+plt.plot(z_range, f(z_range), label = 'f(z)')
+plt.plot(z_range,F_AB(z_range), 'red', label = 'F_AB(z)')
+plt.plot(z_range,F_AC(z_range), 'green', label = 'F_AC(z)')
+plt.axvline(x=solution, color='black', linestyle='--')
+plt.xlim (-12, 2)
+plt.ylim(-400, 400)
+plt.grid()
+plt.legend()
+plt.show()
+fig.savefig(title, bbox_inches = 'tight')
+
+
+
 
 
 ##################################################
@@ -62,70 +67,73 @@ title = 'upg1.png'
 ##################################################
 new_prob(3)
 
-a = np.array([1,2,3])
-rot_matrix = lambda phi: np.array([[np.cos(phi), np.sin(phi),0], [-np.sin(phi), np.cos(phi),0], [0, 0, 1]])
-e = np.array([[1,0,0], [0,1,0], [0,0,1]])
-e_prim = lambda phi: rot_matrix(phi) @ e
+# a = np.array([1,2,3])
+# rot_matrix = lambda phi: np.array([[np.cos(phi), np.sin(phi),0], 
+#                                    [-np.sin(phi), np.cos(phi),0], 
+#                                    [0, 0, 1]])
+# e = np.array([[1,0,0], 
+#               [0,1,0], 
+#               [0,0,1]])
 
-a_prim = lambda phi: np.dot(e_prim(phi), e) * a
+# e_prim = lambda phi: rot_matrix(phi) @ e
+# a_prim = lambda phi: np.dot(e_prim(phi), e) * a
 
-phi = np.linspace(0,2 * np.pi)
+# phi = np.linspace(0,2 * np.pi)
+# a_prim_values = np.array([a_prim(p) for p in phi])
 
-# print(a_prim)
+# title = 'A3_1'
 
-title = 'upg2.png'
+# fig2 = plt.figure()
 
-# fig2 = plt.figure(figsize=(10,10))
-# plt.plot(phi, a_prim(phi)[0], 'blue')
-# plt.plot(phi, a_prim(phi)[1], 'red')
-# plt.plot(phi, a_prim(phi)[2], 'green')
+# plt.plot(phi, a_prim_values[:,0], 'blue', label = 'a1_prim')
+# plt.plot(phi, a_prim_values[:,1], 'red', label = 'a2_prim')
+# plt.plot(phi, a_prim_values[:,2], 'green', label = 'a3_prim')
+# plt.legend()
 # plt.show()
 # fig2.savefig(title, bbox_inches = 'tight')
 
-a_1 = 1
-a_2 = 2
+# a_1 = 1
+# a_2 = 2
 
 a = np.array([1, 2, 3])
-e = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+e = np.array([[1, 0, 0], 
+              [0, 1, 0], 
+              [0, 0, 1]])
 rot_matrix = lambda phi: np.array([[np.cos(phi), np.sin(phi), 0],
-                                   [-np.sin(phi), np.cos(phi), 0], [0, 0, 1]])
-e_prim = lambda phi: rot_matrix(phi) @ e
+                                   [-np.sin(phi), np.cos(phi), 0], 
+                                   [0, 0, 1]])
 
+e_prim = lambda phi: rot_matrix(phi) @ e
 a_prim = lambda phi: np.dot(e_prim(phi), e) @ a
 
 a_1_prim = lambda phi: a_prim(phi)[0]
 a_2_prim = lambda phi: a_prim(phi)[1]
 
 phi = np.linspace(0, 2 * np.pi, 1000)
+
 a_1_prim_values = [a_1_prim(p) for p in phi]
 a_2_prim_values = [a_2_prim(p) for p in phi]
 a_prim_sum_values = [a_1_prim(p) + a_2_prim(p) for p in phi]
 
-title = 'upg2.png'
+title = 'A3_2'
 
-# fig = plt.figure()
-# plt.plot(phi, a_1_prim_values)
-# plt.plot(phi, a_2_prim_values)
-# plt.plot(phi, a_prim_sum_values)
-# fig.savefig(title, bbox_inches='tight')
+fig = plt.figure()
+plt.plot(phi, a_1_prim_values, label = 'a1_prim')
+plt.plot(phi, a_2_prim_values, label = 'a2_prim')
+plt.plot(phi, a_prim_sum_values, label = 'a1_prim + a2_prim')
+plt.legend()
+plt.axvline(x=np.arctan(2), color='black', linestyle='--')
+plt.axvline(x=np.arctan(-1/2) + 2* np.pi, color='black', linestyle='--')
+plt.show()
+fig.savefig(title, bbox_inches='tight')
+
+print('maximum values of a1_prim and a2_prim:')
+print('a1_prim:', 1*np.cos(np.arctan(2)) + 2* np.sin(np.arctan(2)))
+print('a2_prim:', -1*np.sin(np.arctan(-1/2)) + 2* np.cos(np.arctan(-1/2)))
+
 
 max_y = max(a_prim_sum_values)
 max_x = phi[a_prim_sum_values.index(max_y)]
-
-# print(max_x / np.pi * 180)
-
-'''
-# a_1_prim = lambda phi: np.cos(phi) * a_1 + np.sin(phi) * a_2
-# a_2_prim = lambda phi: -np.sin(phi) * a_1 + np.cos(phi) * a_2
-
-# f = np.polyfit(phi, a_prim_sum_values, 100)
-# func = np.poly1d(f)
-# max = scipy.optimize.fmin(func, 0)
-
-# max = scipy.optimize.fmin(lambda p: -np.sum(a_prim(p)), 0)
-
-# print(a_1_prim(max), a_2_prim(max))
-'''
 
 
 ##################################################
@@ -142,8 +150,11 @@ sigma_ij = sp.Matrix([[200, 100, -50],
                       [-50, 70, 100]])
 
 sigma_prim_ij = einsum('ji, ij -> ij',l_ij.evalf(),sigma_ij.evalf())
-print('sigma_prim_ij')
-sp.pprint(sigma_prim_ij)
+
+print('sigma_prim_ij:')
+print(sigma_prim_ij)
+
+
 
 ##################################################
 # A5
@@ -156,7 +167,9 @@ T = np.array([[6, 4, 0],
 
 
 eval, evect = np.linalg.eig(T)
+print('eigenvalues:')
 print(eval)
+print('eigenvectors:')
 print(evect)
 
 
@@ -233,10 +246,6 @@ plt.show()
 # A7
 ##################################################
 new_prob(7)
-
-# i, j ,k = sp.symbols('i j k')
-# e_ijk = sp.LeviCivita(i, j, k)
-# delta_ij = sp.KroneckerDelta(i, j)
 
 def sympy_2_numpy(tensor_func, *dims):
     shape = dims
