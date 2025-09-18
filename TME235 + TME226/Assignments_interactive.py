@@ -141,15 +141,16 @@ max_x = phi[a_prim_sum_values.index(max_y)]
 ##################################################
 new_prob(4)
 
-l_ij = sp.Matrix([[1 / 2, 0, sp.sqrt(2) / 3 * 2], 
-                 [0, 1, sp.sqrt(2) / 3 * 1 / 2],
-                 [sp.sqrt(2), -1, sp.sqrt(2) / 3 * 1 / 2]])
+l_ij = np.array([[1 / 3, 2/3, 2/3], 
+                 [0, 1 /np.sqrt(2), -1 /np.sqrt(2)],
+                 [-4/(3 * np.sqrt(2)), 1/(3 * np.sqrt(2)), 1/(3 * np.sqrt(2))]])
 
-sigma_ij = sp.Matrix([[200, 100, -50], 
+sigma_ij = np.array([[200, 100, -50], 
                       [100, 300, 70], 
                       [-50, 70, 100]])
 
-sigma_prim_ij = einsum('ji, ij -> ij',l_ij.evalf(),sigma_ij.evalf())
+# sigma_prim_ij = einsum('ji, ij -> ij',l_ij.evalf(),sigma_ij.evalf())
+sigma_prim_ij = l_ij.T @ sigma_ij @ l_ij
 
 print('sigma_prim_ij:')
 print(sigma_prim_ij)
