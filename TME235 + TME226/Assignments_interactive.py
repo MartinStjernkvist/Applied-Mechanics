@@ -283,40 +283,38 @@ X1, X2, X3 = sp.symbols('X1 X2 X3')
 x = sp.Matrix([[X1 + X2 * v0 * t / h0],
                [X2 + X1 * v0 * t / h0],
                [X3]])
+print('x:')
 display(x)
 
 x_dt = sp.diff(x, t)
+print('v, Lagrangian:')
 display(x_dt)
 
 system_of_eqn = [X1 + X2 * v0 * t / h0 - x1, X2 + X1 * v0 * t / h0 - x2]
 variables = (X1, X2)
 sol = sp.solve(system_of_eqn, variables, dict = True)
-display(sol)
-display(sol[0][X1])
+# display(sol)
+# display(sol[0][X1])
 
 X = sp.Matrix([[sol[0][X1]],
                [sol[0][X2]],
                [0]])
 
 v = sp.diff(X, t)
+print('v, Eulerian:')
 display(v)
 
-# Define symbols
 x1_sym, x2_sym, x3_sym = sp.symbols('x1 x2 x3')
 
-# Define the expressions for x1, x2, x3 in terms of X1, X2, X3, t, v0, h0
 x1_expr = X1 + X2 * v0 * t / h0
 x2_expr = X2 + X1 * v0 * t / h0
 x3_expr = X3
 
-# Substitute x1_sym -> x1_expr, x2_sym -> x2_expr in v
 v_x = v.subs({x1_sym: x1_expr, x2_sym: x2_expr})
 display(v_x)
 
 # F = sp.diff(x, [X1, X2, X3])
 # display(F)
-
-print(np.sqrt(9+36))
 
 
 
