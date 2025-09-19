@@ -34,66 +34,53 @@ def new_prob(num):
 new_prob(2)
 g = 9.81
 
-f = lambda z: 6/np.sqrt(11) * 1 / (9 + 12/13 * z) * (12 + 4 * np.sqrt(z**2 - 6*z +34)) + 48 * z
+f = lambda z: 6/np.sqrt(11) * 1 / (9 + (12/13) * z) * (12 + 4 * np.sqrt(z**2 - 6*z +34)) - 48 * z
 
 solution = fsolve(f, 0)
-# print(solution)
+print('solution to f(z) = 0:')
+print(solution)
 
-F_AB = lambda z: g * 6/np.sqrt(11) * 1 / (9 + 12/13 * z) * np.sqrt(z**2 - 6*z +34)
-F_AC = lambda z: F_AB(z) * 4 * np.sqrt(11) /13 * z / np.sqrt(z**2 - 6*z +34) - 2 * g
+F_AB = lambda z: m*g * 6/np.sqrt(11) * 1 / (9 + (12/13) * z) * np.sqrt(z**2 - 6*z +34)
+F_AC = lambda z: F_AB(z) * 4 * np.sqrt(11) /13 * z / np.sqrt(z**2 - 6*z +34) - 2 *m * g
 
-z_range = np.linspace(-20, 10, 100)
+a = 10 #m
+m = 4_000 #kg
+print('resulting cable forces at z_solution:')
+print('F_AB: ', F_AB(solution)/1000, 'kN')
+print('F_AC: ', F_AC(solution)/1000, 'kN')
+
+z_range = np.linspace(0, 50, 1000)
 
 title = 'A2'
 
 fig = plt.figure()
 plt.plot(z_range, f(z_range), label = 'f(z)')
-plt.plot(z_range,F_AB(z_range), 'red', label = 'F_AB(z)')
-plt.plot(z_range,F_AC(z_range), 'green', label = 'F_AC(z)')
-plt.axvline(x=solution, color='black', linestyle='--')
-plt.xlim (-12, 2)
-plt.ylim(-400, 400)
+plt.axvline(x=solution, color='black', linestyle='--', label='f(z) = 0, with smallest F_AB(z) & F_AC(z)')
+plt.xlim (0, 2)
+plt.ylim(-1000,1000)
+plt.xlabel('z')
+plt.ylabel('f(z)')
 plt.grid()
 plt.legend()
 plt.show()
-fig.savefig(title, bbox_inches = 'tight')
 
-
-
+fig = plt.figure()
+plt.plot(z_range, f(z_range), label = 'f(z)')
+plt.plot(z_range,F_AB(z_range), 'red', label = 'F_AB(z)')
+plt.plot(z_range,F_AC(z_range), 'green', label = 'F_AC(z)')
+plt.axvline(x=solution, color='black', linestyle='--', label='f(z) = 0, with smallest F_AB(z) & F_AC(z)')
+plt.xlim (0, 2)
+plt.ylim(-100_000, 100_000)
+plt.xlabel('z')
+plt.grid()
+plt.legend()
+plt.show()
 
 
 ##################################################
 # A3
 ##################################################
 new_prob(3)
-
-# a = np.array([1,2,3])
-# rot_matrix = lambda phi: np.array([[np.cos(phi), np.sin(phi),0], 
-#                                    [-np.sin(phi), np.cos(phi),0], 
-#                                    [0, 0, 1]])
-# e = np.array([[1,0,0], 
-#               [0,1,0], 
-#               [0,0,1]])
-
-# e_prim = lambda phi: rot_matrix(phi) @ e
-# a_prim = lambda phi: np.dot(e_prim(phi), e) * a
-
-# phi = np.linspace(0,2 * np.pi)
-# a_prim_values = np.array([a_prim(p) for p in phi])
-
-# title = 'A3_1'
-
-# fig2 = plt.figure()
-
-# plt.plot(phi, a_prim_values[:,0], 'blue', label = 'a1_prim')
-# plt.plot(phi, a_prim_values[:,1], 'red', label = 'a2_prim')
-# plt.plot(phi, a_prim_values[:,2], 'green', label = 'a3_prim')
-# plt.legend()
-# plt.show()
-# fig2.savefig(title, bbox_inches = 'tight')
-
-# a_1 = 1
-# a_2 = 2
 
 a = np.array([1, 2, 3])
 e = np.array([[1, 0, 0], 
@@ -121,11 +108,11 @@ fig = plt.figure()
 plt.plot(phi, a_1_prim_values, label = 'a1_prim')
 plt.plot(phi, a_2_prim_values, label = 'a2_prim')
 plt.plot(phi, a_prim_sum_values, label = 'a1_prim + a2_prim')
+plt.axvline(x=np.arctan(2), color='black', linestyle='--', label='maximum a1_prim')
+plt.axvline(x=np.arctan(-1/2) + 2* np.pi, color='grey', linestyle='--', label='maximum a2_prim')
+plt.xlabel(r'angle $\phi$')
 plt.legend()
-plt.axvline(x=np.arctan(2), color='black', linestyle='--')
-plt.axvline(x=np.arctan(-1/2) + 2* np.pi, color='black', linestyle='--')
 plt.show()
-fig.savefig(title, bbox_inches='tight')
 
 print('maximum values of a1_prim and a2_prim:')
 print('a1_prim:', 1*np.cos(np.arctan(2)) + 2* np.sin(np.arctan(2)))
