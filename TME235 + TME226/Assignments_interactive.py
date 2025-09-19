@@ -1,4 +1,8 @@
 #%%
+# The following code has been written by Martin Stjernkvist
+# Ideally, the code should be run in the application VSCODE,
+# within the interactive python environment
+
 # !pip install ipympl
 %matplotlib widget
 # %matplotlib inline
@@ -25,7 +29,7 @@ def doit(expr):
     return disp(expr.doit)
 
 def new_prob(num):
-    print_string = '\n-----------\n' + 'A' + str(num) + '\n-----------\n'
+    print_string = '\n----------------------\n' + 'Assignment ' + str(num) + '\n----------------------\n'
     return print(print_string)
     
 ##################################################
@@ -49,7 +53,7 @@ print('resulting cable forces at z_solution:')
 print('F_AB: ', F_AB(solution)/1000, 'kN')
 print('F_AC: ', F_AC(solution)/1000, 'kN')
 
-z_range = np.linspace(0, 50, 1000)
+z_range = np.linspace(0, 100, 1000)
 
 title = 'A2'
 
@@ -114,7 +118,11 @@ plt.xlabel(r'angle $\phi$')
 plt.legend()
 plt.show()
 
-print('maximum values of a1_prim and a2_prim:')
+print('angles with maximum values (rad):')
+print('a1_prim: ', np.arctan(2))
+print('a2_prim: ', np.arctan(-1/2))
+
+print('\nmaximum values of a1_prim and a2_prim:')
 print('a1_prim:', 1*np.cos(np.arctan(2)) + 2* np.sin(np.arctan(2)))
 print('a2_prim:', -1*np.sin(np.arctan(-1/2)) + 2* np.cos(np.arctan(-1/2)))
 
@@ -132,15 +140,15 @@ l_ij = np.array([[1 / 3, 2/3, 2/3],
                  [0, 1 /np.sqrt(2), -1 /np.sqrt(2)],
                  [-4/(3 * np.sqrt(2)), 1/(3 * np.sqrt(2)), 1/(3 * np.sqrt(2))]])
 
-sigma_ij = np.array([[200, 100, -50], 
+sigma_prim_ij = np.array([[200, 100, -50], 
                       [100, 300, 70], 
                       [-50, 70, 100]])
 
 # sigma_prim_ij = einsum('ji, ij -> ij',l_ij.evalf(),sigma_ij.evalf())
-sigma_prim_ij = l_ij.T @ sigma_ij @ l_ij
+sigma_ij = l_ij.T @ sigma_prim_ij @ l_ij
 
-print('sigma_prim_ij (MPa):')
-print(sigma_prim_ij)
+print('sigma_ij (MPa):')
+print(sigma_ij)
 
 
 
@@ -157,7 +165,7 @@ T = np.array([[6, 4, 0],
 eval, evect = np.linalg.eig(T)
 print('eigenvalues:')
 print(eval)
-print('eigenvectors:')
+print('eigenvectors (columns in the matrix):')
 print(evect)
 
 
@@ -177,13 +185,23 @@ lim_min = -1000
 linspace = np.linspace(lim_min, lim_max, N)
 x1_range, x2_range = np.meshgrid(linspace, linspace)
 
-figsize = (5,5)
-fig = plt.figure(figsize=figsize)
+print('2D plot:')
+fig, axes = plt.subplots(1,1, squeeze=False)
+ax1 = axes[0,0]
+cp = ax1.contourf(x1_range, x2_range, Phi_f(x1_range, x2_range), levels = 50, cmap = 'inferno')
+ax1.set_xlabel('x1')
+ax1.set_ylabel('x2')
+fig.colorbar(cp, ax=ax1, label=r'$\Phi$(x1, x2)')
+plt.tight_layout()
+plt.show()
+
+print('3D plot:')
+fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 surf = ax.plot_surface(x1_range, x2_range, Phi_f(x1_range, x2_range), cmap='inferno', label = 'scalar field')
 ax.set_xlabel('x1')
 ax.set_ylabel('x2')
-fig.colorbar(surf, ax=ax)
+fig.colorbar(surf, ax=ax, label=r'$\Phi$(x1, x2)')
 plt.tight_layout()
 plt.show()
 
@@ -197,19 +215,11 @@ print(solution)
 
 grad_Phi_f_x1 = sp.lambdify([x1, x2], grad_Phi[0])
 grad_Phi_f_x2 = sp.lambdify([x1, x2], grad_Phi[1])
-print('confirm solution:')
+print('\nconfirm solution:')
 print(grad_Phi_f_x1(10,100), grad_Phi_f_x2(10,100))
 
-# fig, axes = plt.subplots(1,2, figsize = figsize, squeeze=False)
-# ax1 = axes[0,0]
-# ax2 = axes[0,1]
-# ax1.contourf(x1_range, x2_range, grad_Phi_f_x1(x1_range, x2_range), levels = 50, cmap = 'inferno')
-# ax2.contourf(x1_range, x2_range, grad_Phi_f_x2(x1_range, x2_range), levels = 50, cmap = 'inferno')
-# plt.tight_layout()
-# plt.show()
-
 hess_Phi = sp.hessian(Phi, (x1, x2))
-print('hessian:')
+print('\nhessian:')
 display(sp.simplify(hess_Phi))
 
 hess_Phi_f = sp.lambdify([x1, x2], hess_Phi)
@@ -217,17 +227,8 @@ print('value of hessian at solution:')
 print(hess_Phi_f(10,100))
 
 eval, evect = np.linalg.eig(hess_Phi_f(10,100))
-print('eigenvalues of hessian:')
+print('\neigenvalues of hessian:')
 print(eval)
-
-fig, axes = plt.subplots(1,1, figsize = figsize, squeeze=False)
-ax1 = axes[0,0]
-cp = ax1.contourf(x1_range, x2_range, Phi_f(x1_range, x2_range), levels = 50, cmap = 'inferno')
-ax1.set_xlabel('x1')
-ax1.set_ylabel('x2')
-fig.colorbar(cp, ax=ax1)
-plt.tight_layout()
-plt.show()
 
 ##################################################
 # A8
@@ -244,9 +245,10 @@ print('sigma_ij (dev):')
 print(deviatoric_sigma_ij)
 
 eval, evect = np.linalg.eig(deviatoric_sigma_ij)
-print('principal stresses (eigenvalues):')
+print('\nprincipal stresses (eigenvalues of deviatoric stress tensor), (MPa):')
 print(eval)
-print('principal directions (eigenvectors):')
+
+print('\nprincipal directions (eigenvectors, columns to matrix):')
 print(evect)
 
 n = np.array([[-3 / np.sqrt(45)],
@@ -254,7 +256,7 @@ n = np.array([[-3 / np.sqrt(45)],
               [0]])
 
 t = deviatoric_sigma_ij @ n
-print('stress vector on plane:')
+print('\nstress vector on plane (MPa):')
 print(t)
 
 ##################################################
