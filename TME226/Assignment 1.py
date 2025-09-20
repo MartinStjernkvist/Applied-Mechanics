@@ -306,7 +306,8 @@ def xi(x1, x2, nu, V1_inf):
 
 
 
-figsize = (6,6)
+print('Velocity (v1) profiles at different values for x1, plotted against x2:')
+
 frame = [0,1,0,0.05]
 
 plotta_subplots(
@@ -348,24 +349,13 @@ plotta_subplots(
     suptitle="Velocity Profiles (v1 vs x2)"
 )
 
-# plotta_subplots(
-#     nrows=1,
-#     ncols=1,
-#     fig_size=(12, 5),
-#     fig_title="v2 vs x2",
-#     subplot_instructions=[
-#         {
-#             "plotstyle": "plot",
-#             "x1_data": v1_2d[50, :],
-#             "x2_data": xi_blas,
-#             "color": "b",
-#             "title": "i=50",
-#             "xlabel": "v1",
-#             "ylabel": "x2",
-#             'frame': frame
-#         }
-#     ],
-#     suptitle="Velocity Profiles (v1 vs x2)"
-# )
+
+
+##################################################
+# E2
+##################################################
+new_prob(2)
+
+
 
 # %%
