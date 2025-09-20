@@ -19,87 +19,140 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 
-def plotta(
-   
-   fig_size=(5,5),
-   fig_title="Figure",
-   frame = None,
-   x1_label="x1",
-   x2_label="x2",
-   x1_data=None,
-   x2_data=None,
-   x3_data=None,
-   plotstyle="plot",
-   color="b",
-   linestyle="-",
-   marker=None,
-   cmap="viridis",
-   levels=50,
-   savefig=True,
-   show=True,
-   elev=30,
-   azim=45
+##################################################
+# Functions
+##################################################
+
+def new_prob(num):
+    print_string = '\n----------------------\n' + 'Assignment E' + str(num) + '\n----------------------\n'
+    return print(print_string)
+
+SMALL_SIZE = 10
+MEDIUM_SIZE = 12
+BIGGER_SIZE = 14
+
+# Set the global font sizes
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+plt.rc('figure', figsize=(9, 5))
+
+
+def plotta_subplots(
+    nrows=1,
+    ncols=1,
+    fig_size=None,
+    fig_title="Figure",
+    subplot_instructions=None,  # List of dicts, one per subplot
+    suptitle=None,
+    savefig=True,
+    show=True
 ):
-   """
-   Flexible plotting function for 2D/3D plots.
-   plotstyle: 'plot', 'scatter', 'contour', 'contourf', 'surface'
-   """
-   fig = plt.figure(fig_title, figsize=fig_size)
-   
-   if plotstyle == "plot":
-      plt.plot(x1_data, x2_data, color=color, linestyle=linestyle, marker=marker)
-      plt.xlabel(x1_label)
-      plt.ylabel(x2_label)
-   elif plotstyle == "scatter":
-      plt.scatter(x1_data, x2_data, color=color, marker=marker)
-      plt.xlabel(x1_label)
-      plt.ylabel(x2_label)
-   elif plotstyle in ["contour", "contourf"]:
-      if x3_data is None:
-         raise ValueError("y_data (Z values) required for contour plots")
-      if plotstyle == "contour":
-         cp = plt.contour(x1_data, x2_data, x3_data, levels=levels, cmap=cmap)
-      else:
-         cp = plt.contourf(x1_data, x2_data, x3_data, levels=levels, cmap=cmap)
-      plt.xlabel(x1_label)
-      plt.ylabel(x2_label)
-      plt.colorbar(cp)
-   elif plotstyle == "surface":
-      ax = fig.add_subplot(111, projection="3d")
-      surf = ax.plot_surface(x1_data, x2_data, x3_data, cmap=cmap)
-      ax.set_xlabel(x1_label)
-      ax.set_ylabel(x2_label)
-      ax.set_zlabel("Z")
-      ax.view_init(elev=elev, azim=azim)
-      fig.colorbar(surf, ax=ax)
-   else:
-      raise ValueError(f"Unknown plotstyle: {plotstyle}")
+    """
+    Flexible multi-subplot plotting function.
+    Each subplot is described by a dict with keys:
+      - plotstyle: 'plot', 'scatter', 'contour', 'contourf', 'surface'
+      - x1_data, x2_data, x3_data, color, linestyle, marker, cmap, levels, title, xlabel, ylabel, zlabel, frame, elev, azim
+    """
+    fig, axes = plt.subplots(nrows, ncols, figsize=fig_size, squeeze=False, subplot_kw={'projection': None})
+    axes = axes.flatten()
+    if subplot_instructions is None:
+        subplot_instructions = [{} for _ in range(nrows * ncols)]
+    for idx, instr in enumerate(subplot_instructions):
+        ax = axes[idx]
+        plotstyle = instr.get("plotstyle", "plot")
+        x1_data = instr.get("x1_data", None)
+        x2_data = instr.get("x2_data", None)
+        x3_data = instr.get("x3_data", None)
+        color = instr.get("color", "b")
+        linestyle = instr.get("linestyle", "-")
+        marker = instr.get("marker", None)
+        cmap = instr.get("cmap", "viridis")
+        levels = instr.get("levels", 50)
+        title = instr.get("title", f"Subplot {idx+1}")
+        xlabel = instr.get("xlabel", "x1")
+        ylabel = instr.get("ylabel", "x2")
+        zlabel = instr.get("zlabel", "Z")
+        frame = instr.get("frame", None)
+        elev = instr.get("elev", 30)
+        azim = instr.get("azim", 45)
 
-   if frame != None:
-      plt.axis(frame)
-      
-   plt.title(fig_title)
-   plt.tight_layout()
-   if savefig:
-      plt.savefig(fig_title + ".png")
-   if show:
+        if plotstyle == "plot":
+            ax.plot(x1_data, x2_data, color=color, linestyle=linestyle, marker=marker)
+        elif plotstyle == "scatter":
+            ax.scatter(x1_data, x2_data, color=color, marker=marker)
+        elif plotstyle in ["contour", "contourf"]:
+            if x3_data is None:
+                raise ValueError("x3_data (Z values) required for contour plots")
+            if plotstyle == "contour":
+                cp = ax.contour(x1_data, x2_data, x3_data, levels=levels, cmap=cmap)
+            else:
+                cp = ax.contourf(x1_data, x2_data, x3_data, levels=levels, cmap=cmap)
+            fig.colorbar(cp, ax=ax)
+        elif plotstyle == "surface":
+            # For 3D, need to convert axis to 3D
+            ax.remove()
+            ax = fig.add_subplot(nrows, ncols, idx+1, projection="3d")
+            surf = ax.plot_surface(x1_data, x2_data, x3_data, cmap=cmap)
+            ax.set_zlabel(zlabel)
+            ax.view_init(elev=elev, azim=azim)
+            fig.colorbar(surf, ax=ax)
+        else:
+            raise ValueError(f"Unknown plotstyle: {plotstyle}")
+
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        if frame is not None:
+            ax.axis(frame)
+
+    if suptitle:
+        fig.suptitle(suptitle)
+    plt.tight_layout()
+    if savefig:
+        plt.savefig(fig_title + ".png")
+    if show:
         plt.show()
+    return fig, axes
 
 
-# def xsi(V1_inf, nu, x1, x2):
-#     return (V1_inf / (nu, x1)**(1/2) * x2)
 
-# def partial_Psi_partial_x1(V1_inf, nu, x1, g
+# plotta_subplots(
+#     nrows=1,
+#     ncols=2,
+#     fig_size=(12, 5),
+#     fig_title="MultiPlot",
+#     subplot_instructions=[
+#         {
+#             "plotstyle": "plot",
+#             "x1_data": v1_2d[100, :],
+#             "x2_data": x2_2d[100, :],
+#             "color": "b",
+#             "title": "Line Plot",
+#             "xlabel": "v1",
+#             "ylabel": "x2"
+#         },
+#         {
+#             "plotstyle": "contourf",
+#             "x1_data": x1_2d,
+#             "x2_data": x2_2d,
+#             "x3_data": v1_2d,
+#             "cmap": "plasma",
+#             "title": "Contour Plot",
+#             "xlabel": "x1",
+#             "ylabel": "x2"
+#         }
+#     ],
+#     suptitle="Velocity Profiles"
+# )
 
-# V1_inf_test = 1
-# nu_test = 1
-# x1_test = np.linspace(0, 100, 100)
-# x2_test = np.linspace(0, 100, 100)
-# input = (V1_inf_test, nu_test, x1_test, x2_test)
-# xsi_list_test = np.array(list(map(xsi, input)))
-# print(xsi_list_test)
-
-'''-----------------'''
+##################################################
+# Given code
+##################################################
 
 plt.rcParams.update({'font.size': 22})
 
@@ -205,6 +258,7 @@ plt.axis([0,1.1,0,0.05]) # set x & y axis
 plt.xlabel('$V_1$') 
 plt.ylabel('$x_2$') 
 plt.text(0.04,0.04,'$x_1=0.14$ and $1.58$') # show this text at (0.04,0.04)
+plt.show()
 plt.savefig('velprof.png')
 
 ################################ contour plot of v1
@@ -221,6 +275,7 @@ plt.locator_params(axis='x', nbins=2)
 #ax1.xaxis.set_major_locator(xticks)
 plt.axis([0,0.1,0,0.1]) # zoom-in on the first 0.1m from the inlet
 plt.title('$V_1$')
+plt.show()
 plt.savefig('v1_iso.png')
 
 ################################ compute the velocity gradient dv_1/dx_2
@@ -234,39 +289,83 @@ plt.title('Velocity gradient')
 plt.xlabel(r'$\partial v_1/\partial x_2$')
 plt.ylabel('$x_2$') 
 plt.text(-380,0.004,'$x_1=0.52$')
+plt.show()
 plt.savefig('v1_grad.png')
 
 ##################################################
 # E1
 ##################################################
-figsize = (5,5)
+new_prob(1)
 
-i=100 # plot the velocity gradient for i=170
+def nu(xi, x1, x2, V1_inf):
+    return (x2 / xi)**2 * (V1_inf / x1)
 
-plotta(
-   fig_size=figsize,
-    fig_title="v1 vs x2",
-    frame = [0, 1, 0, 1],
-    x1_label="v1",
-    x2_label="x2",
-    x1_data=v1_2d[i,:],
-    x2_data=x2_2d[i,:],
-    x3_data=None,
-    plotstyle="plot",
-    color="b",
-    linestyle="-",
-    marker=None,
-    cmap="viridis",
-    levels=50,
-    savefig=True,
-    show=True,
-    elev=30,
-    azim=45
+# eqn (3.49)
+def xi(x1, x2, nu, V1_inf):
+    return x2 * (V1_inf / (nu * x1))**(1/2)
+
+
+
+figsize = (6,6)
+frame = [0,1,0,0.05]
+
+plotta_subplots(
+    nrows=1,
+    ncols=3,
+    fig_title="v2 vs x2",
+    subplot_instructions=[
+        {
+            "plotstyle": "plot",
+            "x1_data": v1_2d[50, :],
+            "x2_data": x2_2d[50, :],
+            "color": "b",
+            "title": "i=50",
+            "xlabel": "v1",
+            "ylabel": "x2",
+            'frame': frame
+        },
+        {
+            "plotstyle": "plot",
+            "x1_data": v1_2d[100, :],
+            "x2_data": x2_2d[100, :],
+            "color": "b",
+            "title": "i=100",
+            "xlabel": "v1",
+            "ylabel": "x2",
+            'frame': frame
+        },
+        {
+            "plotstyle": "plot",
+            "x1_data": v1_2d[150, :],
+            "x2_data": x2_2d[150, :],
+            "color": "b",
+            "title": "i=150",
+            "xlabel": "v1",
+            "ylabel": "x2",
+            'frame': frame
+        }
+    ],
+    suptitle="Velocity Profiles (v1 vs x2)"
 )
 
-
-
-# plotta(x1_data=X, x2_data=Y, y_data=Z, plotstyle="contourf", cmap="plasma")
-# plotta(x1_data=X, x2_data=Y, y_data=Z, plotstyle="surface", cmap="inferno")
+# plotta_subplots(
+#     nrows=1,
+#     ncols=1,
+#     fig_size=(12, 5),
+#     fig_title="v2 vs x2",
+#     subplot_instructions=[
+#         {
+#             "plotstyle": "plot",
+#             "x1_data": v1_2d[50, :],
+#             "x2_data": xi_blas,
+#             "color": "b",
+#             "title": "i=50",
+#             "xlabel": "v1",
+#             "ylabel": "x2",
+#             'frame': frame
+#         }
+#     ],
+#     suptitle="Velocity Profiles (v1 vs x2)"
+# )
 
 # %%
