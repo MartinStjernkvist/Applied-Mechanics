@@ -19,6 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 
+#%%
 ##################################################
 # Functions
 ##################################################
@@ -150,6 +151,7 @@ def plotta_subplots(
 #     suptitle="Velocity Profiles"
 # )
 
+#%%
 ##################################################
 # Given code
 ##################################################
@@ -292,6 +294,7 @@ plt.text(-380,0.004,'$x_1=0.52$')
 plt.show()
 plt.savefig('v1_grad.png')
 
+#%%
 ##################################################
 # E1
 ##################################################
@@ -350,12 +353,88 @@ plotta_subplots(
 )
 
 
-
+#%%
 ##################################################
 # E2
 ##################################################
 new_prob(2)
 
 
+# Need to find x2 at the location where v1 = 0.99*V1_inf
+index_gg_test = np.where(v1_2d[i,:] >= 0.99*V1_inf)[0][0]
+delta_gg_test = x2_2d[i,index_gg_test]
+print(delta_gg_test)
+print(index_gg_test)
+
+delta_gg = 5 * np.sqrt((viscos * xc[i])/V1_inf)
+print(delta_gg)
+
+# Need to now plot delta_gg and delta_gg_blasius as a function of x1
+delta_gg_blasius = 5 * np.sqrt((viscos * xc)/V1_inf)
+delta_99_all = np.zeros_like(xc)
+
+for i in range(len(xc)):
+    V1_inf = v1_2d[i,-1]
+    index_99 = np.where(v1_2d[i,:] >= 0.99*V1_inf)[0][0]
+    delta_99_all[i] = x2_2d[i,index_99]
+
+plt.figure()
+plt.plot(xc, delta_gg_blasius, 'b-', label=r'$\delta_{gg}$')
+plt.plot(xc, delta_99_all, 'r--', label=r'$\delta_{99}$')
+plt.xlabel(r'$x_1$')
+plt.ylabel(r'Boundary layer thickness')
+plt.title('Boundary layer thickness vs x1')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#delta_star = 
 
 # %%
+##################################################
+# E3
+##################################################
+new_prob(3)
+
+
+
+
+# %%
+##################################################
+# E4
+##################################################
+new_prob(4)
+
+
+
+
+# %%
+##################################################
+# E5
+##################################################
+new_prob(5)
+
+
+
+
+# %%
+##################################################
+# E6
+##################################################
+new_prob(6)
+
+
+
+
+# %%
+##################################################
+# E7
+##################################################
+new_prob(7)
+
+# %%
+##################################################
+# E8
+##################################################
+new_prob(8)
+
