@@ -40,7 +40,7 @@ plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-plt.rc('figure', figsize=(8, 5))
+plt.rc('figure', figsize=(5, 4))
 
 
 def plotta_subplots(
@@ -300,6 +300,8 @@ plt.savefig('v1_grad.png')
 ##################################################
 new_prob(1)
 
+
+'''
 def nu(xi, x1, x2, V1_inf):
     return (x2 / xi)**2 * (V1_inf / x1)
 
@@ -351,6 +353,75 @@ plotta_subplots(
     ],
     suptitle="Velocity Profiles (v1 vs x2)"
 )
+'''
+
+# Substask 1
+plt.figure()
+i=170 # plot the velocity profile for i=170
+plt.plot(v1_2d[i,:], x2_2d[i,:], 'b-', label='$x_1=1.58$')
+
+i=85 # plot the velocity profile for i=85
+plt.plot(v1_2d[i,:], x2_2d[i,:], 'g-.', label='$x_1=0.66$')
+
+i=5 # plot the velocity profile for i=5
+plt.plot(v1_2d[i,:], x2_2d[i,:], 'r--', label='$x_1=0.14$')
+
+plt.title('Velocity profile')
+plt.axis([0,1.1,0,0.05])
+plt.xlabel('$V_1$') 
+plt.ylabel('$x_2$') 
+plt.legend(loc='best')
+plt.savefig('velprof.png')
+plt.show()
+
+
+# Substask 2
+i = 170 # plot the dimensioneless velocity profile for i=170
+
+# Freestream velocity at x1 location
+V1_inf = v1_2d[i,-1] # Double check this value
+# print('V1_inf:', V1_inf)
+
+xi = x2_2d[i,:] * np.sqrt(V1_inf / (viscos * x1_2d[i,:])) # eqn (3.48), x2 = yp
+# print(xi)
+
+v1_norm = v1_2d[i, :] / V1_inf
+v2_norm = v2_2d[i, :] / V1_inf
+#print(v2_norm)
+
+g_prim_blas = u_blas # Pretty sure that g'' in the blasius.dat file is incorrectly named
+v2_blas = - (1/2) * xi_blas * viscos * (g_blas - xi_blas * g_prim_blas) # combine eqn (3.44), eqn (3.48) & eqn (3.50)
+v2_blas_norm = v2_blas / V1_inf
+
+# Plot
+plt.figure()
+plt.plot(xi, v1_norm, 'b-', label=fr'$x_1={xc[i]:.2f}$')
+
+# Add Blasius solution for comparison
+plt.plot(xi_blas, u_blas, 'k--', label='Blasius solution, v1_Blasius_norm')
+
+plt.title('Similarity velocity profile')
+plt.axis([0,20,0,1.1])
+plt.xlabel(r'$\xi$')
+plt.ylabel(r'$v_1 / V_{1,\infty}$')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Plot
+plt.figure()
+plt.plot(xi, v2_norm, 'r--', label=fr'$x_1={xc[i]:.2f}$')
+
+# Add Blasius solution for comparison
+plt.plot(xi_blas, v2_blas_norm, 'k--', label='Blasius solution v2_Blasius_norm')
+
+plt.title('Similarity velocity profile')
+plt.axis([0,20,0,0.003])
+plt.xlabel(r'$\xi$')
+plt.ylabel(r'$v_2 / V_{1,\infty}$')
+plt.legend()
+plt.grid(True)
+plt.show()
 
 
 #%%
@@ -359,27 +430,17 @@ plotta_subplots(
 ##################################################
 new_prob(2)
 
-
-# Need to find x2 at the location where v1 = 0.99*V1_inf
-index_gg_test = np.where(v1_2d[i,:] >= 0.99*V1_inf)[0][0]
-delta_gg_test = x2_2d[i,index_gg_test]
-print(delta_gg_test)
-print(index_gg_test)
-
-delta_gg = 5 * np.sqrt((viscos * xc[i])/V1_inf)
-print(delta_gg)
-
-# Need to now plot delta_gg and delta_gg_blasius as a function of x1
-delta_gg_blasius = 5 * np.sqrt((viscos * xc)/V1_inf)
+# Need to now plot delta_gg and delta_99_blasius as a function of x1
+delta_99_blasius = 5 * np.sqrt((viscos * xc)/V1_inf)
 delta_99_all = np.zeros_like(xc)
 
 for i in range(len(xc)):
     V1_inf = v1_2d[i,-1]
-    index_99 = np.where(v1_2d[i,:] >= 0.99*V1_inf)[0][0]
+    index_99 = np.where(v1_2d[i,:] >= 0.99 * V1_inf)[0][0]
     delta_99_all[i] = x2_2d[i,index_99]
 
 plt.figure()
-plt.plot(xc, delta_gg_blasius, 'b-', label=r'$\delta_{gg}$')
+plt.plot(xc, delta_99_blasius, 'b-', label=r'$\delta_{gg}$')
 plt.plot(xc, delta_99_all, 'r--', label=r'$\delta_{99}$')
 plt.xlabel(r'$x_1$')
 plt.ylabel(r'Boundary layer thickness')
@@ -388,7 +449,59 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-#delta_star = 
+
+# Creating empty arrays to store results
+delta_star = np.zeros(ni)
+theta = np.zeros(ni)
+
+delta_star_blasius = np.zeros(ni)
+theta_blasius = np.zeros(ni)
+
+for i in range(ni):
+     
+    x2 = x2_2d[i, :] # local x2 array
+    u = v1_2d[i, :].copy() # local velocity profile
+
+    # local freestream velocity (could also use constant V1_inf = 1.0)
+    V1_inf = np.max(v1_2d[i,:])
+    if V1_inf == 0:
+        # avoid division by zero, skipping or setting to NaN
+        delta_star[i] = np.nan
+        theta[i] = np.nan
+        continue
+    
+    uhat = v1_2d[i,:] / V1_inf # normalized velocity
+    jmax = np.argmax(u)  # finding index of maximum u
+
+    # integration domain up to jmax (include jmax)
+    x2_int = x2[:jmax+1]
+    uhat_int = uhat[:jmax+1]
+
+    # integrands
+    integrand_delta = 1.0 - uhat_int
+    integrand_theta = uhat_int * (1.0 - uhat_int)
+
+    # trapezoidal integration
+    delta_star[i] = np.trapezoid(integrand_delta, x2_int)
+    theta[i]      = np.trapezoid(integrand_theta, x2_int)
+
+    delta_star_blasius[i] = 1.721 * np.sqrt((viscos * xc[i-1]) / V1_inf)
+    theta_blasius[i]      = 0.664 * np.sqrt((viscos * xc[i-1]) / V1_inf)
+    
+# Plotting
+x1 = x1_2d[:,0]
+plt.figure()
+plt.plot(x1, delta_star, label="δ* (numerical)")
+plt.plot(x1, theta, label=r'$\theta$ (numerical)')
+plt.plot(x1, delta_star_blasius, 'k--', label="δ* (Blasius)")
+plt.plot(x1, theta_blasius, 'r--', label=r'$\theta$ (Blasius)')
+plt.xlabel('$x_1$')
+plt.ylabel('thickness (m)')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#display(delta_star, theta)
 
 # %%
 ##################################################
@@ -396,8 +509,25 @@ plt.show()
 ##################################################
 new_prob(3)
 
+plt.figure()
+i = 85
+gradient = np.gradient(v1_2d[i,:], x2_2d[i,:])
+plt.plot(gradient, x2_2d[i,:], 'r--', label=fr'$x_1={xc[i]:.2f}$')
+i = 170
+gradient = np.gradient(v1_2d[i,:], x2_2d[i,:])
+plt.plot(gradient, x2_2d[i,:], 'b--', label=fr'$x_1={xc[i]:.2f}$')
+i = 100
+gradient = np.gradient(v1_2d[i,:], x2_2d[i,:])
+plt.plot(gradient, x2_2d[i,:], 'g--', label=fr'$x_1={xc[i]:.2f}$')
 
+plt.title('Velocity gradients')
+plt.axis([-5,100,0,0.04])
+plt.legend()
+plt.ylabel('$x_2$')
+plt.xlabel('$\\partial V_1 / \\partial x_2$')
+plt.show()
 
+print('prove/disprove assumptions')
 
 # %%
 ##################################################
@@ -405,8 +535,34 @@ new_prob(3)
 ##################################################
 new_prob(4)
 
+V1_inf = 1 # freestream velocity (assumed constant according to problem statement)
+rho = 1.204             # kg/m^3 at 20C
+viscos_dyn = viscos / rho
 
+dvdx = np.gradient(v2_2d, xp, axis=0)  # ∂v2/∂x1
 
+tau_12 = viscos_dyn * (dudy + dvdx)   # shape (ni, nj) as denoted in boundary_layer.py
+
+# extract wall shear stress at the wall index j=0
+tau_w = tau_12[:,0]          
+
+# local skin friction coefficient
+Cf = tau_w / (0.5 * rho * V1_inf**2)
+
+# Blasius solution for Cf
+Cf_blas = 0.664 / np.sqrt((V1_inf * x1) / viscos)
+
+# Plotting results
+valid = np.isfinite(Cf) & (np.sqrt((V1_inf * x1) / viscos) > 0) # Avoiding invalid values
+
+plt.figure()
+plt.plot(xp[valid], Cf[valid], label='Cf (numerical)')
+plt.plot(xp[valid], Cf_blas[valid], '--', label='Cf (Blasius)')
+plt.xlabel('$x_1$')
+plt.ylabel('$C_f$')
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # %%
 ##################################################
@@ -415,7 +571,29 @@ new_prob(4)
 new_prob(5)
 
 
+plt.figure()
 
+omega_3 = dvdx - dudy
+print('dvdx:')
+print(dvdx)
+print('dudy:')
+print(dudy)
+print('vorticity: ',omega_3)
+i = 85
+plt.plot(omega_3[i,:], x2_2d[i,:], label=fr'$x_1={xc[i]:.2f}$')
+i=100
+plt.plot(omega_3[i,:], x2_2d[i,:], '--', label=fr'$x_1={xc[i]:.2f}$')
+i=150
+plt.plot(omega_3[i,:], x2_2d[i,:], '--', label=fr'$x_1={xc[i]:.2f}$')
+i=0
+plt.plot(omega_3[i,:], x2_2d[i,:], '--', label=fr'$x_1={xc[i]:.2f}$')
+
+plt.axis([-110,1,-0,0.05])
+plt.xlabel('$\omega$')
+plt.ylabel('$x_2$')
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # %%
 ##################################################
