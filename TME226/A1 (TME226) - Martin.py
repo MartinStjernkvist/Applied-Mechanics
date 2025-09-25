@@ -390,7 +390,16 @@ v2_norm = v2_2d[i, :] / V1_inf
 #print(v2_norm)
 
 g_prim_blas = u_blas # Pretty sure that g'' in the blasius.dat file is incorrectly named
-v2_blas = - (1/2) * xi_blas * viscos * (g_blas - xi_blas * g_prim_blas) # combine eqn (3.44), eqn (3.48) & eqn (3.50)
+'''
+evaluate the parenthesis at different values for x1
+then plug in the term in the equation
+
+also add more plots to the figures
+'''
+
+x1_value = 1.58
+value = np.sqrt(viscos * V1_inf/x1_value)
+v2_blas = - (1/2) * value * (g_blas - xi_blas * g_prim_blas) # combine eqn (3.44), eqn (3.48) & eqn (3.50)
 v2_blas_norm = v2_blas / V1_inf
 
 # Plot
