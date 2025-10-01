@@ -548,7 +548,10 @@ V1_inf = 1 # freestream velocity (assumed constant according to problem statemen
 rho = 1.204             # kg/m^3 at 20C
 viscos_dyn = viscos / rho
 
-dvdx = np.gradient(v2_2d, xp, axis=0)  # ∂v2/∂x1
+# compute the gradient dudx, dudy
+dvdx, dvdy=np.gradient(v2_2d,xp,yp)
+
+# dvdx = np.gradient(v2_2d, xp, axis=0)  # ∂v2/∂x1
 
 tau_12 = viscos_dyn * (dudy + dvdx)   # shape (ni, nj) as denoted in boundary_layer.py
 
@@ -579,15 +582,13 @@ plt.show()
 ##################################################
 new_prob(5)
 
+omega_3 = dvdx - dudy
+
+print('dvdx: ', dvdx)
+print('dudy: ', dudy)
+print('vorticity: ',omega_3)
 
 plt.figure()
-
-omega_3 = dvdx - dudy
-print('dvdx:')
-print(dvdx)
-print('dudy:')
-print(dudy)
-print('vorticity: ',omega_3)
 i = 85
 plt.plot(omega_3[i,:], x2_2d[i,:], label=fr'$x_1={xc[i]:.2f}$')
 i=100
@@ -610,7 +611,51 @@ plt.show()
 ##################################################
 new_prob(6)
 
+S12 = 0.5 * (dudy + dvdx)
+Omega12 = 0.5 * (dudy - dvdx)
 
+print(S12)
+print(Omega12)
+
+i = 170
+
+plt.figure()
+plt.plot(xp, S12[:,i], 'r-', label='$S_12$')
+plt.plot(xp, Omega12[:,i], 'b-', label=fr'$\Omega_{12}$')
+plt.title('Shear and Vorticity at x2=1.58')
+plt.xlabel('$x_1$')
+plt.ylabel('$S_{12}, \\Omega_{12}$')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+i = 85
+
+plt.figure()
+plt.plot(xp, S12[:,i], 'r-', label='$S_12$')
+plt.plot(xp, Omega12[:,i], 'b-', label=fr'$\Omega_{12}$')
+plt.title('Shear and Vorticity at x2=0.66')
+plt.xlabel('$x_1$')
+plt.ylabel('$S_{12}, \\Omega_{12}$')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+i = 50
+
+plt.figure()
+plt.plot(xp, S12[:,i], 'r-', label='$S_12$')
+plt.plot(xp, Omega12[:,i], 'b-', label=fr'$\Omega_{12}$')
+plt.title('Shear and Vorticity at x2=0.66')
+plt.xlabel('$x_1$')
+plt.ylabel('$S_{12}, \\Omega_{12}$')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# X2 (y) value is incorrect, need to be calculated based on given height and amount of elements.
+
+# Change axels, meaning x on y axis, and then plot for x1 coordinates, meaning x1=i for example.
 
 
 # %%
@@ -618,6 +663,31 @@ new_prob(6)
 # E7
 ##################################################
 new_prob(7)
+
+
+
+# Phi = viscos * np.array([[2 *dudx * dudx, (dudy + dvdx) * dudy],
+#                          [(dvdx + dudy) * dvdx, 2 *dvdy * dvdy]])
+
+S_ij =  np.array([[dudx, 0.5 * (dudy + dvdx)],
+                [0.5 * (dvdx + dudy), dvdy]])
+
+grad_v_ij = np.array([[dudx, dudy],
+                      [dvdx, dvdy]])
+
+Phi = 2 * viscos * np.sum(S_ij * grad_v_ij, axis=(0, 1))
+
+
+################################ contour plot of Phi
+fig2 = plt.figure("Phi")
+plt.contourf(x1_2d, x2_2d, Phi, 50)
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.title("contour dissipation plot")
+plt.title(fr'$\Phi_1$')
+# plt.colorbar()
+plt.show()
+# plt.savefig('Phi.png')
 
 # %%
 ##################################################
