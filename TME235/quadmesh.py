@@ -1,3 +1,23 @@
+# Purpose:
+# Generates a 2D rectangular mesh
+#
+# Input:
+# p1    - Lower left point of rectangle [x1, y1]
+# p2    - Upper right point of rectangle [x2, y2]
+# nelx  - Number of elments in x direction
+# nely  - Number of elments in y direction
+# ndofs - Number of degrees of freedom per node
+#
+# Output:
+# Edof  - Connectivity matrix for mesh, cf. Calfem Toolbox
+# Ex    - Elementwise x-coordinates, cf. Calfem Toolbox
+# Ey    - Elementwise y-coordinates, cf. Calfem Toolbox
+# Bi    - Matrix containing boundary dofs for segment i (i=1,2,3,4)
+#         First column -> 1st dofs, second column -> 2nd dofs and so on   
+#         size = (num boundary nodes on segment) x ndofs
+#         B1 = Bottom side     B2 = Right side
+#         B3 = Upper side      B4 = Left side  
+#
 import numpy as np
 def ex_ey_quadmesh(p1,p2,nelx,nely,ndofs):
     xv=np.linspace(p1[0],p2[0],nelx+1)
