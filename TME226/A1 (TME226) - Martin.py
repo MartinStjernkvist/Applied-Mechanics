@@ -712,11 +712,11 @@ fig2 = plt.figure("Phi")
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi)
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi[50,:])
 Phi_plot = np.log10(Phi)
-# plt.colorbar(label=r'$\log_{10}(\Phi)$')
+
 plt.contourf(x1_2d, x2_2d, Phi_plot, levels=20, cmap='viridis')
 # plt.contour(x1_2d, x2_2d, Phi_plot)
 # plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
-
+plt.colorbar(label=r'$\log_{10}(\Phi)$')
 plt.axis([-0.2,xc[-1],0, yc[-1]])
 
 plt.xlabel("$x_1$")
