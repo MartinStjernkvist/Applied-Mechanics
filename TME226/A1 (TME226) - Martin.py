@@ -5,7 +5,11 @@ from scipy.optimize import fsolve
 # from scipy.differentiate import hessian
 import numpy as np
 from numpy import einsum
+import matplotlib
+matplotlib.pyplot.close('all')
+matplotlib.use('module://matplotlib_inline.backend_inline')  # or 'TkAgg' or 'Qt5Agg'
 import matplotlib.pyplot as plt
+
 import sympy as sp
 from IPython.display import display, Math
 from mpl_toolkits.mplot3d import axes3d
@@ -16,7 +20,6 @@ from matplotlib import animation
 
 import scipy.io as sio
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib import ticker
 
 #%%
@@ -724,7 +727,7 @@ plt.title("contour dissipation plot")
 plt.title(fr'$\Phi_1$')
 # plt.colorbar()
 plt.show()
-# plt.savefig('Phi.png')
+plt.savefig('Phi.png')
 
 
 from scipy import integrate
