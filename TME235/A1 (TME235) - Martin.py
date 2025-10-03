@@ -203,7 +203,7 @@ display(integration_constants)
 ## apply the constants to get the final deflection expression
 solution = simplify(w_general.subs(integration_constants)) 
 
-print(f"\nDeflection: w(x) =")
+print(f"\nDeflection: w(x):")
 display(solution)
 print(f"\nMax deflection at x=L: w_max = {simplify(solution.subs(x, L))}")
 
@@ -211,10 +211,10 @@ print(f"\nMax deflection at x=L: w_max = {simplify(solution.subs(x, L))}")
 M_solution = simplify(M.subs(integration_constants))
 V_solution = simplify(V.subs(integration_constants))
 
-print(f"\nMoment: M(x) =")
+print(f"\nMoment: M(x):")
 display(M_solution)
 
-print(f"\nShear: V(x) =")
+print(f"\nShear: V(x):")
 display(V_solution)
 
 

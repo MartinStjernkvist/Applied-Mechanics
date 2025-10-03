@@ -675,17 +675,37 @@ S_ij =  np.array([[dudx, 0.5 * (dudy + dvdx)],
 grad_v_ij = np.array([[dudx, dudy],
                       [dvdx, dvdy]])
 
-Phi = 2 * viscos * np.sum(S_ij * grad_v_ij, axis=(0, 1))
+print(np.shape(S_ij), np.shape(grad_v_ij))
+
+tau_ij = 2 * viscos * S_ij
 
 
-################################ contour plot of Phi
+Phi = np.einsum('jikl, ijkl -> kl',tau_ij, grad_v_ij)
+# Phi = tau_ij @ grad_v_ij
+# Phi = tau_ij * grad_v_ij
+# Phi = np.dot(tau_ij, grad_v_ij)
+
+
+# Phi = np.sum(tau_ij.T * grad_v_ij, axis=(0, 1))
+
+# Phi = tau_ij.T @ grad_v_ij
+
+# Phi = 2 * viscos * np.sum(S_ij * grad_v_ij, axis=(0, 1))
+
+print(Phi)
+
 fig2 = plt.figure("Phi")
-plt.contourf(x1_2d, x2_2d, Phi, 50)
+# plt.contourf(x1_2d[50,:], x2_2d[50,:], Phi[50,:], 50)
+# plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
+plt.plot(x1_2d[50,:], x2_2d[50,:], Phi)
+# plt.plot(x1_2d[50,:], x2_2d[50,:], Phi[50,:])
+
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
 plt.title("contour dissipation plot")
 plt.title(fr'$\Phi_1$')
 # plt.colorbar()
+plt.legend()
 plt.show()
 # plt.savefig('Phi.png')
 
