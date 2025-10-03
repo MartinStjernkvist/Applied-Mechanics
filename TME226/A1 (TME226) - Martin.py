@@ -664,8 +664,6 @@ plt.show()
 ##################################################
 new_prob(7)
 
-
-
 # Phi = viscos * np.array([[2 *dudx * dudx, (dudy + dvdx) * dudy],
 #                          [(dvdx + dudy) * dvdx, 2 *dvdy * dvdy]])
 
@@ -679,30 +677,47 @@ print(np.shape(S_ij), np.shape(grad_v_ij))
 
 tau_ij = 2 * viscos * S_ij
 
-
 Phi = np.einsum('jikl, ijkl -> kl',tau_ij, grad_v_ij)
 # Phi = tau_ij @ grad_v_ij
 # Phi = tau_ij * grad_v_ij
 # Phi = np.dot(tau_ij, grad_v_ij)
-
-
 # Phi = np.sum(tau_ij.T * grad_v_ij, axis=(0, 1))
-
 # Phi = tau_ij.T @ grad_v_ij
-
 # Phi = 2 * viscos * np.sum(S_ij * grad_v_ij, axis=(0, 1))
 
 print(Phi)
-print(np.shape(Phi))
+print('shape of Phi: ', np.shape(Phi))
+print("Shape of dudx:", np.shape(dudx))
+print("Shape of S_ij:", np.shape(S_ij))
+print("Shape of grad_v_ij:", np.shape(grad_v_ij))
+print("Shape of tau_ij:", np.shape(tau_ij))
+print("Shape of Phi:", np.shape(Phi))
+
+print("Contains NaN:", np.any(np.isnan(Phi)))
+print("Contains inf:", np.any(np.isinf(Phi)))
+print("All zeros:", np.all(Phi == 0))
+
+print("Phi stats:")
+print("  Min:", np.min(Phi))
+print("  Max:", np.max(Phi))
+print("  Mean:", np.mean(Phi))
+print("  Std:", np.std(Phi))
+
+# Check if values are extremely small/large
+print("  Order of magnitude:", np.log10(np.abs(Phi[Phi != 0]).mean()))
 
 fig2 = plt.figure("Phi")
-# plt.contourf(x1_2d[50,:], x2_2d[50,:], Phi[50,:], 50)
+# plt.contourf(x1_2d[50,:], x2_2d[50,:], Phi, 50)
 # plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi)
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi[50,:])
-plt.contourf(x1_2d, x2_2d, Phi, levels=20, cmap='viridis')
+Phi_plot = np.log10(Phi)
+# plt.colorbar(label=r'$\log_{10}(\Phi)$')
+plt.contourf(x1_2d, x2_2d, Phi_plot, levels=20, cmap='viridis')
+# plt.contour(x1_2d, x2_2d, Phi_plot)
+# plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
 
-plt.axis([0,200 ,0, 255])
+plt.axis([-0.2,xc[-1],0, yc[-1]])
 
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
