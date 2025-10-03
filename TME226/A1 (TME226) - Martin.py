@@ -703,7 +703,6 @@ print("  Max:", np.max(Phi))
 print("  Mean:", np.mean(Phi))
 print("  Std:", np.std(Phi))
 
-# Check if values are extremely small/large
 print("  Order of magnitude:", np.log10(np.abs(Phi[Phi != 0]).mean()))
 
 fig2 = plt.figure("Phi")
@@ -713,22 +712,42 @@ fig2 = plt.figure("Phi")
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi[50,:])
 Phi_plot = np.log10(Phi)
 
-plt.contourf(x1_2d, x2_2d, Phi_plot, levels=20, cmap='viridis')
+plt.contourf(x1_2d, x2_2d, Phi_plot, levels=100, cmap='viridis')
 # plt.contour(x1_2d, x2_2d, Phi_plot)
 # plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
-plt.colorbar(label=r'$\log_{10}(\Phi)$')
-plt.axis([-0.2,xc[-1],0, yc[-1]])
 
+# plt.colorbar(label=r'$\log_{10}(\Phi)$')
+plt.axis([-0.2,xc[-1],0, yc[-1]])
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
 plt.title("contour dissipation plot")
 plt.title(fr'$\Phi_1$')
 # plt.colorbar()
-# plt.legend()
 plt.show()
 # plt.savefig('Phi.png')
 
-# %%
+
+from scipy import integrate
+
+# If you have 1D coordinate arrays
+x1 = x1_2d[:, 0]  # or however you define x1
+x2 = x2_2d[0, :]  # or however you define x2
+
+# Double integral over the entire domain
+integral = integrate.trapezoid(integrate.trapezoid(Phi, x1, axis=0), x2)
+print(f"Double integral of Phi: {integral:.20f}")
+
+rho = 1.204   # air density [kg/m^3]
+cp  = 1005    # specific heat at 20C [J/kg/K]
+
+denominator = 1 / (-2 * rho * cp) * integral
+v1_int = v1_2d[0,:]
+
+numerator = np.trapezoid(v1_int, x2)
+
+T_b = denominator / numerator
+
+print('bulk temperature: ', T_b)
 
 # %%
 ##################################################
