@@ -293,20 +293,6 @@ plt.savefig('E1_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 # Substask 2
-i = 170 # plot the dimensioneless velocity profile for i=170
-
-# Freestream velocity at x1 location
-V1_inf = v1_2d[i,-1] # Double check this value
-# print('V1_inf:', V1_inf)
-
-xi = x2_2d[i,:] * np.sqrt(V1_inf / (viscos * x1_2d[i,:])) # eqn (3.48), x2 = yp
-# print(xi)
-
-v1_norm = v1_2d[i, :] / V1_inf
-v2_norm = v2_2d[i, :] / V1_inf
-#print(v2_norm)
-
-g_prim_blas = u_blas # Pretty sure that g'' in the blasius.dat file is incorrectly named
 '''
 evaluate the parenthesis at different values for x1
 then plug in the term in the equation
@@ -314,19 +300,28 @@ then plug in the term in the equation
 also add more plots to the figures
 '''
 
-x1_value = 1.58
-value = np.sqrt(viscos * V1_inf/x1_value)
-v2_blas = - (1/2) * value * (g_blas - xi_blas * g_prim_blas) # combine eqn (3.44), eqn (3.48) & eqn (3.50)
+g_prim_blas = u_blas # Pretty sure that g'' in the blasius.dat file is incorrectly named
+
+plt.figure()
+
+i = 170 # plot the velocity profile for i=170
+
+# Freestream velocity at x1 location
+V1_inf = v1_2d[i,-1]
+
+xi = x2_2d[i,:] * np.sqrt(V1_inf / (viscos * x1_2d[i,:])) # eqn (3.48), x2 = yp
+
+v1_norm = v1_2d[i, :] / V1_inf
+v2_norm = v2_2d[i, :] / V1_inf
+
+x1_value = x1_2d[i,0]
+v2_blas = - (1/2) * np.sqrt(viscos * V1_inf/x1_value) * (g_blas - xi_blas * g_prim_blas)
 v2_blas_norm = v2_blas / V1_inf
 
-# Plot
-plt.figure()
 plt.plot(xi, v1_norm, 'b-', label=fr'$x_1={xc[i]:.2f}$')
+plt.plot(xi_blas, u_blas, 'k--', label=fr'Blasius solution, $x_1={xc[i]:.2f}$')
 
-# Add Blasius solution for comparison
-plt.plot(xi_blas, u_blas, 'k--', label='Blasius solution, v1_Blasius_norm')
-
-plt.title('Similarity velocity profile')
+plt.title(fr'Normalized velocities for $v_1$')
 plt.axis([0,20,0,1.1])
 plt.xlabel(r'$\xi$')
 plt.ylabel(r'$v_1 / V_{1,\infty}$')
@@ -338,12 +333,11 @@ plt.show()
 
 # Plot
 plt.figure()
-plt.plot(xi, v2_norm, 'r--', label=fr'$x_1={xc[i]:.2f}$')
 
-# Add Blasius solution for comparison
-plt.plot(xi_blas, v2_blas_norm, 'k--', label='Blasius solution v2_Blasius_norm')
+plt.plot(xi, v2_norm, 'r-', label=fr'$x_1={xc[i]:.2f}$')
+plt.plot(xi_blas, v2_blas_norm, 'k--', label=fr'Blasius solution, $x_1={xc[i]:.2f}$')
 
-plt.title('Similarity velocity profile')
+plt.title(fr'Normalized velocities for $v_2$')
 plt.axis([0,20,0,0.003])
 plt.xlabel(r'$\xi$')
 plt.ylabel(r'$v_2 / V_{1,\infty}$')
@@ -352,6 +346,48 @@ plt.grid(True)
 plt.savefig('E1_3', dpi=dpi, bbox_inches='tight')
 plt.show()
 
+
+# i = 50 # plot the velocity profile for i=170
+
+# # Freestream velocity at x1 location
+# V1_inf = v1_2d[i,-1]
+
+# xi = x2_2d[i,:] * np.sqrt(V1_inf / (viscos * x1_2d[i,:])) # eqn (3.48), x2 = yp
+
+# v1_norm = v1_2d[i, :] / V1_inf
+# v2_norm = v2_2d[i, :] / V1_inf
+
+# x1_value = x1_2d[i,0]
+# v2_blas = - (1/2) * np.sqrt(viscos * V1_inf/x1_value) * (g_blas - xi_blas * g_prim_blas)
+# v2_blas_norm = v2_blas / V1_inf
+
+# plt.plot(xi, v1_norm, 'b-', label=fr'$x_1={xc[i]:.2f}$')
+# plt.plot(xi_blas, u_blas, 'k--', label=fr'Blasius solution, $x_1={xc[i]:.2f}$')
+
+# plt.title(fr'Normalized velocities for $v_1$')
+# plt.axis([0,20,0,1.1])
+# plt.xlabel(r'$\xi$')
+# plt.ylabel(r'$v_1 / V_{1,\infty}$')
+# plt.legend()
+# plt.grid(True)
+# plt.savefig('E1_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+
+# Plot
+plt.figure()
+
+plt.plot(xi, v2_norm, 'r-', label=fr'$x_1={xc[i]:.2f}$')
+plt.plot(xi_blas, v2_blas_norm, 'k--', label=fr'Blasius solution, $x_1={xc[i]:.2f}$')
+
+plt.title(fr'Normalized velocities for $v_2$')
+plt.axis([0,20,0,0.003])
+plt.xlabel(r'$\xi$')
+plt.ylabel(r'$v_2 / V_{1,\infty}$')
+plt.legend()
+plt.grid(True)
+plt.savefig('E1_3', dpi=dpi, bbox_inches='tight')
+plt.show()
 
 
 #%%
@@ -362,18 +398,18 @@ new_prob(2)
 
 # Need to now plot delta_gg and delta_99_blasius as a function of x1
 delta_99_blasius = 5 * np.sqrt((viscos * xc)/V1_inf)
-delta_99_all = np.zeros_like(xc)
+delta_99 = np.zeros_like(xc)
 
 for i in range(len(xc)):
     V1_inf = v1_2d[i,-1]
     index_99 = np.where(v1_2d[i,:] >= 0.99 * V1_inf)[0][0]
-    delta_99_all[i] = x2_2d[i,index_99]
+    delta_99[i] = x2_2d[i,index_99]
 
 plt.figure()
-plt.plot(xc, delta_99_blasius, 'b-', label=r'$\delta_{gg}$')
-plt.plot(xc, delta_99_all, 'r-', label=r'$\delta_{99}$')
+plt.plot(xc, delta_99_blasius, 'b-', label=r'$\delta_{99, \text{Blasius}}$')
+plt.plot(xc, delta_99, 'r-', label=r'$\delta_{99}$')
 plt.xlabel(r'$x_1$')
-plt.ylabel(r'Boundary layer thickness')
+plt.ylabel(fr'Boundary layer thickness')
 plt.title('Boundary layer thickness')
 plt.legend()
 plt.grid(True)
@@ -427,7 +463,7 @@ plt.plot(x1, theta, label=r'$\theta$ (numerical)')
 plt.plot(x1, delta_star_blasius, 'k--', label="δ* (Blasius)")
 plt.plot(x1, theta_blasius, 'r--', label=r'$\theta$ (Blasius)')
 plt.xlabel('$x_1$')
-plt.ylabel('thickness (m)')
+plt.ylabel('Boundary layer thickness')
 plt.legend()
 plt.grid(True)
 plt.savefig('E2_2', dpi=dpi, bbox_inches='tight')
@@ -492,8 +528,10 @@ Cf_blas = 0.664 / np.sqrt((V1_inf * x1) / viscos)
 valid = np.isfinite(Cf) & (np.sqrt((V1_inf * x1) / viscos) > 0) # Avoiding invalid values
 
 plt.figure()
-plt.plot(xp[valid], Cf[valid], label='$C_f$ (numerical)')
-plt.plot(xp[valid], Cf_blas[valid], '--', label='$C_f$ (Blasius)')
+plt.plot(xp[valid], Cf[valid], label='$C_f$')
+plt.plot(xp[valid], Cf_blas[valid], '--', label='Blasius solution')
+
+plt.title(fr'Skinfriction at different $x_1$ locations')
 plt.xlabel('$x_1$')
 plt.ylabel('$C_f$')
 plt.legend()
@@ -509,20 +547,19 @@ new_prob(5)
 
 omega_3 = dvdx - dudy
 
-print('dvdx: ', dvdx)
-print('dudy: ', dudy)
-print('vorticity: ',omega_3)
+# print('dvdx: ', dvdx)
+# print('dudy: ', dudy)
+# print('vorticity: ',omega_3)
 
 plt.figure()
 i = 85
 plt.plot(omega_3[i,:], x2_2d[i,:], label=fr'$x_1={xc[i]:.2f}$')
 i=100
-plt.plot(omega_3[i,:], x2_2d[i,:], '--', label=fr'$x_1={xc[i]:.2f}$')
+plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 i=150
-plt.plot(omega_3[i,:], x2_2d[i,:], '--', label=fr'$x_1={xc[i]:.2f}$')
-i=0
-plt.plot(omega_3[i,:], x2_2d[i,:], '--', label=fr'$x_1={xc[i]:.2f}$')
+plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 
+plt.title(fr'Vorticity at different $x_1$ locations (above plate)')
 plt.axis([-110,1,-0,0.05])
 plt.xlabel('$\omega$')
 plt.ylabel('$x_2$')
@@ -531,6 +568,24 @@ plt.grid(True)
 plt.savefig('E5_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
+plt.figure()
+i=0
+plt.plot(omega_3[i,2:], x2_2d[i,2:], '-', label=fr'$x_1={xc[i]:.2f}$')
+i=19
+plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
+i=20
+plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
+
+plt.title(fr'Vorticity at different $x_1$ locations (upstream of plate)')
+plt.axis([-2000,200,-0,0.005])
+plt.xlabel('$\omega$')
+plt.ylabel('$x_2$')
+plt.legend()
+plt.grid(True)
+plt.savefig('E5_2', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+print(omega_3[i,:])
 # %%
 ##################################################
 # E6
