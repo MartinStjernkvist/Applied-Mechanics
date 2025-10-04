@@ -149,13 +149,8 @@ def quadmesh(p1,p2,nelx,nely,ndofs):
     B1,B2,B3,B4,P1,P2,P3,P4=B1B2B3B4_quadmesh(nelx,nely,ndofs)
     return Ex,Ey,Edof,B1,B2,B3,B4,P1,P2,P3,P4
 
-##################################################
-# E1
-##################################################
-new_prob(1)
-
 #%% ###################### Method 1: dsolve ##############################
-# E1
+# EULER-BERNOULLI
 ##################################################
 new_prob(1)
 print("\nCantilever Beam - Point Load at Free End")
@@ -210,6 +205,7 @@ print(f"\nMax deflection at x=L: w_max = {simplify(solution.subs(x, L))}")
 ## moment and shear with solution
 M_solution = simplify(M.subs(integration_constants))
 V_solution = simplify(V.subs(integration_constants))
+# print(V_solution.evalf(subs={P:5}))
 
 print(f"\nMoment: M(x):")
 display(M_solution)
@@ -221,10 +217,40 @@ display(V_solution)
 
 # %%
 ##################################################
-# E2
+# TIMOSHENKO
 ##################################################
 new_prob(2)
 
+## Define symbolic variables
+x, q0, E, I, Ks, G, A, L = symbols('x q0 E I Ks G A L', real=True)
 
+f_phi = Function('phi') # phi is a function of x
+
+## Define the differential equation in terms of phi
+diffeq_phi = Eq(E*I*f_phi(x).diff(x, 3), q0)
+
+## Solve the differential equation for phi(x) (eq. 3.35 LN)
+phi = dsolve(diffeq_phi, f_phi(x)).rhs
+
+## Solve the differential equation for w(x) (eq. 3.36 LN)
+w = Function('w') # w is a function of x
+diffeq_w = Eq(w(x).diff(x), -E*I/(G*Ks*A)*phi.diff(x,2) + phi)
+w        = dsolve(diffeq_w, w(x)).rhs
+
+## Define boundary conditions
+M = -E*I*phi.diff(x)
+boundary_conditions = [ w.subs(x, 0), # w(0)=0
+                        M.subs(x, 0), # M(0)=0
+                        w.subs(x, L), # w(L)=0
+                        M.subs(x, L)  # M(L)=0
+                        ]
+
+## Solve for the integration constants
+integration_constants = solve(boundary_conditions, 'C1, C2, C3, C4', real=True)
+
+## Substitute the integration constants into the solution
+solution = w.subs(integration_constants)
+
+solution
 
 # %%

@@ -813,22 +813,19 @@ print('bulk temperature: ', T_b)
 ##################################################
 new_prob(8)
 
+tau_11 = viscos * (dudx + dudx)
+tau_12 = tau_12
+tau_21 = tau_12 # symmetric tensor
+tau_22 = viscos * (dvdy + dvdy)
 
-dvdy = np.gradient(v2_2d, yp, axis=1)
-
-tau11 = viscos * (dudx + dudx)
-tau12 = tau_12
-tau21 = tau12 # Due to stress tensor being a symmetric tensor
-tau22 = viscos * (dvdy + dvdy)
-
-ni, nj = tau11.shape
+ni, nj = tau_11.shape
 eigvals = np.zeros((ni, nj, 2)) # Creates a vector of length 2 for each (i,j) point
 eigvecs = np.zeros((ni, nj, 2, 2)) # Creates a 2x2 matrix for each (i,j) point
 
 for i in range(ni): # Loop over all ni values
     for j in range(nj): # Loop over all nj values
-        tau = np.array([[tau11[i,j], tau12[i,j]],
-                        [tau21[i,j], tau22[i,j]]])
+        tau = np.array([[tau_11[i,j], tau_12[i,j]],
+                        [tau_21[i,j], tau_22[i,j]]])
         vals, vecs = np.linalg.eig(tau)
         eigvals[i,j] = vals
         eigvecs[i,j] = vecs
@@ -838,29 +835,37 @@ for i in range(ni): # Loop over all ni values
 
 i = 200  
 eigval_slice = eigvals[i, :, 1]   
-tau11_slice = tau11[i, :]
-tau12_slice = tau12[i, :]
-tau21_slice = tau21[i, :]
-tau22_slice = tau22[i, :]
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
 
 
 # Eigenvalue vs vertical position
-plt.plot(yp, eigval_slice, label="Eigenvalue")
-plt.xlabel("x2 (vertical position)")
-plt.ylabel("Value")
-plt.title(f"Eigenvalue vs x2 at x1 index = {i}")
-plt.axis([-0.1,0.1,0,0.001])
+plt.figure()
+
+plt.plot(eigval_slice, yp, label="Eigenvalue")
+
+plt.title(fr"Eigenvalue vs $x_2$ at $x_1$ index = {i}")
+plt.ylabel(fr"$x_2$")
+plt.xlabel("$\lambda$")
+plt.axis([-0.0001,0.001,0,0.1])
+plt.legend()
 plt.savefig('E8_1', dpi=dpi, bbox_inches='tight')
 plt.show()
+
+plt.figure()
 
 plt.plot(tau11_slice, yp, label=r"$\tau_{11}$")
 plt.plot(tau12_slice, yp, label=r"$\tau_{12}$")
 plt.plot(tau21_slice, yp, label=r"$\tau_{21}$")
 plt.plot(tau22_slice, yp, label=r"$\tau_{22}$")
-plt.axis([-0.000005,0.000008,0,0.3])
-plt.xlabel("x2 (vertical position)")
-plt.ylabel("Stress component value")
-plt.title(f"Stress components vs x2 at x1 index = {i}")
+
+plt.title(fr"Stress components vs $x_2$ at $x_1$ index = {i}")
+plt.axis([-5e-6,5e-6,0,0.25])
+# plt.axis([0,0.3,-0.000005,0.000008])
+plt.ylabel(fr"$x_2$")
+plt.xlabel("Stress component value")
 plt.legend()
 plt.savefig('E8_2', dpi=dpi, bbox_inches='tight')
 plt.show()
