@@ -598,15 +598,24 @@ Omega12 = 0.5 * (dudy - dvdx)
 print(S12)
 print(Omega12)
 
+max_i = np.unravel_index(np.argmax(S12, axis=None), S12.shape)[0]
+
+print('i =', max_i, 'Max S12 at i =', np.max(S12))
+
+max_i = np.unravel_index(np.argmax(Omega12, axis=None), Omega12.shape)[0]
+
+print('i =', max_i, 'Max omega12 at i =', np.max(Omega12))
+
 i = 170
 
 plt.figure()
-plt.plot(xp, S12[:,i], 'r-', label='$S_12$')
-plt.plot(xp, Omega12[:,i], 'b-', label=fr'$\Omega_{12}$')
-plt.title('Shear and Vorticity at x2=1.58')
-plt.xlabel('$x_1$')
-plt.ylabel('$S_{12}, \\Omega_{12}$')
+plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
+plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
+plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
+plt.xlabel('$S_{12}, \\Omega_{12}$')
+plt.ylabel('$x_2$')
 plt.legend()
+# plt.axis([-0.1,0.1,0,1.3])
 plt.grid(True)
 plt.savefig('E6_1', dpi=dpi, bbox_inches='tight')
 plt.show()
@@ -614,33 +623,29 @@ plt.show()
 i = 85
 
 plt.figure()
-plt.plot(xp, S12[:,i], 'r-', label='$S_12$')
-plt.plot(xp, Omega12[:,i], 'b-', label=fr'$\Omega_{12}$')
-plt.title('Shear and Vorticity at x2=0.66')
-plt.xlabel('$x_1$')
-plt.ylabel('$S_{12}, \\Omega_{12}$')
+plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
+plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
+plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
+plt.xlabel('$S_{12}, \\Omega_{12}$')
+plt.ylabel('$x_2$')
 plt.legend()
 plt.grid(True)
+# plt.axis([-0.1,0.1,0,1.3])
 plt.savefig('E6_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-i = 50
+i = 5
 
 plt.figure()
-plt.plot(xp, S12[:,i], 'r-', label='$S_12$')
-plt.plot(xp, Omega12[:,i], 'b-', label=fr'$\Omega_{12}$')
-plt.title('Shear and Vorticity at x2=0.66')
-plt.xlabel('$x_1$')
-plt.ylabel('$S_{12}, \\Omega_{12}$')
+plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
+plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
+plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
+plt.xlabel('$S_{12}, \\Omega_{12}$')
+plt.ylabel('$x_2$')
 plt.legend()
 plt.grid(True)
 plt.savefig('E6_3', dpi=dpi, bbox_inches='tight')
 plt.show()
-
-# X2 (y) value is incorrect, need to be calculated based on given height and amount of elements.
-
-# Change axels, meaning x on y axis, and then plot for x1 coordinates, meaning x1=i for example.
-
 
 # %%
 ##################################################
