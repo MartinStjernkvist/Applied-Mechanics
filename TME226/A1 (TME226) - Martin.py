@@ -856,9 +856,9 @@ plt.show()
 
 plt.figure()
 
+plt.plot(tau12_slice, yp, label=r"$\tau_{12} = \tau_{21}$")
 plt.plot(tau11_slice, yp, label=r"$\tau_{11}$")
-plt.plot(tau12_slice, yp, label=r"$\tau_{12}$")
-plt.plot(tau21_slice, yp, label=r"$\tau_{21}$")
+# plt.plot(tau21_slice, yp, label=r"$\tau_{21}$")
 plt.plot(tau22_slice, yp, label=r"$\tau_{22}$")
 
 plt.title(fr"Stress components vs $x_2$ at $x_1$ index = {i}")
@@ -870,6 +870,18 @@ plt.legend()
 plt.savefig('E8_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
+
+plt.figure()
+
+plt.plot(tau12_slice, yp, label=r"$\tau_{12} = \tau_{21}$")
+
+plt.title(fr"Stress components vs $x_2$ at $x_1$ index = {i}")
+plt.axis([-0.0001,0.001,0,0.1])
+plt.ylabel(fr"$x_2$")
+plt.xlabel("Stress component value")
+plt.legend()
+plt.savefig('E8_3', dpi=dpi, bbox_inches='tight')
+plt.show()
 
 
 print(eigvecs[1,4])
