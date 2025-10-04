@@ -592,83 +592,111 @@ print(omega_3[i,:])
 ##################################################
 new_prob(6)
 
+# S12 = 0.5 * (dudy + dvdx)
+# Omega12 = 0.5 * (dudy - dvdx)
+
+dudx_cut, dudy_cut=np.gradient(v1_2d[1:,:],xp[1:],yp[:])
+dvdx_cut, dvdy_cut=np.gradient(v2_2d[1:,:],xp[1:],yp[:])
+
 S12 = 0.5 * (dudy + dvdx)
 Omega12 = 0.5 * (dudy - dvdx)
 
-print(S12)
-print(Omega12)
+S12_cut = 0.5 * (dudy_cut + dvdx_cut)
+Omega12_cut = 0.5 * (dudy_cut - dvdx_cut)
 
-max_i = np.unravel_index(np.argmax(S12, axis=None), S12.shape)[0]
+print('dudy: ', dudy)
+print('dvdx: ', dvdx) # basically = 0
+print('max value of dvdx: ', np.unravel_index(np.argmax(dvdx, axis=None), dvdx.shape)[0])
+# print(S12)
+# print(Omega12)
 
-print('i =', max_i, 'Max S12 at i =', np.max(S12))
+max_i = np.unravel_index(np.argmax(S12_cut, axis=None), S12_cut.shape)[0]
 
-max_i = np.unravel_index(np.argmax(Omega12, axis=None), Omega12.shape)[0]
+print('i =', max_i, 'Max S12 at i:', np.max(S12_cut))
 
-print('i =', max_i, 'Max omega12 at i =', np.max(Omega12))
+max_i = np.unravel_index(np.argmax(Omega12_cut, axis=None), Omega12_cut.shape)[0]
 
-i = 170
+print('i =', max_i, 'Max omega12 at i:', np.max(Omega12_cut))
+
+# i = 170
+
+# plt.figure()
+# plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
+# plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
+# plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
+# plt.xlabel('$S_{12}, \\Omega_{12}$')
+# plt.ylabel('$x_2$')
+# plt.legend()
+# plt.axis([-0.5,35,0,0.05])
+# plt.grid(True)
+# plt.savefig('E6_1', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# i = 85
+
+# plt.figure()
+# plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
+# plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
+# plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
+# plt.xlabel('$S_{12}, \\Omega_{12}$')
+# plt.ylabel('$x_2$')
+# plt.legend()
+# plt.grid(True)
+# plt.axis([-0.5,55,0,0.05])
+# plt.savefig('E6_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# i = 5
+
+# plt.figure()
+# plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
+# plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
+# plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
+# plt.xlabel('$S_{12}, \\Omega_{12}$')
+# plt.ylabel('$x_2$')
+# plt.legend()
+# plt.grid(True)
+# plt.savefig('E6_3', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
 
 plt.figure()
-plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
-plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
-plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
-plt.xlabel('$S_{12}, \\Omega_{12}$')
-plt.ylabel('$x_2$')
-plt.legend()
-plt.axis([-0.5,35,0,0.05])
-plt.grid(True)
-plt.savefig('E6_1', dpi=dpi, bbox_inches='tight')
-plt.show()
 
-i = 85
+i = 170-1
+plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
+plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
 
-plt.figure()
-plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
-plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
-plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
-plt.xlabel('$S_{12}, \\Omega_{12}$')
-plt.ylabel('$x_2$')
-plt.legend()
-plt.grid(True)
-plt.axis([-0.5,55,0,0.05])
-plt.savefig('E6_2', dpi=dpi, bbox_inches='tight')
-plt.show()
+i = 50
+plt.plot(S12[i,:], yp, 'g-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
+plt.plot(Omega12[i,:], yp, 'y--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
 
-i = 5
-
-plt.figure()
-plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$')
-plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$')
-plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
-plt.xlabel('$S_{12}, \\Omega_{12}$')
-plt.ylabel('$x_2$')
-plt.legend()
-plt.grid(True)
-plt.savefig('E6_3', dpi=dpi, bbox_inches='tight')
-plt.show()
-
-
-plt.figure()
-i = 170
-
-plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$' + fr', x_1={xc[i]:.2f}')
-plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$' + fr', x_1={xc[i]:.2f}')
-
-i = 85
-plt.plot(S12[i,:], yp, 'g-', label='$S_{12}$' + fr', x_1={xc[i]:.2f}')
-plt.plot(Omega12[i,:], yp, 'y--', label='$\Omega_{12}$' + fr', x_1={xc[i]:.2f}')
-
-i = 5
-plt.plot(S12[i,:], yp, 'm-', label='$S_{12}$' + fr', x_1={xc[i]:.2f}')
-plt.plot(Omega12[i,:], yp, 'k--', label='$\Omega_{12}$' + fr', x_1={xc[i]:.2f}')
+i = 1
+plt.plot(S12[i,:], yp, 'm-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
+plt.plot(Omega12[i,:], yp, 'k--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
 
 plt.title(fr'Shear and Vorticity')
-plt.axis([-0.5,55,0,0.04])
+plt.axis([-1,80,0,0.04])
 plt.xlabel('$S_{12}, \\Omega_{12}$')
 plt.ylabel('$x_2$')
 plt.legend()
 plt.grid(True)
 plt.savefig('E6_4', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+plt.figure()
+
+i = 20
+plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
+plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
+
+plt.title(fr'Shear and Vorticity, plate border')
+plt.axis([-15,1000,0,0.01])
+plt.xlabel('$S_{12}, \\Omega_{12}$')
+plt.ylabel('$x_2$')
+plt.legend()
+plt.grid(True)
+plt.savefig('E6_5', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 # %%
