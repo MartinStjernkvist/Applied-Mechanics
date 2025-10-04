@@ -552,15 +552,15 @@ omega_3 = dvdx - dudy
 # print('vorticity: ',omega_3)
 
 plt.figure()
-i = 85
+i = 50
 plt.plot(omega_3[i,:], x2_2d[i,:], label=fr'$x_1={xc[i]:.2f}$')
 i=100
 plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
-i=150
+i=170
 plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 
 plt.title(fr'Vorticity at different $x_1$ locations (above plate)')
-plt.axis([-110,1,-0,0.05])
+plt.axis([-160,1,-0,0.05])
 plt.xlabel('$\omega$')
 plt.ylabel('$x_2$')
 plt.legend()
@@ -609,7 +609,8 @@ print('dudy: ', dudy)
 print('dvdx: ', dvdx) # basically = 0
 print('max value of dvdx: ', np.unravel_index(np.argmax(dvdx, axis=None), dvdx.shape)[0])
 # print(S12)
-# print(Omega12)
+print(Omega12[20,0])
+print(dudy[20,0])
 
 max_i = np.unravel_index(np.argmax(S12_cut, axis=None), S12_cut.shape)[0]
 
@@ -691,8 +692,16 @@ i = 20
 plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
 plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
 
+i = 19
+plt.plot(S12[i,:], yp, 'g-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
+plt.plot(Omega12[i,:], yp, 'y--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
+
+i = 18
+plt.plot(S12[i,:], yp, 'm-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
+plt.plot(Omega12[i,:], yp, 'k--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
+
 plt.title(fr'Shear and Vorticity, plate border')
-plt.axis([-15,1000,0,0.005])
+plt.axis([-100,1000,0,0.005])
 plt.xlabel('$S_{12}, \\Omega_{12}$')
 plt.ylabel('$x_2$')
 plt.legend()
@@ -747,35 +756,43 @@ print("  Std:", np.std(Phi))
 
 print("  Order of magnitude:", np.log10(np.abs(Phi[Phi != 0]).mean()))
 
-fig2 = plt.figure("Phi")
+fig2 = plt.figure()
 # plt.contourf(x1_2d[50,:], x2_2d[50,:], Phi, 50)
 # plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi)
 # plt.plot(x1_2d[50,:], x2_2d[50,:], Phi[50,:])
-Phi_plot = np.log10(Phi)
+Phi_log = np.log10(Phi)
 
-plt.contourf(x1_2d, x2_2d, Phi_plot, levels=100, cmap='viridis')
+plt.contourf(x1_2d, x2_2d, Phi_log, levels=50, cmap='viridis')
 # plt.contour(x1_2d, x2_2d, Phi_plot)
 # plt.pcolormesh(x1_2d, x2_2d, Phi, shading = 'auto', cmap='plasma')
 
-# plt.colorbar(label=r'$\log_{10}(\Phi)$')
+
 plt.axis([-0.2,xc[-1],0, yc[-1]])
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-plt.title("contour dissipation plot")
-plt.title(fr'$\Phi_1$')
-# plt.colorbar()
+plt.title("contour dissipation ($\Phi_1$)")
+plt.colorbar(label=r'$\log_{10}(\Phi)$')
 plt.savefig('E7_1', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+fig2 = plt.figure()
+
+plt.contourf(x1_2d, x2_2d, Phi_log, levels=20, cmap='viridis')
+
+plt.axis([-0.05,0.15,0, 0.003])
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.title("contour dissipation ($\Phi_1$), plate border")
+plt.colorbar(label=r'$\log_{10}(\Phi)$')
+plt.savefig('E7_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 from scipy import integrate
 
-# If you have 1D coordinate arrays
-x1 = x1_2d[:, 0]  # or however you define x1
-x2 = x2_2d[0, :]  # or however you define x2
-
 # Double integral over the entire domain
-integral = integrate.trapezoid(integrate.trapezoid(Phi, x1, axis=0), x2)
+integral = integrate.trapezoid(integrate.trapezoid(Phi, xp, axis=0), yp)
 print(f"Double integral of Phi: {integral:.20f}")
 
 rho = 1.204   # air density [kg/m^3]
