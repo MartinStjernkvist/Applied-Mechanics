@@ -615,7 +615,7 @@ plt.title(fr'Shear and Vorticity at $x_1={xc[i]:.2f}$')
 plt.xlabel('$S_{12}, \\Omega_{12}$')
 plt.ylabel('$x_2$')
 plt.legend()
-# plt.axis([-0.1,0.1,0,1.3])
+plt.axis([-0.5,35,0,0.05])
 plt.grid(True)
 plt.savefig('E6_1', dpi=dpi, bbox_inches='tight')
 plt.show()
@@ -630,7 +630,7 @@ plt.xlabel('$S_{12}, \\Omega_{12}$')
 plt.ylabel('$x_2$')
 plt.legend()
 plt.grid(True)
-# plt.axis([-0.1,0.1,0,1.3])
+plt.axis([-0.5,55,0,0.05])
 plt.savefig('E6_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
@@ -645,6 +645,30 @@ plt.ylabel('$x_2$')
 plt.legend()
 plt.grid(True)
 plt.savefig('E6_3', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+plt.figure()
+i = 170
+
+plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$' + fr', x_1={xc[i]:.2f}')
+plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$' + fr', x_1={xc[i]:.2f}')
+
+i = 85
+plt.plot(S12[i,:], yp, 'g-', label='$S_{12}$' + fr', x_1={xc[i]:.2f}')
+plt.plot(Omega12[i,:], yp, 'y--', label='$\Omega_{12}$' + fr', x_1={xc[i]:.2f}')
+
+i = 5
+plt.plot(S12[i,:], yp, 'm-', label='$S_{12}$' + fr', x_1={xc[i]:.2f}')
+plt.plot(Omega12[i,:], yp, 'k--', label='$\Omega_{12}$' + fr', x_1={xc[i]:.2f}')
+
+plt.title(fr'Shear and Vorticity')
+plt.axis([-0.5,55,0,0.04])
+plt.xlabel('$S_{12}, \\Omega_{12}$')
+plt.ylabel('$x_2$')
+plt.legend()
+plt.grid(True)
+plt.savefig('E6_4', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 # %%
