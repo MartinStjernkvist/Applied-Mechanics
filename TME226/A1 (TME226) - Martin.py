@@ -954,85 +954,108 @@ right_side = term3
 
 residual = left_side - right_side
 
-i = 5
-
 plt.figure()
-plt.plot(yp, term1[i,:], label='v1 ∂v1/∂x1')
-plt.plot(yp, term2[i,:], label='v2 ∂v1/∂x2')
-plt.plot(yp, term3[i,:], label='ν ∂²v1/∂x2²')
-plt.plot(yp, left_side[i,:], '--', label='LHS (sum)')
-plt.plot(yp, right_side[i,:], ':', label='RHS')
-plt.plot(yp, residual[i,:], '-.', label='Residual')
-plt.xlabel('$x_2$'); plt.ylabel('Value')
-plt.title(f'x1 index {i} (x1≈{xp[i]:.3f})')
+
+i = 5
+plt.plot(term1[i,:], yp, 'r-', label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+plt.plot(term2[i,:], yp, 'g-', label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+plt.plot(term3[i,:], yp, 'b--', label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+
+
+plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# plt.axis([0,0.03,-0.4,0.2])
+plt.ylabel('$x_2$')
+plt.xlabel('Value')
 plt.legend()
 plt.grid(True)
 plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-i = 85
-
 plt.figure()
-plt.plot(yp, term1[i,:], label='v1 ∂v1/∂x1')
-plt.plot(yp, term2[i,:], label='v2 ∂v1/∂x2')
-plt.plot(yp, term3[i,:], label='ν ∂²v1/∂x2²')
-plt.plot(yp, left_side[i,:], '--', label='LHS (sum)')
-plt.plot(yp, right_side[i,:], ':', label='RHS')
-plt.plot(yp, residual[i,:], '-.', label='Residual')
-plt.axis([0,0.1,-0.4,0.2])
-plt.xlabel('$x_2$'); plt.ylabel('Value')
-plt.title(f'x1 index {i} (x1≈{xp[i]:.3f})')
+
+i = 5
+plt.plot(left_side[i,:], yp, 'r-', label='LHS (sum)')
+plt.plot(right_side[i,:], yp, 'g', label='RHS')
+plt.plot(residual[i,:], yp, 'b--', label='Residual')
+
+
+plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# plt.axis([0,0.03,-0.4,0.2])
+plt.ylabel('$x_2$')
+plt.xlabel('Value')
 plt.legend()
 plt.grid(True)
 plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-i = 170
+
 
 plt.figure()
-plt.plot(yp, term1[i,:], label='v1 ∂v1/∂x1')
-plt.plot(yp, term2[i,:], label='v2 ∂v1/∂x2')
-plt.plot(yp, term3[i,:], label='ν ∂²v1/∂x2²')
-plt.plot(yp, left_side[i,:], '--', label='LHS (sum)')
-plt.plot(yp, right_side[i,:], ':', label='RHS')  
-plt.plot(yp, residual[i,:], '-.', label='Residual')
-plt.xlabel('$x_2$'); plt.ylabel('Value')
-plt.title(f'x1 index {i} (x1≈{xp[i]:.3f})')
+
+i = 85
+plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
+plt.plot(right_side[i,:], yp, ':', label='RHS')
+plt.plot(residual[i,:], yp, '-.', label='Residual')
+
+plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+plt.axis([-0.4,0.2,0,0.03])
+plt.ylabel('$x_2$')
+plt.xlabel('Value')
 plt.legend()
 plt.grid(True)
 plt.savefig('E10_3', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
+
+plt.figure()
+
+i = 170
+plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
+plt.plot(right_side[i,:], yp, ':', label='RHS')
+plt.plot(residual[i,:], yp, '-.', label='Residual')
+
+plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+plt.axis([-0.4,0.2,0,0.03])
+plt.ylabel('$x_2$')
+plt.xlabel('Value')
+plt.legend()
+plt.grid(True)
+plt.savefig('E10_4', dpi=dpi, bbox_inches='tight')
+plt.show()
+
 dpdx1, dpdx2 = np.gradient(p_2d, xp, yp, edge_order=2)
 
+plt.figure()
 
 i = 25
-
-# plot ∂p/∂x1 vs x2
-plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
-plt.xlabel("$x_2$")
-plt.ylabel(r"$\partial p / \partial x_1$")
-plt.title(f"Pressure gradient at x1")
-plt.grid(True)
+plt.plot(dpdx1[i, :], yp, label=fr"$x_1=${xc[i]:.2f}")
 
 i = 50
-
-plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+plt.plot(dpdx1[i, :], yp, label=f"x1={xc[i]:.2f}")
 
 i = 100
-
-plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+plt.plot(dpdx1[i, :], yp, label=f"x1={xc[i]:.2f}")
 
 i = 150
-
-plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+plt.plot(dpdx1[i, :], yp, label=f"x1={xc[i]:.2f}")
 
 i = 200
+plt.plot(dpdx1[i, :], yp, label=f"x1={xc[i]:.2f}")
 
-plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+plt.title(fr"Pressure gradient at $x_1$")
+plt.axis([-0.075,0.01, -0.01,0.8])
+plt.ylabel("$x_2$")
+plt.xlabel(r"$\partial p / \partial x_1$")
+plt.grid(True)
 plt.legend()
-plt.savefig('E10_4', dpi=dpi, bbox_inches='tight')
+plt.savefig('E10_5', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
@@ -1042,14 +1065,34 @@ d2v1_dx1dx2, d2v1_dx2sq = np.gradient(dudy, xp, yp, edge_order=2)
 
 d2_at_wall = d2v1_dx2sq[:, 0] # Extracting values at the wall (j=0)
 
+d2_at_wall_log = np.log(d2_at_wall)
+
 plt.figure()
+
 plt.plot(xp, d2_at_wall, '-o', markersize=3)
+
+plt.title('Second derivative of $v_1$ at the wall')
+# plt.axis([-0.5, 2.5,-10e10,10e15])
+plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
 plt.xlabel(r'$x_1$')
 plt.ylabel(r'$\partial^2 v_1/\partial x_2^2\ \mathrm{at}\ x_2=0$')
-plt.title('Second derivative of $v_1$ at the wall')
-plt.axis([-0.5,2.5,-0.0006*10**8,0.0006*10**8])
+# plt.yscale('log')
 plt.grid(True)
-plt.savefig('E10_5', dpi=dpi, bbox_inches='tight')
+plt.savefig('E10_6', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+plt.figure()
+
+plt.plot(xp, d2_at_wall_log, '-o', markersize=3)
+
+plt.title('Second derivative of $v_1$ at the wall, log scale')
+plt.axis([-0.2, 0.5,-1,15])
+# plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
+plt.xlabel(r'$x_1$')
+plt.ylabel(r'$\partial^2 v_1/\partial x_2^2\ \mathrm{at}\ x_2=0$')
+# plt.yscale('log')
+plt.grid(True)
+plt.savefig('E10_7', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 max_i = np.unravel_index(np.argmax(d2_at_wall, axis=None), d2_at_wall.shape)[0]
@@ -1063,15 +1106,38 @@ print(f"x1 ≈ {xp[i]:.4f}, d2v1/dx2^2 at wall = {d2v1_dx2sq[i,0]:.6e}")
 
 dvorticity_dx1, dvorticity_dx2 = np.gradient(vorticity, xp, yp, edge_order=2)
 
-dvorticity_dx2_wall = dvorticity_dx2[:, 0] 
+dvorticity_dx2_wall = dvorticity_dx2[:, 0]
+dvorticity_dx2_wall_log = np.log(dvorticity_dx2_wall)
 
 plt.figure()
+
 plt.plot(xp, dvorticity_dx2_wall, '-o', markersize=3)
+
+plt.title("Gradient of vorticity at the wall")
+# plt.axis([-0.5,2.5,-1,15])
+plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
 plt.xlabel("$x_1$")
 plt.ylabel(r"$\partial \omega / \partial x_2$ at wall")
-plt.title("Gradient of vorticity at the wall")
-plt.axis([-0.5,2.5,-0.0006*10**8,0.0006*10**8])
+# plt.yscale('log')
 plt.grid(True)
-plt.savefig('E10_6', dpi=dpi, bbox_inches='tight')
+plt.savefig('E10_8', dpi=dpi, bbox_inches='tight')
 plt.show()
+
+
+plt.figure()
+
+plt.plot(xp, dvorticity_dx2_wall_log, '-o', markersize=3)
+
+plt.title("Gradient of vorticity at the wall, log scale")
+plt.axis([-0.2,0.5,-1,15])
+# plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
+plt.xlabel("$x_1$")
+plt.ylabel(r"$\partial \omega / \partial x_2$ at wall")
+# plt.yscale('log')
+plt.grid(True)
+plt.savefig('E10_9', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+print(dvorticity_dx2_wall + d2_at_wall)
 # %%
