@@ -45,6 +45,7 @@ plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 plt.rc('figure', figsize=(5, 4))
 
+dpi = 300
 
 def plotta_subplots(
     nrows=1,
@@ -122,37 +123,6 @@ def plotta_subplots(
     if show:
         plt.show()
     return fig, axes
-
-
-
-# plotta_subplots(
-#     nrows=1,
-#     ncols=2,
-#     fig_size=(12, 5),
-#     fig_title="MultiPlot",
-#     subplot_instructions=[
-#         {
-#             "plotstyle": "plot",
-#             "x1_data": v1_2d[100, :],
-#             "x2_data": x2_2d[100, :],
-#             "color": "b",
-#             "title": "Line Plot",
-#             "xlabel": "v1",
-#             "ylabel": "x2"
-#         },
-#         {
-#             "plotstyle": "contourf",
-#             "x1_data": x1_2d,
-#             "x2_data": x2_2d,
-#             "x3_data": v1_2d,
-#             "cmap": "plasma",
-#             "title": "Contour Plot",
-#             "xlabel": "x1",
-#             "ylabel": "x2"
-#         }
-#     ],
-#     suptitle="Velocity Profiles"
-# )
 
 #%%
 ##################################################
@@ -303,61 +273,6 @@ plt.savefig('v1_grad.png')
 ##################################################
 new_prob(1)
 
-
-'''
-def nu(xi, x1, x2, V1_inf):
-    return (x2 / xi)**2 * (V1_inf / x1)
-
-# eqn (3.49)
-def xi(x1, x2, nu, V1_inf):
-    return x2 * (V1_inf / (nu * x1))**(1/2)
-
-
-
-print('Velocity (v1) profiles at different values for x1, plotted against x2:')
-
-frame = [0,1,0,0.05]
-
-plotta_subplots(
-    nrows=1,
-    ncols=3,
-    fig_title="v2 vs x2",
-    subplot_instructions=[
-        {
-            "plotstyle": "plot",
-            "x1_data": v1_2d[50, :],
-            "x2_data": x2_2d[50, :],
-            "color": "b",
-            "title": "i=50",
-            "xlabel": "v1",
-            "ylabel": "x2",
-            'frame': frame
-        },
-        {
-            "plotstyle": "plot",
-            "x1_data": v1_2d[100, :],
-            "x2_data": x2_2d[100, :],
-            "color": "b",
-            "title": "i=100",
-            "xlabel": "v1",
-            "ylabel": "x2",
-            'frame': frame
-        },
-        {
-            "plotstyle": "plot",
-            "x1_data": v1_2d[150, :],
-            "x2_data": x2_2d[150, :],
-            "color": "b",
-            "title": "i=150",
-            "xlabel": "v1",
-            "ylabel": "x2",
-            'frame': frame
-        }
-    ],
-    suptitle="Velocity Profiles (v1 vs x2)"
-)
-'''
-
 # Substask 1
 plt.figure()
 i=170 # plot the velocity profile for i=170
@@ -371,12 +286,11 @@ plt.plot(v1_2d[i,:], x2_2d[i,:], 'r--', label='$x_1=0.14$')
 
 plt.title('Velocity profile')
 plt.axis([0,1.1,0,0.05])
-plt.xlabel('$V_1$') 
+plt.xlabel('$v_1$') 
 plt.ylabel('$x_2$') 
 plt.legend(loc='best')
-plt.savefig('velprof.png')
+plt.savefig('E1_1', dpi=dpi, bbox_inches='tight')
 plt.show()
-
 
 # Substask 2
 i = 170 # plot the dimensioneless velocity profile for i=170
@@ -418,7 +332,9 @@ plt.xlabel(r'$\xi$')
 plt.ylabel(r'$v_1 / V_{1,\infty}$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E1_2', dpi=dpi, bbox_inches='tight')
 plt.show()
+
 
 # Plot
 plt.figure()
@@ -433,7 +349,9 @@ plt.xlabel(r'$\xi$')
 plt.ylabel(r'$v_2 / V_{1,\infty}$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E1_3', dpi=dpi, bbox_inches='tight')
 plt.show()
+
 
 
 #%%
@@ -453,12 +371,13 @@ for i in range(len(xc)):
 
 plt.figure()
 plt.plot(xc, delta_99_blasius, 'b-', label=r'$\delta_{gg}$')
-plt.plot(xc, delta_99_all, 'r--', label=r'$\delta_{99}$')
+plt.plot(xc, delta_99_all, 'r-', label=r'$\delta_{99}$')
 plt.xlabel(r'$x_1$')
 plt.ylabel(r'Boundary layer thickness')
-plt.title('Boundary layer thickness vs x1')
+plt.title('Boundary layer thickness')
 plt.legend()
 plt.grid(True)
+plt.savefig('E2_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
@@ -511,6 +430,7 @@ plt.xlabel('$x_1$')
 plt.ylabel('thickness (m)')
 plt.legend()
 plt.grid(True)
+plt.savefig('E2_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 #display(delta_star, theta)
@@ -537,6 +457,7 @@ plt.axis([-5,100,0,0.04])
 plt.legend()
 plt.ylabel('$x_2$')
 plt.xlabel('$\\partial V_1 / \\partial x_2$')
+plt.savefig('E3_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 print('prove/disprove assumptions')
@@ -571,12 +492,13 @@ Cf_blas = 0.664 / np.sqrt((V1_inf * x1) / viscos)
 valid = np.isfinite(Cf) & (np.sqrt((V1_inf * x1) / viscos) > 0) # Avoiding invalid values
 
 plt.figure()
-plt.plot(xp[valid], Cf[valid], label='Cf (numerical)')
-plt.plot(xp[valid], Cf_blas[valid], '--', label='Cf (Blasius)')
+plt.plot(xp[valid], Cf[valid], label='$C_f$ (numerical)')
+plt.plot(xp[valid], Cf_blas[valid], '--', label='$C_f$ (Blasius)')
 plt.xlabel('$x_1$')
 plt.ylabel('$C_f$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E4_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 # %%
@@ -606,6 +528,7 @@ plt.xlabel('$\omega$')
 plt.ylabel('$x_2$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E5_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 # %%
@@ -630,6 +553,7 @@ plt.xlabel('$x_1$')
 plt.ylabel('$S_{12}, \\Omega_{12}$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E6_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 i = 85
@@ -642,6 +566,7 @@ plt.xlabel('$x_1$')
 plt.ylabel('$S_{12}, \\Omega_{12}$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E6_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 i = 50
@@ -654,6 +579,7 @@ plt.xlabel('$x_1$')
 plt.ylabel('$S_{12}, \\Omega_{12}$')
 plt.legend()
 plt.grid(True)
+plt.savefig('E6_3', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 # X2 (y) value is incorrect, need to be calculated based on given height and amount of elements.
@@ -726,9 +652,8 @@ plt.ylabel("$x_2$")
 plt.title("contour dissipation plot")
 plt.title(fr'$\Phi_1$')
 # plt.colorbar()
+plt.savefig('E7_1', dpi=dpi, bbox_inches='tight')
 plt.show()
-plt.savefig('Phi.png')
-
 
 from scipy import integrate
 
@@ -759,3 +684,247 @@ print('bulk temperature: ', T_b)
 new_prob(8)
 
 
+dvdy = np.gradient(v2_2d, yp, axis=1)
+
+tau11 = viscos * (dudx + dudx)
+tau12 = tau_12
+tau21 = tau12 # Due to stress tensor being a symmetric tensor
+tau22 = viscos * (dvdy + dvdy)
+
+ni, nj = tau11.shape
+eigvals = np.zeros((ni, nj, 2)) # Creates a vector of length 2 for each (i,j) point
+eigvecs = np.zeros((ni, nj, 2, 2)) # Creates a 2x2 matrix for each (i,j) point
+
+for i in range(ni): # Loop over all ni values
+    for j in range(nj): # Loop over all nj values
+        tau = np.array([[tau11[i,j], tau12[i,j]],
+                        [tau21[i,j], tau22[i,j]]])
+        vals, vecs = np.linalg.eig(tau)
+        eigvals[i,j] = vals
+        eigvecs[i,j] = vecs
+
+#print('Eigenvalues', eigvals)
+#print('Eigenvectors', eigvecs)
+
+i = 200  
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau11[i, :]
+tau12_slice = tau12[i, :]
+tau21_slice = tau21[i, :]
+tau22_slice = tau22[i, :]
+
+
+# Eigenvalue vs vertical position
+plt.plot(yp, eigval_slice, label="Eigenvalue")
+plt.xlabel("x2 (vertical position)")
+plt.ylabel("Value")
+plt.title(f"Eigenvalue vs x2 at x1 index = {i}")
+plt.axis([-0.1,0.1,0,0.001])
+plt.savefig('E8_1', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+plt.plot(tau11_slice, yp, label=r"$\tau_{11}$")
+plt.plot(tau12_slice, yp, label=r"$\tau_{12}$")
+plt.plot(tau21_slice, yp, label=r"$\tau_{21}$")
+plt.plot(tau22_slice, yp, label=r"$\tau_{22}$")
+plt.axis([-0.000005,0.000008,0,0.3])
+plt.xlabel("x2 (vertical position)")
+plt.ylabel("Stress component value")
+plt.title(f"Stress components vs x2 at x1 index = {i}")
+plt.legend()
+plt.savefig('E8_2', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+
+print(eigvecs[1,4])
+
+# %%
+##################################################
+# E9
+##################################################
+new_prob(9)
+
+principal_vecs = eigvecs[:,:, :,0]   # Picking the first row of the eigenvector matrix
+# Each eigenvalue has two eigenvectors
+
+# extract components
+u_quiver = principal_vecs[:,:,0]   # x-component of eigenvector
+v_quiver = principal_vecs[:,:,1]   # y-component of eigenvector
+
+plt.figure()
+plt.quiver(x1_2d, x2_2d, u_quiver, v_quiver, 
+           scale=20, width=0.002, color="blue")
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.title("Principal stress eigenvector field all points")
+plt.axis("scaled")
+plt.savefig('E9_1', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+step = 5  # plotting every 5th point
+plt.figure()
+plt.quiver(x1_2d[::step, ::step], x2_2d[::step, ::step],
+           u_quiver[::step, ::step], v_quiver[::step, ::step],
+           scale=70, width=0.002, color="blue")
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.title("Principal stress eigenvector field every 5th point")
+plt.axis("scaled")
+plt.savefig('E9_2', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+step = 10  # plotting every 5th point
+plt.figure()
+plt.quiver(x1_2d[::step, ::step], x2_2d[::step, ::step],
+           u_quiver[::step, ::step], v_quiver[::step, ::step],
+           scale=30, width=0.002, color="blue")
+plt.xlabel("$x_1$")
+plt.ylabel("$x_2$")
+plt.title("Principal stress eigenvector field every 10th point")
+plt.axis("scaled")
+plt.savefig('E9_3', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+
+# %%
+##################################################
+# E10
+##################################################
+new_prob(10)
+
+vorticity = (dvdx - dudy)
+
+d2v1_dx2 = np.gradient(dudy, yp, axis=1)
+
+term1 = v1_2d * dudx
+term2 = v2_2d * dudy
+term3 = viscos * d2v1_dx2
+
+left_side = term1 + term2
+right_side = term3
+
+residual = left_side - right_side
+
+i = 5
+
+plt.figure()
+plt.plot(yp, term1[i,:], label='v1 ∂v1/∂x1')
+plt.plot(yp, term2[i,:], label='v2 ∂v1/∂x2')
+plt.plot(yp, term3[i,:], label='ν ∂²v1/∂x2²')
+plt.plot(yp, left_side[i,:], '--', label='LHS (sum)')
+plt.plot(yp, right_side[i,:], ':', label='RHS')
+plt.plot(yp, residual[i,:], '-.', label='Residual')
+plt.xlabel('$x_2$'); plt.ylabel('Value')
+plt.title(f'x1 index {i} (x1≈{xp[i]:.3f})')
+plt.legend()
+plt.grid(True)
+plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+i = 85
+
+plt.figure()
+plt.plot(yp, term1[i,:], label='v1 ∂v1/∂x1')
+plt.plot(yp, term2[i,:], label='v2 ∂v1/∂x2')
+plt.plot(yp, term3[i,:], label='ν ∂²v1/∂x2²')
+plt.plot(yp, left_side[i,:], '--', label='LHS (sum)')
+plt.plot(yp, right_side[i,:], ':', label='RHS')
+plt.plot(yp, residual[i,:], '-.', label='Residual')
+plt.axis([0,0.1,-0.4,0.2])
+plt.xlabel('$x_2$'); plt.ylabel('Value')
+plt.title(f'x1 index {i} (x1≈{xp[i]:.3f})')
+plt.legend()
+plt.grid(True)
+plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+i = 170
+
+plt.figure()
+plt.plot(yp, term1[i,:], label='v1 ∂v1/∂x1')
+plt.plot(yp, term2[i,:], label='v2 ∂v1/∂x2')
+plt.plot(yp, term3[i,:], label='ν ∂²v1/∂x2²')
+plt.plot(yp, left_side[i,:], '--', label='LHS (sum)')
+plt.plot(yp, right_side[i,:], ':', label='RHS')  
+plt.plot(yp, residual[i,:], '-.', label='Residual')
+plt.xlabel('$x_2$'); plt.ylabel('Value')
+plt.title(f'x1 index {i} (x1≈{xp[i]:.3f})')
+plt.legend()
+plt.grid(True)
+plt.savefig('E10_3', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+dpdx1, dpdx2 = np.gradient(p_2d, xp, yp, edge_order=2)
+
+
+i = 25
+
+# plot ∂p/∂x1 vs x2
+plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+plt.xlabel("$x_2$")
+plt.ylabel(r"$\partial p / \partial x_1$")
+plt.title(f"Pressure gradient at x1")
+plt.grid(True)
+
+i = 50
+
+plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+
+i = 100
+
+plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+
+i = 150
+
+plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+
+i = 200
+
+plt.plot(yp, dpdx1[i, :], label=f"x1={xc[i]:.2f}")
+plt.legend()
+plt.savefig('E10_4', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+
+# 2) second derivative ∂^2 v1 / ∂ x2^2
+d2v1_dx1dx2, d2v1_dx2sq = np.gradient(dudy, xp, yp, edge_order=2)
+
+d2_at_wall = d2v1_dx2sq[:, 0] # Extracting values at the wall (j=0)
+
+plt.figure()
+plt.plot(xp, d2_at_wall, '-o', markersize=3)
+plt.xlabel(r'$x_1$')
+plt.ylabel(r'$\partial^2 v_1/\partial x_2^2\ \mathrm{at}\ x_2=0$')
+plt.title('Second derivative of $v_1$ at the wall')
+plt.axis([-0.5,2.5,-0.0006*10**8,0.0006*10**8])
+plt.grid(True)
+plt.savefig('E10_4', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+max_i = np.unravel_index(np.argmax(d2_at_wall, axis=None), d2_at_wall.shape)[0]
+
+print('i =', max_i, 'Max dissipation at i =', np.max(d2_at_wall))
+
+
+i = 50
+print(f"x1 ≈ {xp[i]:.4f}, d2v1/dx2^2 at wall = {d2v1_dx2sq[i,0]:.6e}")
+
+
+dvorticity_dx1, dvorticity_dx2 = np.gradient(vorticity, xp, yp, edge_order=2)
+
+dvorticity_dx2_wall = dvorticity_dx2[:, 0] 
+
+plt.figure()
+plt.plot(xp, dvorticity_dx2_wall, '-o', markersize=3)
+plt.xlabel("$x_1$")
+plt.ylabel(r"$\partial \omega / \partial x_2$ at wall")
+plt.title("Gradient of vorticity at the wall")
+plt.axis([-0.5,2.5,-0.0006*10**8,0.0006*10**8])
+plt.grid(True)
+plt.savefig('E10_5', dpi=dpi, bbox_inches='tight')
+plt.show()
+# %%
