@@ -595,6 +595,7 @@ new_prob(6)
 # S12 = 0.5 * (dudy + dvdx)
 # Omega12 = 0.5 * (dudy - dvdx)
 
+# exclude value at corner of the domain
 dudx_cut, dudy_cut=np.gradient(v1_2d[1:,:],xp[1:],yp[:])
 dvdx_cut, dvdy_cut=np.gradient(v2_2d[1:,:],xp[1:],yp[:])
 
@@ -691,7 +692,7 @@ plt.plot(S12[i,:], yp, 'r-', label='$S_{12}$' + fr', $x_1={xc[i]:.2f}$')
 plt.plot(Omega12[i,:], yp, 'b--', label='$\Omega_{12}$' + fr', $x_1={xc[i]:.2f}$')
 
 plt.title(fr'Shear and Vorticity, plate border')
-plt.axis([-15,1000,0,0.01])
+plt.axis([-15,1000,0,0.005])
 plt.xlabel('$S_{12}, \\Omega_{12}$')
 plt.ylabel('$x_2$')
 plt.legend()
