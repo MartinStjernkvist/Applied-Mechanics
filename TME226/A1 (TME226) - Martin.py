@@ -902,7 +902,7 @@ plt.ylabel(r'$\partial^2 v_1/\partial x_2^2\ \mathrm{at}\ x_2=0$')
 plt.title('Second derivative of $v_1$ at the wall')
 plt.axis([-0.5,2.5,-0.0006*10**8,0.0006*10**8])
 plt.grid(True)
-plt.savefig('E10_4', dpi=dpi, bbox_inches='tight')
+plt.savefig('E10_5', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 max_i = np.unravel_index(np.argmax(d2_at_wall, axis=None), d2_at_wall.shape)[0]
@@ -925,6 +925,6 @@ plt.ylabel(r"$\partial \omega / \partial x_2$ at wall")
 plt.title("Gradient of vorticity at the wall")
 plt.axis([-0.5,2.5,-0.0006*10**8,0.0006*10**8])
 plt.grid(True)
-plt.savefig('E10_5', dpi=dpi, bbox_inches='tight')
+plt.savefig('E10_6', dpi=dpi, bbox_inches='tight')
 plt.show()
 # %%
