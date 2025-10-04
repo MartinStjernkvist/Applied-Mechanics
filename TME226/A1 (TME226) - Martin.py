@@ -846,7 +846,7 @@ plt.figure()
 
 plt.plot(eigval_slice, yp, label="Eigenvalue")
 
-plt.title(fr"Eigenvalue vs $x_2$ at $x_1$ index = {i}")
+plt.title(fr"Eigenvalue vs $x_2$ at $x_1$[i = {i}]")
 plt.ylabel(fr"$x_2$")
 plt.xlabel("$\lambda$")
 plt.axis([-0.0001,0.001,0,0.1])
@@ -861,7 +861,7 @@ plt.plot(tau11_slice, yp, label=r"$\tau_{11}$")
 # plt.plot(tau21_slice, yp, label=r"$\tau_{21}$")
 plt.plot(tau22_slice, yp, label=r"$\tau_{22}$")
 
-plt.title(fr"Stress components vs $x_2$ at $x_1$ index = {i}")
+plt.title(fr"Stress components vs $x_2$ at $x_1$[i = {i}]")
 plt.axis([-5e-6,5e-6,0,0.25])
 # plt.axis([0,0.3,-0.000005,0.000008])
 plt.ylabel(fr"$x_2$")
@@ -875,7 +875,7 @@ plt.figure()
 
 plt.plot(tau12_slice, yp, label=r"$\tau_{12} = \tau_{21}$")
 
-plt.title(fr"Stress components vs $x_2$ at $x_1$ index = {i}")
+plt.title(fr"Stress components vs $x_2$ at $x_1$[i = {i}]")
 plt.axis([-0.0001,0.001,0,0.1])
 plt.ylabel(fr"$x_2$")
 plt.xlabel("Stress component value")
