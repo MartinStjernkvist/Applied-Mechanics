@@ -276,13 +276,13 @@ new_prob(1)
 # Substask 1
 plt.figure()
 i=170 # plot the velocity profile for i=170
-plt.plot(v1_2d[i,:], x2_2d[i,:], 'b-', label='$x_1=1.58$')
+plt.plot(v1_2d[i,:], x2_2d[i,:], 'b-', fr'$x_1={xc[i]:.2f}$')
 
 i=85 # plot the velocity profile for i=85
-plt.plot(v1_2d[i,:], x2_2d[i,:], 'g-.', label='$x_1=0.66$')
+plt.plot(v1_2d[i,:], x2_2d[i,:], 'g-.', fr'$x_1={xc[i]:.2f}$')
 
 i=5 # plot the velocity profile for i=5
-plt.plot(v1_2d[i,:], x2_2d[i,:], 'r--', label='$x_1=0.14$')
+plt.plot(v1_2d[i,:], x2_2d[i,:], 'r--', fr'$x_1={xc[i]:.2f}$')
 
 plt.title('Velocity profile')
 plt.axis([0,1.1,0,0.05])
@@ -479,24 +479,127 @@ new_prob(3)
 
 plt.figure()
 i = 85
-gradient = np.gradient(v1_2d[i,:], x2_2d[i,:])
-plt.plot(gradient, x2_2d[i,:], 'r--', label=fr'$x_1={xc[i]:.2f}$')
+dv1_dx2 = np.gradient(v1_2d[i,:], x2_2d[i,:])
+plt.plot(dv1_dx2, x2_2d[i,:], 'r--', label=fr'$x_1={xc[i]:.2f}$')
 i = 170
-gradient = np.gradient(v1_2d[i,:], x2_2d[i,:])
-plt.plot(gradient, x2_2d[i,:], 'b--', label=fr'$x_1={xc[i]:.2f}$')
+dv1_dx2 = np.gradient(v1_2d[i,:], x2_2d[i,:])
+plt.plot(dv1_dx2, x2_2d[i,:], 'b--', label=fr'$x_1={xc[i]:.2f}$')
 i = 100
-gradient = np.gradient(v1_2d[i,:], x2_2d[i,:])
-plt.plot(gradient, x2_2d[i,:], 'g--', label=fr'$x_1={xc[i]:.2f}$')
+dv1_dx2 = np.gradient(v1_2d[i,:], x2_2d[i,:])
+plt.plot(dv1_dx2, x2_2d[i,:], 'g--', label=fr'$x_1={xc[i]:.2f}$')
 
 plt.title('Velocity gradients')
-plt.axis([-5,100,0,0.04])
+plt.axis([-5,100,0,0.03])
 plt.legend()
 plt.ylabel('$x_2$')
 plt.xlabel('$\\partial V_1 / \\partial x_2$')
 plt.savefig('E3_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-print('prove/disprove assumptions')
+
+
+
+plt.figure()
+
+plt.contourf(x1_2d, x2_2d, np.log(v1_2d/v2_2d), levels=20, cmap='plasma')
+plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+
+plt.title(fr'$v_1 / v_2$')
+plt.colorbar(label='logarithmic scale')
+plt.axis([-0.01, xp[-1], 0, 0.03])
+plt.legend()
+plt.ylabel('$x_2$')
+plt.xlabel('$x_1$')
+plt.savefig('E3_2', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+
+dv1_dx1, dv1_dx2 = np.gradient(v1_2d, x1_2d[:,0], x2_2d[0,:])
+
+# plt.figure()
+
+# # plt.contourf(x1_2d, x2_2d, np.log(dv1_dx2/dv1_dx1), levels=50, cmap='plasma')
+# plt.contourf(x1_2d, x2_2d, dv1_dx1, levels=10, cmap='plasma')
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# plt.title(fr'$\partial v_1 / \partial x_1$')
+# plt.colorbar()
+# plt.axis([-0.01, xp[-1], 0, 0.03])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E3_3', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+
+# plt.figure()
+# plt.contourf(x1_2d, x2_2d, np.log(dv1_dx2), levels=10, cmap='plasma')
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# plt.title(fr'$\partial v_1 / \partial x_2$')
+# plt.colorbar(label='logarithmic scale')
+# plt.axis([-0.01, xp[-1], 0, 0.03])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E3_4', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+
+# plt.figure()
+# plt.contourf(x1_2d, x2_2d, np.log(dv1_dx2 - dv1_dx1), levels=10, cmap='plasma')
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# plt.title(fr'$(\partial v_1 / \partial x_2)) - (\partial v_1 / \partial x_1)$')
+# plt.colorbar(label='logarithmic scale')
+# plt.axis([-0.01, xp[-1], 0, 0.03])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E3_5', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# print(fr'(\partial v_1 / \partial x_2) - (\partial v_1 / \partial x_1)', dv1_dx2-dv1_dx1)
+# vec = dv1_dx2-dv1_dx1
+# print('max: ', np.max(vec), 'min: ', np.min(vec))
+
+frac = (dv1_dx2 - dv1_dx1)/dv1_dx2
+
+plt.figure()
+plt.contourf(x1_2d, x2_2d, np.log(frac), levels=10, cmap='plasma')
+plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+plt.title(fr'$(\partial v_1 / \partial x_2 - \partial v_1 / \partial x_1) / (\partial v_1 / \partial x_2)$')
+plt.colorbar(label='logarithmic scale')
+plt.axis([-0.01, xp[-1], 0, 0.03])
+plt.legend()
+plt.ylabel('$x_2$')
+plt.xlabel('$x_1$')
+plt.savefig('E3_3', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+print('fraction values above the plate: ', frac[20:,:])
+
+# plt.figure()
+# plt.contourf(x1_2d, x2_2d, (dv1_dx1 - dv1_dx2) / dv1_dx1, levels=10, cmap='plasma')
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# # plt.title(fr'$((\partial v_1 / \partial x_2)) - (\partial v_1 / \partial x_1)$')
+# plt.colorbar(label='logarithmic scale')
+# plt.axis([-0.01, xp[-1], 0, 0.03])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E3_5', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# lös detta
+
+# print(fr'(\partial v_1 / \partial x_2) - (\partial v_1 / \partial x_1)', dv1_dx2-dv1_dx1)
+# vec = dv1_dx2-dv1_dx1
+# print('max: ', np.max(vec), 'min: ', np.min(vec))
 
 # %%
 ##################################################
@@ -538,6 +641,86 @@ plt.legend()
 plt.grid(True)
 plt.savefig('E4_1', dpi=dpi, bbox_inches='tight')
 plt.show()
+
+
+
+# plt.figure()
+
+# plt.contourf(x1_2d, x2_2d, np.log(dvdx), levels=10, cmap='plasma')
+
+# plt.title(fr'$\partial v_2 / \partial x_1$')
+# plt.colorbar(label='logarithmic scale')
+# plt.axis([xp[0], xp[-1], 0, yp[-1]])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E4_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# plt.figure()
+
+# plt.contourf(x1_2d, x2_2d, dvdx, levels=10, cmap='plasma')
+
+# plt.title(fr'$\partial v_2 / \partial x_1$')
+# plt.colorbar()
+# plt.axis([xp[0], xp[-1], 0, yp[-1]])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E4_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+
+# plt.figure()
+
+# plt.contourf(x1_2d, x2_2d, np.log(dvdx), levels=10, cmap='plasma')
+# plt.contourf(x1_2d, x2_2d, dvdx, levels=10, cmap='plasma')
+
+# plt.title(fr'$\partial v_2 / \partial x_1$')
+# # plt.colorbar(label='logarithmic scale')
+# plt.axis([xp[0], xp[-1], 0, yp[-1]])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E4_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# plt.figure()
+
+# plt.contourf(x1_2d, x2_2d, dvdx, levels=10, cmap='plasma')
+# # plt.contourf(x1_2d, x2_2d, np.log(dvdx), levels=10, cmap='plasma')
+
+# plt.title(fr'$\partial v_2 / \partial x_1$')
+# plt.colorbar()
+# plt.axis([xp[17], xp[21], 0, 0.1])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$x_1$')
+# plt.savefig('E4_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# print(dvdx[170,170])
+# print(xp[170], yp[170])
+
+
+# plt.figure()
+# i = 85
+# dv2_dx2 = np.gradient(v2_2d[i,:], x2_2d[i,:])
+# plt.plot(dv1_dx2, x2_2d[i,:], 'r--', label=fr'$x_1={xc[i]:.2f}$')
+# i = 170
+# dv2_dx2 = np.gradient(v2_2d[i,:], x2_2d[i,:])
+# plt.plot(dv1_dx2, x2_2d[i,:], 'b--', label=fr'$x_1={xc[i]:.2f}$')
+# i = 100
+# dv1_dx2 = np.gradient(v1_2d[i,:], x2_2d[i,:])
+# plt.plot(dv1_dx2, x2_2d[i,:], 'g--', label=fr'$x_1={xc[i]:.2f}$')
+
+# plt.title('Velocity gradients')
+# plt.axis([-5,100,0,0.03])
+# plt.legend()
+# plt.ylabel('$x_2$')
+# plt.xlabel('$\\partial V_1 / \\partial x_2$')
+# plt.savefig('E4_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 # %%
 ##################################################
@@ -724,7 +907,7 @@ S_ij =  np.array([[dudx, 0.5 * (dudy + dvdx)],
 grad_v_ij = np.array([[dudx, dudy],
                       [dvdx, dvdy]])
 
-print(np.shape(S_ij), np.shape(grad_v_ij))
+# print(np.shape(S_ij), np.shape(grad_v_ij))
 
 tau_ij = 2 * viscos * S_ij
 
@@ -736,25 +919,26 @@ Phi = np.einsum('jikl, ijkl -> kl',tau_ij, grad_v_ij)
 # Phi = tau_ij.T @ grad_v_ij
 # Phi = 2 * viscos * np.sum(S_ij * grad_v_ij, axis=(0, 1))
 
-print(Phi)
-print('shape of Phi: ', np.shape(Phi))
-print("Shape of dudx:", np.shape(dudx))
-print("Shape of S_ij:", np.shape(S_ij))
-print("Shape of grad_v_ij:", np.shape(grad_v_ij))
-print("Shape of tau_ij:", np.shape(tau_ij))
-print("Shape of Phi:", np.shape(Phi))
+# print(Phi)
+# print('shape of Phi: ', np.shape(Phi))
 
-print("Contains NaN:", np.any(np.isnan(Phi)))
-print("Contains inf:", np.any(np.isinf(Phi)))
-print("All zeros:", np.all(Phi == 0))
+# print("Shape of dudx:", np.shape(dudx))
+# print("Shape of S_ij:", np.shape(S_ij))
+# print("Shape of grad_v_ij:", np.shape(grad_v_ij))
+# print("Shape of tau_ij:", np.shape(tau_ij))
+# print("Shape of Phi:", np.shape(Phi))
 
-print("Phi stats:")
-print("  Min:", np.min(Phi))
-print("  Max:", np.max(Phi))
-print("  Mean:", np.mean(Phi))
-print("  Std:", np.std(Phi))
+# print("Contains NaN:", np.any(np.isnan(Phi)))
+# print("Contains inf:", np.any(np.isinf(Phi)))
+# print("All zeros:", np.all(Phi == 0))
 
-print("  Order of magnitude:", np.log10(np.abs(Phi[Phi != 0]).mean()))
+# print("Phi stats:")
+# print("  Min:", np.min(Phi))
+# print("  Max:", np.max(Phi))
+# print("  Mean:", np.mean(Phi))
+# print("  Std:", np.std(Phi))
+
+# print("  Order of magnitude:", np.log10(np.abs(Phi[Phi != 0]).mean()))
 
 fig2 = plt.figure()
 # plt.contourf(x1_2d[50,:], x2_2d[50,:], Phi, 50)
@@ -777,17 +961,17 @@ plt.savefig('E7_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
-fig2 = plt.figure()
+# fig2 = plt.figure()
 
-plt.contourf(x1_2d, x2_2d, Phi_log, levels=20, cmap='viridis')
+# plt.contourf(x1_2d, x2_2d, Phi_log, levels=20, cmap='viridis')
 
-plt.axis([-0.05,0.15,0, 0.003])
-plt.xlabel("$x_1$")
-plt.ylabel("$x_2$")
-plt.title("contour dissipation ($\Phi_1$), plate border")
-plt.colorbar(label=r'$\log_{10}(\Phi)$')
-plt.savefig('E7_2', dpi=dpi, bbox_inches='tight')
-plt.show()
+# plt.axis([-0.05,0.15,0, 0.003])
+# plt.xlabel("$x_1$")
+# plt.ylabel("$x_2$")
+# plt.title("contour dissipation ($\Phi_1$), plate border")
+# plt.colorbar(label=r'$\log_{10}(\Phi)$')
+# plt.savefig('E7_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 from scipy import integrate
 
@@ -801,7 +985,7 @@ cp  = 1005    # specific heat at 20C [J/kg/K]
 denominator = 1 / (-2 * rho * cp) * integral
 v1_int = v1_2d[0,:]
 
-numerator = np.trapezoid(v1_int, x2)
+numerator = np.trapezoid(v1_int, yp)
 
 T_b = denominator / numerator
 
@@ -832,33 +1016,53 @@ for i in range(ni): # Loop over all ni values
 
 #print('Eigenvalues', eigvals)
 #print('Eigenvectors', eigvecs)
+# print(np.shape(eigvals))
 
+
+# Eigenvalue vs vertical position
+plt.figure()
 i = 200  
 eigval_slice = eigvals[i, :, 1]   
 tau11_slice = tau_11[i, :]
 tau12_slice = tau_12[i, :]
 tau21_slice = tau_21[i, :]
 tau22_slice = tau_22[i, :]
+plt.plot(eigval_slice, yp, label="Eigenvalue, $x_1$[i = {i}]")
 
+i = 150 
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
+plt.plot(eigval_slice, yp, label="Eigenvalue, $x_1$[i = {i}]")
 
-# Eigenvalue vs vertical position
-plt.figure()
+i = 50 
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
+plt.plot(eigval_slice, yp, label="Eigenvalue, $x_1$[i = {i}]")
 
-plt.plot(eigval_slice, yp, label="Eigenvalue")
-
-plt.title(fr"Eigenvalue vs $x_2$ at $x_1$[i = {i}]")
+plt.title(fr"Eigenvalue")
 plt.ylabel(fr"$x_2$")
 plt.xlabel("$\lambda$")
-plt.axis([-0.0001,0.001,0,0.1])
+plt.axis([-0.0001,0.002,0,0.1])
 plt.legend()
 plt.savefig('E8_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-plt.figure()
 
+plt.figure()
+i = 200  
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
 plt.plot(tau12_slice, yp, label=r"$\tau_{12} = \tau_{21}$")
 plt.plot(tau11_slice, yp, label=r"$\tau_{11}$")
-# plt.plot(tau21_slice, yp, label=r"$\tau_{21}$")
 plt.plot(tau22_slice, yp, label=r"$\tau_{22}$")
 
 plt.title(fr"Stress components vs $x_2$ at $x_1$[i = {i}]")
@@ -872,19 +1076,37 @@ plt.show()
 
 
 plt.figure()
+i = 200  
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
+plt.plot(tau12_slice, yp, label=fr"$\tau_{12} = \tau_{21}$, $x_1$[i = {i}]")
 
-plt.plot(tau12_slice, yp, label=r"$\tau_{12} = \tau_{21}$")
+i = 150  
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
+plt.plot(tau12_slice, yp, label=fr"$\tau_{12} = \tau_{21}$, $x_1$[i = {i}]")
 
-plt.title(fr"Stress components vs $x_2$ at $x_1$[i = {i}]")
-plt.axis([-0.0001,0.001,0,0.1])
+i = 50  
+eigval_slice = eigvals[i, :, 1]   
+tau11_slice = tau_11[i, :]
+tau12_slice = tau_12[i, :]
+tau21_slice = tau_21[i, :]
+tau22_slice = tau_22[i, :]
+plt.plot(tau12_slice, yp, label=fr"$\tau_{12} = \tau_{21}$, $x_1$[i = {i}]")
+
+plt.title(fr"Stress components")
+plt.axis([-0.0001,0.002,0,0.1])
 plt.ylabel(fr"$x_2$")
 plt.xlabel("Stress component value")
 plt.legend()
 plt.savefig('E8_3', dpi=dpi, bbox_inches='tight')
 plt.show()
-
-
-print(eigvecs[1,4])
 
 # %%
 ##################################################
@@ -902,6 +1124,9 @@ v_quiver = principal_vecs[:,:,1]   # y-component of eigenvector
 plt.figure()
 plt.quiver(x1_2d, x2_2d, u_quiver, v_quiver, 
            scale=20, width=0.002, color="blue")
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# plt.axis([xp[0], xp[-1], 0, 0.03])
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
 plt.title("Principal stress eigenvector field all points")
@@ -909,29 +1134,59 @@ plt.axis("scaled")
 plt.savefig('E9_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-step = 5  # plotting every 5th point
+step = 10  # plotting every 10th point
 plt.figure()
 plt.quiver(x1_2d[::step, ::step], x2_2d[::step, ::step],
            u_quiver[::step, ::step], v_quiver[::step, ::step],
-           scale=70, width=0.002, color="blue")
-plt.xlabel("$x_1$")
-plt.ylabel("$x_2$")
-plt.title("Principal stress eigenvector field every 5th point")
-plt.axis("scaled")
-plt.savefig('E9_2', dpi=dpi, bbox_inches='tight')
-plt.show()
+           scale=20, width=0.002, color="blue")
 
-step = 10  # plotting every 5th point
-plt.figure()
-plt.quiver(x1_2d[::step, ::step], x2_2d[::step, ::step],
-           u_quiver[::step, ::step], v_quiver[::step, ::step],
-           scale=30, width=0.002, color="blue")
+plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+plt.axis([0, xp[-1], 0, 0.03])
+
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
 plt.title("Principal stress eigenvector field every 10th point")
-plt.axis("scaled")
-plt.savefig('E9_3', dpi=dpi, bbox_inches='tight')
+# plt.axis("scaled")
+plt.legend()
+plt.savefig('E9_2', dpi=dpi, bbox_inches='tight')
 plt.show()
+
+
+# step = 5  # plotting every 5th point
+
+# plt.figure()
+# plt.quiver(x1_2d[::step, ::step], x2_2d[::step, ::step],
+#            u_quiver[::step, ::step], v_quiver[::step, ::step],
+#            scale=20, width=0.002, color="blue")
+
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# # plt.axis([xp[0], xp[-1], 0, 0.03])
+
+# plt.xlabel("$x_1$")
+# plt.ylabel("$x_2$")
+# plt.title("Principal stress eigenvector field every 5th point")
+# # plt.axis("scaled")
+# plt.savefig('E9_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+# step = 10  # plotting every 5th point
+# plt.figure()
+# plt.quiver(x1_2d[::step, ::step], x2_2d[::step, ::step],
+#            u_quiver[::step, ::step], v_quiver[::step, ::step],
+#            scale=30, width=0.002, color="blue")
+
+# plt.plot(xc, delta_99, 'k-', label=r'$\delta_{99}$')
+
+# plt.axis([xp[0], xp[-1], 0, 0.03])
+
+# plt.xlabel("$x_1$")
+# plt.ylabel("$x_2$")
+# plt.title("Principal stress eigenvector field every 10th point")
+# # plt.axis("scaled")
+# plt.savefig('E9_3', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 
 
@@ -955,12 +1210,10 @@ right_side = term3
 residual = left_side - right_side
 
 plt.figure()
-
 i = 5
 plt.plot(term1[i,:], yp, 'r-', label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
 plt.plot(term2[i,:], yp, 'g-', label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
 plt.plot(term3[i,:], yp, 'b--', label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
-
 
 plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
 # plt.axis([0,0.03,-0.4,0.2])
@@ -971,13 +1224,13 @@ plt.grid(True)
 plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-plt.figure()
 
+
+plt.figure()
 i = 5
 plt.plot(left_side[i,:], yp, 'r-', label='LHS (sum)')
 plt.plot(right_side[i,:], yp, 'g', label='RHS')
 plt.plot(residual[i,:], yp, 'b--', label='Residual')
-
 
 plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
 # plt.axis([0,0.03,-0.4,0.2])
@@ -989,9 +1242,41 @@ plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
+# plt.figure()
+# i = 170
+# plt.plot(term1[i,:], yp, 'r-', label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+# plt.plot(term2[i,:], yp, 'g-', label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+# plt.plot(term3[i,:], yp, 'b--', label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+
+# plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# plt.axis([-0.2,0.1,0,0.1])
+# plt.ylabel('$x_2$')
+# plt.xlabel('Value')
+# plt.legend()
+# plt.grid(True)
+# plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+
+
+# plt.figure()
+# i = 170
+# plt.plot(left_side[i,:], yp, 'r-', label='LHS (sum)')
+# plt.plot(right_side[i,:], yp, 'g', label='RHS')
+# plt.plot(residual[i,:], yp, 'b--', label='Residual')
+
+# plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# plt.axis([-0.2,0.1,0,0.1])
+# plt.ylabel('$x_2$')
+# plt.xlabel('Value')
+# plt.legend()
+# plt.grid(True)
+# plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
+
+
 
 plt.figure()
-
 i = 85
 plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
 plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
@@ -1012,7 +1297,6 @@ plt.show()
 
 
 plt.figure()
-
 i = 170
 plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
 plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
@@ -1081,19 +1365,19 @@ plt.grid(True)
 plt.savefig('E10_6', dpi=dpi, bbox_inches='tight')
 plt.show()
 
-plt.figure()
+# plt.figure()
 
-plt.plot(xp, d2_at_wall_log, '-o', markersize=3)
+# plt.plot(xp, d2_at_wall_log, '-o', markersize=3)
 
-plt.title('Second derivative of $v_1$ at the wall, log scale')
-plt.axis([-0.2, 0.5,-1,15])
-# plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
-plt.xlabel(r'$x_1$')
-plt.ylabel(r'$\partial^2 v_1/\partial x_2^2\ \mathrm{at}\ x_2=0$')
-# plt.yscale('log')
-plt.grid(True)
-plt.savefig('E10_7', dpi=dpi, bbox_inches='tight')
-plt.show()
+# plt.title('Second derivative of $v_1$ at the wall, log scale')
+# plt.axis([-0.2, 0.5,-1,15])
+# # plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
+# plt.xlabel(r'$x_1$')
+# plt.ylabel(r'$\partial^2 v_1/\partial x_2^2\ \mathrm{at}\ x_2=0$')
+# # plt.yscale('log')
+# plt.grid(True)
+# plt.savefig('E10_7', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 max_i = np.unravel_index(np.argmax(d2_at_wall, axis=None), d2_at_wall.shape)[0]
 
@@ -1124,20 +1408,25 @@ plt.savefig('E10_8', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
-plt.figure()
+# plt.figure()
 
-plt.plot(xp, dvorticity_dx2_wall_log, '-o', markersize=3)
+# plt.plot(xp, dvorticity_dx2_wall_log, '-o', markersize=3)
 
-plt.title("Gradient of vorticity at the wall, log scale")
-plt.axis([-0.2,0.5,-1,15])
-# plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
-plt.xlabel("$x_1$")
-plt.ylabel(r"$\partial \omega / \partial x_2$ at wall")
-# plt.yscale('log')
-plt.grid(True)
-plt.savefig('E10_9', dpi=dpi, bbox_inches='tight')
-plt.show()
+# plt.title("Gradient of vorticity at the wall, log scale")
+# plt.axis([-0.2,0.5,-1,15])
+# # plt.axis([-0.2,0.5,-0.0006*10**8,0.0006*10**8])
+# plt.xlabel("$x_1$")
+# plt.ylabel(r"$\partial \omega / \partial x_2$ at wall")
+# # plt.yscale('log')
+# plt.grid(True)
+# plt.savefig('E10_9', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 
-print(dvorticity_dx2_wall + d2_at_wall)
+# print((dvorticity_dx2_wall[19:] + d2_at_wall[19:])/dvorticity_dx2_wall[19:])
+# print('d2')
+# print(d2_at_wall[19:])
+# print('vorticity')
+# print(dvorticity_dx2_wall[19:])
+# print(xp[19])
 # %%
