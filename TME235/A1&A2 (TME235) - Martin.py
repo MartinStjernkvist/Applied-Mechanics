@@ -29,7 +29,11 @@ G_num = E_num / (2 * (1 + poisson_num))
 
 # ASSIGNMENT 2 - Axissymetry
 
-
+a_num = 150 # mm
+b_num = 250 # mm
+h0_num = 20 # mm
+p_num = 120 * 10**6 # Pa
+E2_num = 200 * 10**9 # Pa
 
 #%% 
 ####################################################################################################
@@ -51,10 +55,10 @@ M = -E*I*w.diff(x, 2)
 
 # Boundary conditions for distributed load
 boundary_conditions = [ 
-                        w.subs(x, 0),                       #w(0) = 0
-                        w.diff(x).subs(x, 0),               #w'(0) = 0
-                        M.subs(x, L),                       #w''(L) = 0
-                        w.diff(x,3).subs(x, L) - P/(-E*I)   #w'''(L) = -P
+                        w.subs(x, 0),                               #w(0) = 0
+                        w.diff(x).subs(x, 0),                       #w'(0) = 0
+                        M.subs(x, L),                               #w''(L) = 0
+                        w.diff(x, 3).subs(x, L) - P / (-E * I)      #w'''(L) = -P
                         ]
 print('\nboundary conditions:')
 display(boundary_conditions)
@@ -76,11 +80,11 @@ w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num)
 
 plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-')
+plt.axhline(0, color='black', linestyle='--')
 plt.title('Beam Deflection under Combined Loading at L=3')
 plt.xlabel('Position along beam (m)')
 plt.ylabel('Deflection (mm)')
 plt.grid(True)
-plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals)*1e3*1.1)
 plt.xlim(0, L)
 plt.show()
@@ -93,11 +97,11 @@ w_vals = w_func(x_vals, L, q0, P_num, E_num, I_num)
 
 plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-')
+plt.axhline(0, color='black', linestyle='--')
 plt.title('Beam Deflection under Combined Loading at L=0.3')
 plt.xlabel('Position along beam (m)')
 plt.ylabel('Deflection (mm)')
 plt.grid(True)
-plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals)*1e3*1.1)
 plt.xlim(0, L)
 plt.show()
@@ -243,10 +247,10 @@ V    = diff(M_r, r) + 1 / r * (M_r - M_phi)         # shear force field
 
 # Apply the boundary conditions
 boundary_conditions = [
-                        M_r.subs(r, a),         # inner boundary radial bending moment free
-                        V.subs(r, a) - F,       # inner boundary shear force applied
-                        w.subs(r, b),           # outer boundary deflection fixed
-                        w_prime.subs(r, b)      # outer boundary rotation fixed
+                        M_r.subs(r, b),         # outer boundary radial bending moment free
+                        V.subs(r, b) - F,       # outer boundary shear force applied
+                        w.subs(r, a),           # inner boundary deflection fixed
+                        w_prime.subs(r, a)      # inner boundary rotation fixed
                        ]
 
 # Solve for unknown constants
@@ -259,17 +263,20 @@ w_ = simplify(w.subs(sol)) # constants substituted
 print("w(r) = ", w_)
 
 # Plot the deflection field for a given set of parameters
-wp_f = simplify(w_.subs({F:1., q0:0., E:200e3, nu:0.3, a:100, b:500, h:4})) # parameters substituted
+wp_f = simplify(w_.subs({F:-p_num, q0:0, E:E2_num, nu:poisson_num, a:a_num, b:b_num, h:h0_num})) # parameters substituted
 
-r_num  = np.linspace(100., 500., 401)
+r_num  = np.linspace(150, 250, 401)
 wr_num = [wp_f.subs({r:val}) for val in r_num]
 
 plt.figure()
 plt.plot(r_num, wr_num, "b-")
+plt.axvline(a_num, color='black', linestyle='--', label='a')
+plt.axvline(b_num, color='grey', linestyle='--', label='b')
 plt.title('Deflection')
 plt.xlabel(r"$r$ [mm]")
 plt.ylabel(r"$w$ [mm]")
 plt.grid()
+plt.legend()
 plt.show()
 plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
 
