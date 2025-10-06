@@ -8,7 +8,10 @@ from quadmesh import *
 # GIVEN INFORMATION
 ####################################################################################################
 
+# --------------------------------------------
 # ASSIGNMENT 1 - Beam
+# --------------------------------------------
+
 L1 = 3
 L2 = 0.3
 
@@ -27,7 +30,9 @@ Ks_num = 5/6
 A_num = b_num * h_num
 G_num = E_num / (2 * (1 + poisson_num)) 
 
+# --------------------------------------------
 # ASSIGNMENT 2 - Axissymetry
+# --------------------------------------------
 
 a_num = 150 # mm
 b_num = 250 # mm
@@ -35,7 +40,20 @@ h0_num = 20 # mm
 p_num = 120 * 10**6 # Pa
 E2_num = 200 * 10**9 # Pa
 
+# for calfem caluclations:
+thickness = h0_num
+height = thickness
+length = b_num - a_num
+
+Emod = E2_num
+# lower left corner
+p1 = [a_num, 0]
+# upper right corner
+p2 = [length, height]
+
+
 #%% 
+
 ####################################################################################################
 # EULER-BERNOULLI
 ####################################################################################################
@@ -81,9 +99,9 @@ w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num)
 plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-')
 plt.axhline(0, color='black', linestyle='--')
-plt.title('Beam Deflection under Combined Loading at L=3')
-plt.xlabel('Position along beam (m)')
-plt.ylabel('Deflection (mm)')
+plt.title('Beam deflection, combined Loading L=3')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
 plt.grid(True)
 plt.ylim(bottom=min(w_vals)*1e3*1.1)
 plt.xlim(0, L)
@@ -98,9 +116,9 @@ w_vals = w_func(x_vals, L, q0, P_num, E_num, I_num)
 plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-')
 plt.axhline(0, color='black', linestyle='--')
-plt.title('Beam Deflection under Combined Loading at L=0.3')
-plt.xlabel('Position along beam (m)')
-plt.ylabel('Deflection (mm)')
+plt.title('Beam deflection, combined Loading (L=0.3)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
 plt.grid(True)
 plt.ylim(bottom=min(w_vals)*1e3*1.1)
 plt.xlim(0, L)
@@ -195,8 +213,8 @@ w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num, A_num, G_num, Ks_num)
 plt.figure()
 plt.plot(x_vals, w_vals * 1e3, 'b-')
 plt.title('Beam Deflection, combined loading (L=3)')
-plt.xlabel('Position along beam (m)')
-plt.ylabel('Deflection (mm)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
 plt.grid(True)
 plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
@@ -213,8 +231,8 @@ w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num, A_num, G_num, Ks_num)
 plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-', linewidth=2)
 plt.title('Beam deflection, combined loading (L=0.3)')
-plt.xlabel('Position along beam (m)')
-plt.ylabel('Deflection (mm)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
 plt.grid(True)
 plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
@@ -272,7 +290,7 @@ plt.figure()
 plt.plot(r_num, wr_num, "b-")
 plt.axvline(a_num, color='black', linestyle='--', label='a')
 plt.axvline(b_num, color='grey', linestyle='--', label='b')
-plt.title('Deflection')
+plt.title('Axisymmetric deflection')
 plt.xlabel(r"$r$ [mm]")
 plt.ylabel(r"$w$ [mm]")
 plt.grid()
@@ -286,9 +304,46 @@ plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
 ####################################################################################################
 new_prob('2 - AXISYMMETRY FEM')
 
+# --------------------------------------------
+# 1. Compute material stiffness D
+# --------------------------------------------
+
+v = poisson_num
+ptype = 3 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
+Dmat = cfc.hooke(ptype, Emod, v)
+
+# --------------------------------------------
+# 2. Create and plot rectangular mesh using quadmesh.py
+# --------------------------------------------
+
+# number of elements
+nelx = 20
+nely = 10
+# number of dofs per node
+ndofs_per_node = 2
+# number of nodes
+nnode = (nelx + 1) * (nely + 1)
+# number of dofs
+ndofs = ndofs_per_node * nnode
+
+# generate mesh, with quadmesh.py
+Ex, Ey, Edof, B1, B2, B3, B4, P1, P2, P3, P4 = quadmesh(p1, p2, nelx, nely, ndofs_per_node)
+
+cfv.eldraw2_mpl(Ex, Ey) # plot mesh
+
+# --------------------------------------------
+# 3. Define boundary conditions via d.o.f. and prescribed value
+# --------------------------------------------
+
+
+
+
+'''
+GENERAL SOLUTION, SEE AXISYMMETRY CHAPTER WITH CALFEM
+
 # Material stiffness
-Dmat = Emod / (1 - nu **2) * np.array([[1, nu],
-                                       [nu, 1]])
+# Dmat = Emod / (1 - nu **2) * np.array([[1, nu],
+#                                        [nu, 1]])
 
 # Element topology
 Edof = ...
@@ -358,7 +413,7 @@ for el in range(nel):
     strain[1, el] = strain_el[1]
     stress[0, el] = stress_el[0]
     stress[1, el] = stress_el[1]
-        
+'''
 
 
 # %%
