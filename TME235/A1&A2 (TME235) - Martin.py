@@ -23,12 +23,10 @@ Ks_num = 5/6
 A_num = b_num * h_num
 G_num = E_num / (2 * (1 + poisson_num)) 
 
-
 #%% ###################### Method 1: dsolve ##############################
 # EULER-BERNOULLI
 ##################################################
 new_prob(1)
-print("\nCantilever Beam - Point Load at Free End")
 
 ## Define symbolic variables
 P, x, L, E, I = symbols('P x L E I', real=True)
@@ -88,8 +86,6 @@ display(M_solution)
 print(f"\nShear: V(x):")
 display(V_solution)
 
-
-
 # %%
 ##################################################
 # TIMOSHENKO
@@ -97,7 +93,7 @@ display(V_solution)
 new_prob(2)
 
 #############
-# Poiint load
+# Point load
 
 x, q0, E, I, Ks, G, A, L, P = symbols('x q0 E I Ks G A L P', real=True)
 
@@ -176,16 +172,17 @@ q0 = -((m_num * g_num)/L)
 x_vals = np.linspace(0, L, 200)
 w_vals = w_func(x_vals, L, q0, P_num, E_num, I_num, A_num, G_num, Ks_num)
 
-plt.figure(figsize=(10,6))
+plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-', linewidth=2)
-plt.title('Beam Deflection under Combined Loading at L=3', fontsize=16)
+plt.title('Beam Deflection, combined loading (L=3)', fontsize=16)
 plt.xlabel('Position along beam (m)', fontsize=14)
 plt.ylabel('Deflection (mm)', fontsize=14)
 plt.grid(True)
 plt.axhline(0, color='black', linewidth=0.8, linestyle='--')
-plt.ylim(bottom=min(w_vals)*1e3*1.1)
+plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
 plt.xlim(0, L)
 plt.show()
+plt.savefig('TIMOSHENKO_1', dpi=dpi, bbox_inches='tight')
 
 L=L2
 q0 = -((m_num * g_num)/L2)
@@ -193,15 +190,17 @@ q0 = -((m_num * g_num)/L2)
 x_vals = np.linspace(0, L, 200)
 w_vals = w_func(x_vals, L, q0, P_num, E_num, I_num, A_num, G_num, Ks_num)
 
-plt.figure(figsize=(10,6))
+plt.figure()
 plt.plot(x_vals, w_vals*1e3, 'b-', linewidth=2)
-plt.title('Beam Deflection under Combined Loading at L=0.3', fontsize=16)
+plt.title('Beam deflection, combined loading (L=0.3)', fontsize=16)
 plt.xlabel('Position along beam (m)', fontsize=14)
 plt.ylabel('Deflection (mm)', fontsize=14)
 plt.grid(True)
 plt.axhline(0, color='black', linewidth=0.8, linestyle='--')
-plt.ylim(bottom=min(w_vals)*1e3*1.1)
+plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
 plt.xlim(0, L)
 plt.show()
+plt.savefig('TIMOSHENKO_2', dpi=dpi, bbox_inches='tight')
+
 
 #%%
