@@ -374,22 +374,6 @@ plt.show()
 # plt.show()
 
 
-# Plot
-plt.figure()
-
-plt.plot(xi, v2_norm, 'r-', label=fr'$x_1={xc[i]:.2f}$')
-plt.plot(xi_blas, v2_blas_norm, 'k--', label=fr'Blasius solution, $x_1={xc[i]:.2f}$')
-
-plt.title(fr'Normalized velocities for $v_2$')
-plt.axis([0,20,0,0.003])
-plt.xlabel(r'$\xi$')
-plt.ylabel(r'$v_2 / V_{1,\infty}$')
-plt.legend()
-plt.grid(True)
-plt.savefig('E1_3', dpi=dpi, bbox_inches='tight')
-plt.show()
-
-
 #%%
 ##################################################
 # E2
@@ -742,7 +726,7 @@ plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 i=170
 plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 
-plt.title(fr'Vorticity at different $x_1$ locations (above plate)')
+plt.title(fr'Vorticity, above the plate')
 plt.axis([-160,1,-0,0.05])
 plt.xlabel('$\omega$')
 plt.ylabel('$x_2$')
@@ -759,7 +743,7 @@ plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 i=20
 plt.plot(omega_3[i,:], x2_2d[i,:], '-', label=fr'$x_1={xc[i]:.2f}$')
 
-plt.title(fr'Vorticity at different $x_1$ locations (upstream of plate)')
+plt.title(fr'Vorticity, upstream and near the plate')
 plt.axis([-2000,200,-0,0.005])
 plt.xlabel('$\omega$')
 plt.ylabel('$x_2$')
@@ -955,7 +939,7 @@ plt.contourf(x1_2d, x2_2d, Phi_log, levels=50, cmap='viridis')
 plt.axis([-0.2,xc[-1],0, yc[-1]])
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-plt.title("contour dissipation ($\Phi_1$)")
+plt.title("Dissipation $\Phi_1$")
 plt.colorbar(label=r'$\log_{10}(\Phi)$')
 plt.savefig('E7_1', dpi=dpi, bbox_inches='tight')
 plt.show()
@@ -1027,7 +1011,7 @@ tau11_slice = tau_11[i, :]
 tau12_slice = tau_12[i, :]
 tau21_slice = tau_21[i, :]
 tau22_slice = tau_22[i, :]
-plt.plot(eigval_slice, yp, label="Eigenvalue, $x_1$[i = {i}]")
+plt.plot(eigval_slice, yp, label=fr"Eigenvalue, $x_1$[i = {i}]")
 
 i = 150 
 eigval_slice = eigvals[i, :, 1]   
@@ -1035,7 +1019,7 @@ tau11_slice = tau_11[i, :]
 tau12_slice = tau_12[i, :]
 tau21_slice = tau_21[i, :]
 tau22_slice = tau_22[i, :]
-plt.plot(eigval_slice, yp, label="Eigenvalue, $x_1$[i = {i}]")
+plt.plot(eigval_slice, yp, label=fr"Eigenvalue, $x_1$[i = {i}]")
 
 i = 50 
 eigval_slice = eigvals[i, :, 1]   
@@ -1043,7 +1027,7 @@ tau11_slice = tau_11[i, :]
 tau12_slice = tau_12[i, :]
 tau21_slice = tau_21[i, :]
 tau22_slice = tau_22[i, :]
-plt.plot(eigval_slice, yp, label="Eigenvalue, $x_1$[i = {i}]")
+plt.plot(eigval_slice, yp, label=fr"Eigenvalue, $x_1$[i = {i}]")
 
 plt.title(fr"Eigenvalue")
 plt.ylabel(fr"$x_2$")
@@ -1129,7 +1113,7 @@ plt.quiver(x1_2d, x2_2d, u_quiver, v_quiver,
 # plt.axis([xp[0], xp[-1], 0, 0.03])
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-plt.title("Principal stress eigenvector field all points")
+plt.title("Eigenvectors, whole domain")
 plt.axis("scaled")
 plt.savefig('E9_1', dpi=dpi, bbox_inches='tight')
 plt.show()
@@ -1146,7 +1130,7 @@ plt.axis([0, xp[-1], 0, 0.03])
 
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-plt.title("Principal stress eigenvector field every 10th point")
+plt.title("Eigenvectors, every 10th point, boundary layer")
 # plt.axis("scaled")
 plt.legend()
 plt.savefig('E9_2', dpi=dpi, bbox_inches='tight')
@@ -1209,37 +1193,38 @@ right_side = term3
 
 residual = left_side - right_side
 
-plt.figure()
-i = 5
-plt.plot(term1[i,:], yp, 'r-', label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
-plt.plot(term2[i,:], yp, 'g-', label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
-plt.plot(term3[i,:], yp, 'b--', label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+# plt.figure()
+# i = 15
+# plt.plot(term1[i,:], yp,  label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+# plt.plot(term2[i,:], yp,  label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+# plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+# plt.plot(residual[i,:], yp, 'k-.', label='Residual')
 
-plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
-# plt.axis([0,0.03,-0.4,0.2])
-plt.ylabel('$x_2$')
-plt.xlabel('Value')
-plt.legend()
-plt.grid(True)
-plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
-plt.show()
+# plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# # plt.axis([0,0.03,-0.4,0.2])
+# plt.ylabel('$x_2$')
+# plt.xlabel('Value')
+# plt.legend()
+# plt.grid(True)
+# plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 
 
-plt.figure()
-i = 5
-plt.plot(left_side[i,:], yp, 'r-', label='LHS (sum)')
-plt.plot(right_side[i,:], yp, 'g', label='RHS')
-plt.plot(residual[i,:], yp, 'b--', label='Residual')
+# plt.figure()
+# i = 5
+# plt.plot(left_side[i,:], yp, 'r-', label='LHS (sum)')
+# plt.plot(right_side[i,:], yp, 'g', label='RHS')
+# plt.plot(residual[i,:], yp, 'b--', label='Residual')
 
-plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
-# plt.axis([0,0.03,-0.4,0.2])
-plt.ylabel('$x_2$')
-plt.xlabel('Value')
-plt.legend()
-plt.grid(True)
-plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
-plt.show()
+# plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# # plt.axis([0,0.03,-0.4,0.2])
+# plt.ylabel('$x_2$')
+# plt.xlabel('Value')
+# plt.legend()
+# plt.grid(True)
+# plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
+# plt.show()
 
 
 # plt.figure()
@@ -1274,6 +1259,42 @@ plt.show()
 # plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
 # plt.show()
 
+plt.figure()
+i = 20
+plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+# plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
+# plt.plot(right_side[i,:], yp, ':', label='RHS')
+plt.plot(residual[i,:], yp, 'k-.', label='Residual = LHS - RHS')
+
+plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# plt.axis([-0.4,0.2,0,0.03])
+plt.ylabel('$x_2$')
+plt.xlabel('Value')
+plt.legend()
+plt.grid(True)
+plt.savefig('E10_1', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+plt.figure()
+i = 25
+plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
+plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
+plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
+# plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
+# plt.plot(right_side[i,:], yp, ':', label='RHS')
+plt.plot(residual[i,:], yp, 'k-.', label='residual = LHS - RHS')
+
+plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
+# plt.axis([-0.4,0.2,0,0.03])
+plt.ylabel('$x_2$')
+plt.xlabel('Value')
+plt.legend()
+plt.grid(True)
+plt.savefig('E10_2', dpi=dpi, bbox_inches='tight')
+plt.show()
 
 
 plt.figure()
@@ -1281,12 +1302,12 @@ i = 85
 plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
 plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
 plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
-plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
-plt.plot(right_side[i,:], yp, ':', label='RHS')
-plt.plot(residual[i,:], yp, '-.', label='Residual')
+# plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
+# plt.plot(right_side[i,:], yp, ':', label='RHS')
+plt.plot(residual[i,:], yp, 'k-.', label='Residual = LHS - RHS')
 
 plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
-plt.axis([-0.4,0.2,0,0.03])
+# plt.axis([-0.4,0.2,0,0.03])
 plt.ylabel('$x_2$')
 plt.xlabel('Value')
 plt.legend()
@@ -1301,12 +1322,12 @@ i = 170
 plt.plot(term1[i,:], yp, label=fr'$v_1 \cdot \partial v_1/ \partial x_1$')
 plt.plot(term2[i,:], yp, label=fr'$v_2 \cdot \partial v_1/ \partial x_2$')
 plt.plot(term3[i,:], yp, label=fr'$\nu \cdot \partial^2 v_1/ \partial x_2^2$')
-plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
-plt.plot(right_side[i,:], yp, ':', label='RHS')
-plt.plot(residual[i,:], yp, '-.', label='Residual')
+# plt.plot(left_side[i,:], yp, '--', label='LHS (sum)')
+# plt.plot(right_side[i,:], yp, ':', label='RHS')
+plt.plot(residual[i,:], yp, 'k-.', label='Residual = LHS - RHS')
 
 plt.title(fr'$x_1$[i = {i}] $\approx${xp[i]:.3f}')
-plt.axis([-0.4,0.2,0,0.03])
+# plt.axis([-0.4,0.2,0,0.03])
 plt.ylabel('$x_2$')
 plt.xlabel('Value')
 plt.legend()
@@ -1333,7 +1354,7 @@ plt.plot(dpdx1[i, :], yp, label=f"x1={xc[i]:.2f}")
 i = 200
 plt.plot(dpdx1[i, :], yp, label=f"x1={xc[i]:.2f}")
 
-plt.title(fr"Pressure gradient at $x_1$")
+plt.title(fr"Pressure gradient")
 plt.axis([-0.075,0.01, -0.01,0.8])
 plt.ylabel("$x_2$")
 plt.xlabel(r"$\partial p / \partial x_1$")
