@@ -226,7 +226,7 @@ plt.savefig('TIMOSHENKO_2', dpi=dpi, bbox_inches='tight')
 ####################################################################################################
 # AXISYMMETRY NUMERICAL
 ####################################################################################################
-new_prob('1 - AXISYMMETRY NUMERICAL')
+new_prob('2 - AXISYMMETRY NUMERICAL')
 
 # Define symbols
 F, q0, a, b, E, nu, h, r, A1, A2, A3, A4 = symbols('F q0 a b E nu h r A1 A2 A3 A4', real = True)
@@ -280,4 +280,85 @@ plt.legend()
 plt.show()
 plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
 
-#%%
+# %%
+####################################################################################################
+# AXISYMMETRY FEM
+####################################################################################################
+new_prob('2 - AXISYMMETRY FEM')
+
+# Material stiffness
+Dmat = Emod / (1 - nu **2) * np.array([[1, nu],
+                                       [nu, 1]])
+
+# Element topology
+Edof = ...
+nel = np.size(Edof, 0)
+
+# Node coordinates
+Coord = ...
+nnodes = np.size(Coord, 1)
+ndof = nnodes
+
+# Node degrees of freedom
+Dof = np.zeros((nnodes, 1), 'i')
+for nn in range(nnodes):
+    Dof[nn, 0] = nn + 1
+
+# Element thickness and body force
+h = thickness * np.ones((nel))
+qe = np.zeros((nel, 1))
+
+# Boundary conditions
+bcPrescr = np.array([ndof])
+bcVal = np.array([0])
+
+# Initialize stiuffness and force vector, loop over elements
+# need Ke_func subroutine element function
+Ex = cfc.coordxtr(Edof, Coord, Dof)
+K = np.zeros((ndof, ndof))
+f = np.zeros((ndof, 1))
+# assemble stiffness matrix
+for el in range (nel):
+    r1 = Ex[el, 0]
+    r2 = Ex[el, 1]
+    
+    Ke = Ke_func(r1, r2, h, Emod, nu)
+    fe = np.zeros((nen, 1)) # assume zero body force
+    cfc.assem(Edof[el, :], K, Ke, f, fe)
+    
+# Add boundary load contributions
+f[0] = f[0] + ...
+
+# Solve for unknowns
+Ks = csr_matrix(K, shape=(ndofs, ndofs))
+a, r = cfc.spsolveq(Ks, f, bcPrescr, bcVal)
+
+# Plot displacement field
+plt.figure()
+plt.plot(Coord, a, 'b')
+plt.show()
+
+# Compute strains and stresses
+strain = np.zeros((2, nel))
+stress = np.zeros((2, nel))
+rcentre = np.zeros((1, nel))
+ael = np.zeros((2,1))
+
+for el in range(nel):
+    r1 = Ex[el, 0]
+    r2 = Ex[el, 1]
+    
+    ael[0, 0] = a[Edof[el, 0] - 1]
+    ael[1, 0] = a[Edof[el, 1] - 1]
+    
+    strain_el = Be_func(rcentre[0, el], r1, r2) @ ael
+    stress_el = Dmat @ strain_el
+    
+    strain[0, el] = strain_el[0]
+    strain[1, el] = strain_el[1]
+    stress[0, el] = stress_el[0]
+    stress[1, el] = stress_el[1]
+        
+
+
+# %%

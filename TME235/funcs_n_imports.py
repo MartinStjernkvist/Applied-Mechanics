@@ -1,29 +1,27 @@
 #%%
-# %matplotlib inline
-from scipy.optimize import fsolve
-# from scipy.differentiate import hessian
 import numpy as np
-from numpy import einsum
 import matplotlib.pyplot as plt
-import sympy as sp
+from sympy import *
+import math
+
 from IPython.display import display, Math
 from mpl_toolkits.mplot3d import axes3d
 from mpl_toolkits.mplot3d import Axes3D
 from numpy.random import rand
 from IPython.display import HTML
 from matplotlib import animation
-
 import scipy.io as sio
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import ticker
-
-
-import numpy as np
-from sympy import *
-import matplotlib.pyplot as plt
+from scipy.optimize import fsolve
 from matplotlib import rcParams # for changing default values
 import matplotlib.ticker as ticker
+
+import calfem.core as cfc
+import calfem.vis_mpl as cfv
+import calfem.mesh as cfm
+import calfem.utils as cfu
+
+from scipy.sparse import coo_matrix, csr_matrix
+import matplotlib.cm as cm
 
 ##################################################
 # Functions
