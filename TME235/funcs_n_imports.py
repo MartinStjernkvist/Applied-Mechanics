@@ -29,8 +29,8 @@ import matplotlib.ticker as ticker
 # Functions
 ##################################################
 
-def new_prob(num):
-    print_string = '\n----------------------\n' + 'Assignment E' + str(num) + '\n----------------------\n'
+def new_prob(string):
+    print_string = '\n--------------------------------------------\n' + 'Assignment ' + str(string) + '\n--------------------------------------------\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -45,8 +45,8 @@ plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-plt.rc('figure', figsize=(4,4))
+plt.rc('figure', figsize=(6,3))
 
-dpi = 300
+dpi = 500
 
 #
