@@ -355,6 +355,8 @@ plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
 ####################################################################################################
 new_prob('2 - AXISYMMETRY FEM')
 
+
+'''
 # following steps on page 78
 
 # --------------------------------------------
@@ -362,7 +364,7 @@ new_prob('2 - AXISYMMETRY FEM')
 # --------------------------------------------
 
 v = poisson_num
-ptype = 3 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
+ptype = 1 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
 Dmat = cfc.hooke(ptype, Emod, v)
 ep = [ptype,t]
 
@@ -419,6 +421,13 @@ for eltopo, elx, ely in zip(Edof, Ex, Ey):
 # Sparse -> spsolveq
 Ks = csr_matrix(K, shape=(nDofs, nDofs))
 a, r = cfc.spsolveq(Ks, f, bc, bcVal)
+'''
+
+
+
+
+
+
 
 '''
 GENERAL SOLUTION, SEE AXISYMMETRY CHAPTER WITH CALFEM
@@ -496,12 +505,16 @@ for el in range(nel):
     stress[0, el] = stress_el[0]
     stress[1, el] = stress_el[1]
 '''
-
-# From lecture 5
+# --------------------------------------------
+# From lecture 5, changed
+# --------------------------------------------
 
 # 1. Compute stiffness matrix
-Dmat = Emod / (1 - nu**2) * np.array([[1, nu],
-                                      [nu, 1]])
+# Dmat = Emod / (1 - nu**2) * np.array([[1, nu],
+#                                       [nu, 1]])
+v = poisson_num
+ptype = 3 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
+Dmat = cfc.hooke(ptype, Emod, v)
 
 # 2. Define element topology
 Edof = np.array([
@@ -513,6 +526,55 @@ Edof = np.array([
 ])
 nel = np.size(Edof, 0)
 
+# 3. Give the coordinates for the nodes
+Coord = np.array([r1, r2, r3, r4, r5])
+Coord = Coord.reshape(-1, 1)
+nnodes = np.size(Coord, 1)
+ndof = nnodes
+
+# 4. List the d.o.f.s in each node
+Dof = np.zeros((nnodes, 1), 'i')
+for nn in range(nnodes):
+    Dof[nn, 0] = nn + 1
+    
+Dof = np.array([1, 2, 3, 4, 5, 6])
+Dof = Dof.reshape(-1,1)
+
+# 5. Dfine thickness and body force for each element
+h = thickness * np.ones((nel))
+qe = np.zeros((nel, 1))
+
+# 6. Define boundary conditions via d.o.f. and prescribed value
+# boundary conditions assume clamped on right side
+bcPrescr = np.array([ndof])
+bcVal = np.array([0.])
+
+bc = np.array([[6],
+               [0]])
+
+# 7. Initialize the stiffness and force vetor and loop over the components
+Ex = cfc.coordxtr(Edof, Coord, Dof)
+K = np.zeros((ndof, ndof))
+f = np.zeros((ndof, 1))
+# assemble stiffness matrix
+for el in range(nel):
+    r1 = Ex[el, 0]
+    r2 = Ex[el, 1]
+    Ke = Ke_func(r1, r2, Emod, nu)
+    fe = np.zeros((nen, 1)) # assume zero body force
+    cfc.assem(Edof[el, :], K, Ke, f, fe)
+    
+# 8. Add contributions from boundary loads
+f[0] = f[0] + ...
+
+# 9. Solve for the unknowns 
+Ks = csr_matrix(K, shape = (ndof, ndof))
+a, r = cfc.spsolveq(Ks, f, bcPrescr, bcVal)
+
+# 10. plot the displacement field
+plt.figure()
+plt.plot(Coord, a, 'b')
+    
 
 
 
