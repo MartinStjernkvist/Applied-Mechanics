@@ -1,7 +1,57 @@
 #%%
 %matplotlib widget
-from funcs_n_imports import *
 from quadmesh import *
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sympy import *
+import math
+
+from IPython.display import display, Math
+from mpl_toolkits.mplot3d import axes3d
+from mpl_toolkits.mplot3d import Axes3D
+from numpy.random import rand
+from IPython.display import HTML
+from matplotlib import animation
+import scipy.io as sio
+from scipy.optimize import fsolve
+from matplotlib import rcParams # for changing default values
+import matplotlib.ticker as ticker
+
+import calfem.core as cfc
+import calfem.vis_mpl as cfv
+import calfem.mesh as cfm
+import calfem.utils as cfu
+
+from scipy.sparse import coo_matrix, csr_matrix
+import matplotlib.cm as cm
+
+##################################################
+# Functions
+##################################################
+
+def new_prob(string):
+    print_string = '\n--------------------------------------------\n' + 'Assignment ' + str(string) + '\n--------------------------------------------\n'
+    return print(print_string)
+
+SMALL_SIZE = 10
+MEDIUM_SIZE = 12
+BIGGER_SIZE = 14
+
+# Set the global font sizes
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+plt.rc('figure', figsize=(6,3))
+
+dpi = 500
+
+#
+
 
 #%%
 #####################################################################################################
@@ -257,6 +307,7 @@ q = q0*(r-a)/(b-a)  # distributed load
 w = integrate(1 / r * integrate(r * integrate( 1 / r * integrate(q * r / D, r), r), r), r)+\
     A1 * r**2 * log(r / b) + A2 * r**2 + A3 * log(r / b) + A4 # deflection field
 
+
 w_prime = diff(w,r) # rotation field
 
 M_r   = D*(-diff(w_prime, r) - nu / r * w_prime )   # radial bending moment field
@@ -304,6 +355,8 @@ plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
 ####################################################################################################
 new_prob('2 - AXISYMMETRY FEM')
 
+# following steps on page 78
+
 # --------------------------------------------
 # 1. Compute material stiffness D
 # --------------------------------------------
@@ -311,6 +364,7 @@ new_prob('2 - AXISYMMETRY FEM')
 v = poisson_num
 ptype = 3 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
 Dmat = cfc.hooke(ptype, Emod, v)
+ep = [ptype,t]
 
 # --------------------------------------------
 # 2. Create and plot rectangular mesh using quadmesh.py
@@ -324,7 +378,7 @@ ndofs_per_node = 2
 # number of nodes
 nnode = (nelx + 1) * (nely + 1)
 # number of dofs
-ndofs = ndofs_per_node * nnode
+nDofs = ndofs_per_node * nnode
 
 # generate mesh, with quadmesh.py
 Ex, Ey, Edof, B1, B2, B3, B4, P1, P2, P3, P4 = quadmesh(p1, p2, nelx, nely, ndofs_per_node)
@@ -335,8 +389,36 @@ cfv.eldraw2_mpl(Ex, Ey) # plot mesh
 # 3. Define boundary conditions via d.o.f. and prescribed value
 # --------------------------------------------
 
+# initialize boundary condition vectors
+#bc = np.array([],’i’) #vector with dof’s that should be prescribed
+#bcVal = np.array([],’f’) #vector with values of the prescribed bc’s
+# boundary conditions, assume clamped on the left side
+bc =B4
+bcVal =0.*np.ones(np.size(bc))
 
+# --------------------------------------------
+# 4. Initialize the stiffness and force vector
+# and loop over the elements
+# --------------------------------------------
 
+#initialize stiffness matrix
+K = np.zeros([nDofs,nDofs])
+#initialize force vector
+f = np.zeros((nDofs, 1))
+
+#loop to assemble stiffness matrix
+for eltopo, elx, ely in zip(Edof, Ex, Ey):
+    Ke = cfc.planqe(elx, ely, ep, Dmat) #computation of element stiffness matrix
+    cfc.assem(eltopo, K, Ke)
+    
+# --------------------------------------------
+# 5. Solve for the unknowns
+# --------------------------------------------
+
+#Introduce sparse matrix before solving the equation system
+# Sparse -> spsolveq
+Ks = csr_matrix(K, shape=(nDofs, nDofs))
+a, r = cfc.spsolveq(Ks, f, bc, bcVal)
 
 '''
 GENERAL SOLUTION, SEE AXISYMMETRY CHAPTER WITH CALFEM
@@ -414,6 +496,24 @@ for el in range(nel):
     stress[0, el] = stress_el[0]
     stress[1, el] = stress_el[1]
 '''
+
+# From lecture 5
+
+# 1. Compute stiffness matrix
+Dmat = Emod / (1 - nu**2) * np.array([[1, nu],
+                                      [nu, 1]])
+
+# 2. Define element topology
+Edof = np.array([
+    [1,2],
+    [2,3],
+    [3,5],
+    [4,5],
+    [5,6]
+])
+nel = np.size(Edof, 0)
+
+
 
 
 # %%
