@@ -326,7 +326,8 @@ sol= solve(boundary_conditions, unknowns)
 # Formulate the deflection field
 w_ = simplify(w.subs(sol)) # constants substituted
 
-print("w(r) = ", w_)
+print("w(r) = ")
+display(w_)
 
 # Plot the deflection field for a given set of parameters
 wp_f = simplify(w_.subs({F:-p_num, q0:0, E:E2_num, nu:poisson_num, a:a_num, b:b_num, h:h0_num})) # parameters substituted
@@ -588,7 +589,7 @@ v = poisson_num
 ptype = 3 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
 Dmat = cfc.hooke(ptype, Emod, v)
 # ep = [ptype, t]
-ep = [ptype, h0_num] # testa t=1
+ep = [ptype, h0_num, 2]
 
 # --------------------------------------------
 # 2. Create and plot rectangular mesh using quadmesh.py
@@ -627,15 +628,18 @@ bcVal =0.*np.ones(np.size(bc))
 # --------------------------------------------
 
 #initialize stiffness matrix
-K = np.zeros([nDofs,nDofs])
+K = np.zeros((nDofs,nDofs))
 #initialize force vector
 f = np.zeros((nDofs, 1))
+f[B2 - 1, 0] = 1
+eq = None  # or np.array([0, 0]) if no body forces
+
 
 #loop to assemble stiffness matrix
-for eltopo, elx, ely in zip(Edof, Ex, Ey):
-    Ke = cfc.planqe(elx, ely, ep, Dmat) #computation of element stiffness matrix
+for eltopo, elx, ely in zip(Edof, Ex, Ey):  # Don't include eq in zip
+    Ke = cfc.plani4e(elx, ely, ep, Dmat)  # Pass eq as parameter
     if Ke is None:
-        print("planqe returned None for element:", eltopo)
+        print("plani4e returned None for element:", eltopo)
         print("elx:", elx)
         print("ely:", ely)
         continue
@@ -647,7 +651,6 @@ for eltopo, elx, ely in zip(Edof, Ex, Ey):
 
 #Introduce sparse matrix before solving the equation system
 # Sparse -> spsolveq
+
 Ks = csr_matrix(K, shape=(nDofs, nDofs))
 a, r = cfc.spsolveq(Ks, f, bc, bcVal)
-
-# %%
