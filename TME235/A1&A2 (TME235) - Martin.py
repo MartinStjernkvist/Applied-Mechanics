@@ -90,16 +90,13 @@ h0_num = 20 # mm
 p_num = 120 * 10**6 # Pa
 E2_num = 200 * 10**9 # Pa
 
-# for calfem caluclations:
+# for calfem calculations:
 thickness = h0_num
-height = thickness
-length = b_num - a_num
-
 Emod = E2_num
 # lower left corner
 p1 = [a_num, 0]
 # upper right corner
-p2 = [length, height]
+p2 = [b_num, h0_num]
 
 
 #%% 
@@ -505,6 +502,11 @@ for el in range(nel):
     stress[0, el] = stress_el[0]
     stress[1, el] = stress_el[1]
 '''
+
+
+
+
+'''
 # --------------------------------------------
 # From lecture 5, changed
 # --------------------------------------------
@@ -574,8 +576,78 @@ a, r = cfc.spsolveq(Ks, f, bcPrescr, bcVal)
 # 10. plot the displacement field
 plt.figure()
 plt.plot(Coord, a, 'b')
-    
+'''
 
 
+
+# --------------------------------------------
+# 1. Compute material stiffness D
+# --------------------------------------------
+
+v = poisson_num
+ptype = 3 # 1: plane stress, 2: plane strain, 3: axisymmetry, 4: three dimensional
+Dmat = cfc.hooke(ptype, Emod, v)
+# ep = [ptype, t]
+ep = [ptype, h0_num] # testa t=1
+
+# --------------------------------------------
+# 2. Create and plot rectangular mesh using quadmesh.py
+# --------------------------------------------
+
+# number of elements
+nelx = 20
+nely = 10
+# number of dofs per node
+ndofs_per_node = 2
+# number of nodes
+nnode = (nelx + 1) * (nely + 1)
+# number of dofs
+nDofs = ndofs_per_node * nnode
+
+# generate mesh, with quadmesh.py
+Ex, Ey, Edof, B1, B2, B3, B4, P1, P2, P3, P4 = quadmesh(p1, p2, nelx, nely, ndofs_per_node)
+
+cfv.eldraw2(Ex, Ey) # plot mesh
+
+
+# --------------------------------------------
+# 3. Define boundary conditions via d.o.f. and prescribed value
+# --------------------------------------------
+
+# initialize boundary condition vectors
+#bc = np.array([],’i’) #vector with dof’s that should be prescribed
+#bcVal = np.array([],’f’) #vector with values of the prescribed bc’s
+# boundary conditions, assume clamped on the left side
+bc =B4
+bcVal =0.*np.ones(np.size(bc))
+
+# --------------------------------------------
+# 4. Initialize the stiffness and force vector
+# and loop over the elements
+# --------------------------------------------
+
+#initialize stiffness matrix
+K = np.zeros([nDofs,nDofs])
+#initialize force vector
+f = np.zeros((nDofs, 1))
+
+#loop to assemble stiffness matrix
+for eltopo, elx, ely in zip(Edof, Ex, Ey):
+    Ke = cfc.planqe(elx, ely, ep, Dmat) #computation of element stiffness matrix
+    if Ke is None:
+        print("planqe returned None for element:", eltopo)
+        print("elx:", elx)
+        print("ely:", ely)
+        continue
+    cfc.assem(eltopo, K, Ke)
+
+# --------------------------------------------
+# 5. Solve for the unknowns
+# --------------------------------------------
+
+#Introduce sparse matrix before solving the equation system
+# Sparse -> spsolveq
+Ks = csr_matrix(K, shape=(nDofs, nDofs))
+a, r = cfc.spsolveq(Ks, f, bc, bcVal)
 
 # %%
