@@ -88,4 +88,56 @@ plt.xlabel('meshsize (m)')
 plt.ylabel('displacement $w$')
 plt.savefig(str(name), dpi=400, bbox_inches='tight')
 plt.show()
+
+
+datasets = {}
+current_data = []
+current_name = None
+
+with open('abaqus_results_mises.rpt', 'r') as f:
+    for line in f:
+        # Detect dataset header: line with at least two words, first is 'X'
+        tokens = line.strip().split()
+        if len(tokens) >= 2 and tokens[0] == 'X':
+            # Save previous dataset
+            if current_name and current_data:
+                datasets[current_name] = np.array(current_data)
+            # Start new dataset
+            current_name = ' '.join(tokens)
+            current_data = []
+        elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+            # Try to parse data lines
+            try:
+                values = [float(x.replace('E', 'e')) for x in line.split()]
+                if len(values) == 2:
+                    current_data.append(values)
+            except Exception:
+                pass  # skip lines that can't be parsed
+    # Save last dataset
+    if current_name and current_data:
+        datasets[current_name] = np.array(current_data)
+        
+print(datasets.items())
+
+# Plot all datasets
+for name, data in datasets.items():
+    if name == 'X 3m':
+        plt.figure()
+        plt.plot(data[:, 0], data[:, 1], label= 'smises_bottom_X_03m')
+        plt.xlabel(name.split()[0])
+        plt.ylabel('smises_bottom_X_03m')
+        plt.title('smises_bottom_X_03m')
+        plt.legend()
+        plt.savefig(str('smises_bottom_X_03m'), dpi=400, bbox_inches='tight')
+        plt.show()
+    if name == 'X m':
+        plt.figure()
+        plt.plot(data[:, 0], data[:, 1], label= 'smises_bottom_X_3m')
+        plt.xlabel(name.split()[0])
+        plt.ylabel('smises_bottom_X_3m')
+        plt.title('smises_bottom_X_03m')
+        plt.legend()
+        plt.savefig(str('smises_bottom_X_03m'), dpi=400, bbox_inches='tight')
+        plt.show()
+    
 #%%
