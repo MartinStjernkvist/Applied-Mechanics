@@ -135,9 +135,9 @@ for name, data in datasets.items():
         plt.plot(data[:, 0], data[:, 1], label= 'smises_bottom_X_3m')
         plt.xlabel(name.split()[0])
         plt.ylabel('smises_bottom_X_3m')
-        plt.title('smises_bottom_X_03m')
+        plt.title('smises_bottom_X_3m')
         plt.legend()
-        plt.savefig(str('smises_bottom_X_03m'), dpi=400, bbox_inches='tight')
+        plt.savefig(str('smises_bottom_X_3m'), dpi=400, bbox_inches='tight')
         plt.show()
     
 #%%
