@@ -1317,6 +1317,35 @@ plt.legend()
 plt.show()
 plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
 
+
+
+# Calculate the radial normal stress at the outer surface (maximum)
+z = h / 2  # position at outer surface
+sigma_rr = 6 * M_r / h**2  # maximum radial stress (at z = ±h/2)
+
+# Substitute the solution constants
+sigma_rr_ = simplify(sigma_rr.subs(sol))
+
+print("sigma_rr(r) = ")
+display(sigma_rr_)
+
+# Plot the radial stress field for the same parameters
+sigma_rr_f = simplify(sigma_rr_.subs({F:-p_num, q0:0, E:E2_num, nu:poisson_num, a:a_num, b:b_num, h:h0_num}))
+
+sigma_rr_num = [sigma_rr_f.subs({r:val}) for val in r_num]
+
+plt.figure()
+plt.plot(r_num, sigma_rr_num, "r-")
+plt.axvline(a_num, color='black', linestyle='--', label='a')
+plt.axvline(b_num, color='grey', linestyle='--', label='b')
+plt.axhline(0, color='gray', linestyle='-', linewidth=0.5)
+plt.title('Radial normal stress at outer surface')
+plt.xlabel(r"$r$ [mm]")
+plt.ylabel(r"$\sigma_{rr}$ [MPa]")
+plt.grid()
+plt.legend()
+plt.show()
+plt.savefig('AXISYMMETRY_2', dpi=dpi, bbox_inches='tight')
 # %%
 ####################################################################################################
 ####################################################################################################
