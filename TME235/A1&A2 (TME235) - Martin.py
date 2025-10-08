@@ -295,8 +295,8 @@ plt.grid(True)
 plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
 plt.xlim(0, L)
-plt.show()
 plt.savefig('TIMOSHENKO_1', dpi=dpi, bbox_inches='tight')
+plt.show()
 
 L=L2
 q0_num = -((m_num * g_num)/L2)
@@ -313,9 +313,8 @@ plt.grid(True)
 plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
 plt.xlim(0, L)
-plt.show()
 plt.savefig('TIMOSHENKO_2', dpi=dpi, bbox_inches='tight')
-
+plt.show()
 
 
 #%%
@@ -592,7 +591,7 @@ sfac = 1  # deformation scale
 coords_def = coords + sfac * np.hstack([U, V])
 
 # Plot
-plt.figure(figsize=(10, 3))
+plt.figure()
 for elx, ely in zip(Ex, Ey):
     # Undeformed
     plt.plot(np.append(elx, elx[0]), np.append(ely, ely[0]), 'k-', lw=0.8, alpha=0.5)
@@ -752,7 +751,7 @@ sfac = 40  # deformation scale
 coords_def = coords + sfac * np.hstack([U, V])
 
 # Plot
-plt.figure(figsize=(10, 3))
+plt.figure()
 for elx, ely in zip(Ex, Ey):
     # Undeformed
     plt.plot(np.append(elx, elx[0]), np.append(ely, ely[0]), 'k-', lw=0.8, alpha=0.5)
@@ -1299,10 +1298,8 @@ plt.xlabel(r"$r$ [mm]")
 plt.ylabel(r"$w$ [mm]")
 plt.grid()
 plt.legend()
-plt.show()
 plt.savefig('AXISYMMETRY_1', dpi=dpi, bbox_inches='tight')
-
-
+plt.show()
 
 # Calculate the radial normal stress at the outer surface (maximum)
 z = h / 2  # position at outer surface
@@ -1329,8 +1326,9 @@ plt.xlabel(r"$r$ [mm]")
 plt.ylabel(r"$\sigma_{rr}$ [MPa]")
 plt.grid()
 plt.legend()
-plt.show()
 plt.savefig('AXISYMMETRY_2', dpi=dpi, bbox_inches='tight')
+plt.show()
+
 # %%
 ####################################################################################################
 ####################################################################################################
@@ -1340,7 +1338,7 @@ plt.savefig('AXISYMMETRY_2', dpi=dpi, bbox_inches='tight')
 
 
 
-# Assigment 2 - Calfem
+# Assigment 2 - Calfem, constant area
 
 
 
@@ -1349,6 +1347,242 @@ plt.savefig('AXISYMMETRY_2', dpi=dpi, bbox_inches='tight')
 ####################################################################################################
 ####################################################################################################
 new_prob('2 - Calfem')
+
+b_outer = 0.25
+nu=0.3
+E=200e9
+h0 = 0.02
+Width = b
+num_el = 6
+nnodes = num_el + 1
+a_inner = 0.15
+
+coords = np.linspace(b_outer, a_inner, nnodes)
+#coords = coords.reshape(-1,1)
+
+Edof = np.zeros((num_el, 2), dtype=int)
+for i in range(num_el):
+    Edof[i, 0] = i + 1 
+    Edof[i, 1] = i + 2       
+
+#display(coords)
+display(Edof)
+
+num_dofs = np.max(Edof)
+
+#Dmat = E / (1-nu**2) * np.array([[1, nu],
+                                 #[nu,1]])
+
+num_dofs = np.max(Edof)
+K = np.zeros((num_dofs, num_dofs))
+f = np.zeros((num_dofs, 1))
+
+print("K shape:", K.shape)
+
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    Le = r2 - r1
+    r_mean = 0.5 * (r1 + r2)
+    
+    # Constant thickness
+    h_e = h0
+
+    print('h_e',np.shape(h_e))
+    print('r_mean',np.shape(r_mean))
+
+    
+    Ke = (2 * np.pi * E * h_e * r_mean / Le) * np.array([[1, -1],
+                                                        [-1,  1]])
+    cfc.assem(Edof[el, :], K, Ke)
+
+# Bcs
+bc = np.array([nnodes])  
+bcVal = np.array([0.0])
+
+# Applying distributed load
+sigma_r = -120e6  # 1 MPa
+r_inner = coords[0]
+h_inner = h0
+f[0, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
+
+
+a, r= cfc.solveq(K, f, bc, bcVal)
+
+
+plt.figure()
+plt.plot(coords, a * 1e3, 'o-', label='$u_r(r)$ [mm]')
+plt.xlabel('r [m]')
+plt.ylabel('Radial displacement [mm]')
+plt.title('Axisymmetric radial displacement')
+plt.grid(True)
+plt.legend()
+plt.savefig('Axisymmetric radial displacement (constant height)', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+for i in range(nnodes):
+    print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+
+# Computing radial stress
+sigma_rr_vals = np.zeros(num_el)
+r_centers = np.zeros(num_el)
+
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    Le = r2 - r1
+    r_mean = 0.5 * (r1 + r2)
+    r_centers[el] = r_mean
+
+    u1 = a[el, 0]
+    u2 = a[el + 1, 0]
+    du_dr = (u2 - u1) / Le
+
+    # Plane stress approximation
+    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
+    sigma_rr_vals[el] = sigma_rr
+
+# Plotting radial stress
+plt.figure()
+plt.plot(r_centers, sigma_rr_vals/1e6, 'o-', label=r'$\sigma_{rr}$ [MPa]')
+plt.xlabel('r [m]')
+plt.ylabel(r'$\sigma_{rr}$ [MPa]')
+plt.title('Radial stress distribution σ_rr(r)')
+plt.grid(True)
+plt.legend()
+plt.savefig('Radial stress distribution (constant height)', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+# %%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+
+# Assigment 2 - Calfem, varying area
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+b_outer = 0.25
+nu=0.3
+E=200e9
+h0 = 0.02
+Width = b
+num_el = 6
+nnodes = num_el + 1
+a_inner = 0.15
+
+coords = np.linspace(b_outer, a_inner, nnodes)
+
+display(coords)
+#coords = coords.reshape(-1,1)
+
+Edof = np.zeros((num_el, 2), dtype=int)
+for i in range(num_el):
+    Edof[i, 0] = i + 1       # First column
+    Edof[i, 1] = i + 2       # Second column
+
+#display(coords)
+display(Edof)
+
+num_dofs = np.max(Edof)
+
+#Dmat = E / (1-nu**2) * np.array([[1, nu],
+                                 #[nu,1]])
+
+num_dofs = np.max(Edof)
+K = np.zeros((num_dofs, num_dofs))
+f = np.zeros((num_dofs, 1))
+
+print("K shape:", K.shape)
+
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    Le = r2 - r1
+    r_mean = 0.5 * (r1 + r2)
+    
+    # variable thickness
+    h_e = h0 * (r_mean - a_inner) / (b_outer - a_inner) + h0
+
+    print('h_e',np.shape(h_e))
+    print('r_mean',np.shape(r_mean))
+
+    # local stiffness (axisymmetric linear element)
+    Ke = (2 * np.pi * E * h_e * r_mean / Le) * np.array([[1, -1],
+                                                        [-1,  1]])
+    cfc.assem(Edof[el, :], K, Ke)
+
+# --- Boundary conditions ---
+bc = np.array([nnodes])  # fix outer radius (clamped)
+bcVal = np.array([0.0])
+
+# Applying distributed load
+sigma_r = -120e6 
+r_inner = coords[0]
+h_inner = h0
+f[0, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
+
+
+a, r= cfc.solveq(K, f, bc, bcVal)
+
+
+plt.figure()
+plt.plot(coords, a * 1e3, 'o-', label='$u_r(r)$ [mm]')
+plt.xlabel('r [m]')
+plt.ylabel('Radial displacement [mm]')
+plt.title('Axisymmetric radial displacement')
+plt.grid(True)
+plt.legend()
+plt.savefig('Axisymmetric radial displacement (varying height)', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+for i in range(nnodes):
+    print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+
+# Computing normal stress, radial
+
+sigma_rr_vals = np.zeros(num_el)
+r_centers = np.zeros(num_el)
+
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    Le = r2 - r1
+    r_mean = 0.5 * (r1 + r2)
+    r_centers[el] = r_mean
+
+    u1 = a[el, 0]
+    u2 = a[el + 1, 0]
+    du_dr = (u2 - u1) / Le
+
+    # Plane stress approximation
+    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
+    sigma_rr_vals[el] = sigma_rr
+
+# Plotting radial stress
+plt.figure()
+plt.plot(r_centers, sigma_rr_vals/1e6, 'o-', label=r'$\sigma_{rr}$ [MPa]')
+plt.xlabel('r [m]')
+plt.ylabel(r'$\sigma_{rr}$ [MPa]')
+plt.title('Radial stress distribution σ_rr(r)')
+plt.grid(True)
+plt.legend()
+plt.savefig('Radial stress distribution (varying height)', dpi=dpi, bbox_inches='tight')
+plt.show()
+#%%
 
 
 '''
@@ -1577,7 +1811,7 @@ plt.plot(Coord, a, 'b')
 '''
 
 
-
+'''
 # --------------------------------------------
 # 1. Compute material stiffness D
 # --------------------------------------------
@@ -1652,5 +1886,6 @@ for eltopo, elx, ely in zip(Edof, Ex, Ey):  # Don't include eq in zip
 
 Ks = csr_matrix(K, shape=(nDofs, nDofs))
 a, r = cfc.spsolveq(Ks, f, bc, bcVal)
+'''
 
 #%%
