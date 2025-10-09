@@ -926,7 +926,7 @@ p_num = 120 * 10**6
 # Define symbols
 p, q0, a, b, E, nu, h, r, f_r, A1, A2 = symbols('p q0 a b E nu h r f_r A1 A2', real = True)
 
-D = 1 / 12 / (1 - nu**2) * E * (h**3) # bending stiffness
+D = E / (1 - nu**2)  # same as in problem 4 in the literature
 
 # radial force = 0
 f_r = 0
@@ -992,12 +992,11 @@ plt.axvline(b_num, color='grey', linestyle='--', label='b')
 plt.axhline(0, color='gray', linestyle='-', linewidth=0.5)
 plt.title('Normal stress')
 plt.xlabel(r"$r$ [mm]")
-plt.ylabel(r"$\sigma_{rr}$ [MPa]")
+plt.ylabel(r"$\sigma_{rr}$ [Pa]")
 plt.grid()
 plt.legend()
 plt.savefig('Normal stress', dpi=dpi, bbox_inches='tight')
 plt.show()
-
 # %%
 ####################################################################################################
 ####################################################################################################
