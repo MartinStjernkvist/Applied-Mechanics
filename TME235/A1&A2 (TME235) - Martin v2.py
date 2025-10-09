@@ -171,6 +171,7 @@ plt.ylim(bottom=min(w_vals)*1e3*1.1)
 plt.xlim(0, L)
 plt.show()
 
+
 L=L2
 x_vals = np.linspace(0, L, 200)
 q0 = -h_num * b_num * rho_num * g_num
@@ -902,6 +903,122 @@ for name, data in datasets.items():
         plt.legend()
         plt.savefig(str('smises_bottom_X_3m'), dpi=400, bbox_inches='tight')
         plt.show()
+
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 1 - Comparison between models
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('1 - Comparison between models')
+
+
+# np.savez('bernoulli_3.npz', x_values=, y_values=, z_values=)
+# np.savez('timoshenko_3.npz', x_values=, y_values=, z_values=)
+# np.savez('calfem_3.npz', x_values=, y_values=, z_values=)
+# np.savez('abaqus_3.npz', x_values=, y_values=, z_values=)
+
+# np.savez('bernoulli_03.npz', x_values=, y_values=, z_values=)
+# np.savez('timoshenko_03.npz', x_values=, y_values=, z_values=)
+# np.savez('calfem_03.npz', x_values=, y_values=, z_values=)
+# np.savez('abaqus_03.npz', x_values=, y_values=, z_values=)
+
+bernoulli_3 = np.load('bernoulli_3.npz')
+timoshenko_3 = np.load('timoshenko_3.npz')
+calfem_3 = np.load('calfem_3.npz')
+abaqus_3 = np.load('abaqus_3.npz')
+
+x_bernoulli_3, deflection_bernoulli_3, stress_bernoulli_3 = bernoulli_3['x_values'], bernoulli_3['y_values'], bernoulli_3['z_values']
+x_timoshenko_3, deflection_timoshenko_3, stress_timoshenko_3 = timoshenko_3['x_values'], timoshenko_3['y_values'], timoshenko_3['z_values']
+x_calfem_3, deflection_calfem_3, stress_calfem_3 = calfem_3['x_values'], calfem_3['y_values'], calfem_3['z_values']
+x_abaqus_3, deflection_abaqus_3, stress_abaqus_3 = abaqus_3['x_values'], abaqus_3['y_values'], abaqus_3['z_values']
+
+bernoulli_03 = np.load('bernoulli_03.npz')
+timoshenko_03 = np.load('timoshenko_03.npz')
+calfem_03 = np.load('calfem_03.npz')
+abaqus_03 = np.load('abaqus_03.npz')
+
+x_bernoulli_03, deflection_bernoulli_03, stress_bernoulli_03 = bernoulli_03['x_values'], bernoulli_03['y_values'], bernoulli_03['z_values']
+x_timoshenko_03, deflection_timoshenko_03, stress_timoshenko_03 = timoshenko_03['x_values'], timoshenko_03['y_values'], timoshenko_03['z_values']
+x_calfem_03, deflection_calfem_03, stress_calfem_03 = calfem_03['x_values'], calfem_03['y_values'], calfem_03['z_values']
+x_abaqus_03, deflection_abaqus_03, stress_abaqus_03 = abaqus_03['x_values'], abaqus_03['y_values'], abaqus_03['z_values']
+
+
+plt.figure()
+
+plt.plot(x_bernoulli_3, deflection_bernoulli_3, label='Euler-Bernoulli')
+plt.plot(x_timoshenko_3, deflection_timoshenko_3, label='')
+plt.plot(x_calfem_3, deflection_calfem_3, label='Calfem')
+plt.plot(x_abaqus_3, deflection_abaqus_3, label='Abaqus')
+
+plt.title('Deflection comparison (L=3m)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
+plt.grid(True)
+plt.legend()
+plt.savefig('comparison deflection 3m', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+
+plt.figure()
+
+plt.plot(x_bernoulli_03, deflection_bernoulli_03, label='Euler-Bernoulli')
+plt.plot(x_timoshenko_03, deflection_timoshenko_03, label='')
+plt.plot(x_calfem_03, deflection_calfem_03, label='Calfem')
+plt.plot(x_abaqus_03, deflection_abaqus_03, label='Abaqus')
+
+plt.title('Deflection comparison (L=3m)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
+plt.grid(True)
+plt.legend()
+plt.savefig('comparison deflection 03m', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+plt.figure()
+
+plt.plot(x_bernoulli_3, stress_bernoulli_3, label='Euler-Bernoulli')
+plt.plot(x_timoshenko_3, stress_timoshenko_3, label='')
+plt.plot(x_calfem_3, stress_calfem_3, label='Calfem')
+plt.plot(x_abaqus_3, stress_abaqus_3, label='Abaqus')
+
+plt.title('Stress comparison (L=3m)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
+plt.grid(True)
+plt.legend()
+plt.savefig('comparison stress 3m', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
+plt.figure()
+
+plt.plot(x_bernoulli_03, stress_bernoulli_03, label='Euler-Bernoulli')
+plt.plot(x_timoshenko_03, stress_timoshenko_03, label='')
+plt.plot(x_calfem_03, stress_calfem_03, label='Calfem')
+plt.plot(x_abaqus_03, stress_abaqus_03, label='Abaqus')
+
+plt.title('Stress comparison (L=0.3m)')
+plt.xlabel('x (m)')
+plt.ylabel('w (mm)')
+plt.grid(True)
+plt.legend()
+plt.savefig('comparison stress 03m', dpi=dpi, bbox_inches='tight')
+plt.show()
+
+
 
 
 #%%
