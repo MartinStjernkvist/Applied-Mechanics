@@ -80,6 +80,115 @@ def fig(fig_name):
 ####################################################################################################
 ####################################################################################################
 
+# --------------------------------------------
+# ASSIGNMENT 3 - Axisymmetric disc
+# --------------------------------------------
+# q = 15 * 10**6 # Pa
+# b_radius = 0.3 # m
+# a_radius = 0.1 # m
+# h = a_radius / 4
+# E = 210 * 10**9 # Pa
+# nu = 0.3
+# sigma_y = 400 * 10**6 # Pa
+# F = 0
+
+
+# --------------------------------------------
+# ASSIGNMENT 3 - Axisymmetric disc
+# --------------------------------------------
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 3 - numerical
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('3 - numerical')
+
+# define symbols
+r, q0, b, a, E, nu, h, A1, A2, A3, A4 = symbols('r q0 b a E nu h A1 A2 A3 A4', real = True)
+
+q = q0 * (r - a) / (b - a)
+
+D = E * h**3 / (12 * (1 - nu**2))
+w = integrate(1 /r * integrate(r * integrate(1 / r * integrate(q * r / D, r), r), r), r) + A1 * r**2 * log(r / b) + A2 * r**2 + A3 * log(r / b) * A4
+
+M_r = D *(- w.diff(r, 2) - nu * w.diff(r, 1) / r)
+M_phi = D * (-w.diff(r, 1) - nu * w.diff(r, 2))
+
+V = M_r.diff(r, 1) +  1 / r * (M_r - M_phi)
+
+sigma_rr = E / (1 - nu**2) * (-z * w.diff(r, 2) - nu * z * w.diff(r, 1))
+sigma_phiphi = E / (1 - nu**2) * (-nu * z * w.diff(r, 2) - z * w.diff(r, 1))
+
+boundary_condition = [
+    M_r.subs(r, a),
+    M_phi.subs()        
+]
+
+#%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #%%
 ####################################################################################################
@@ -89,7 +198,7 @@ def fig(fig_name):
 
 
 
-# Assignment 1 - ...
+# Assignment 3 - numerical
 
 
 
@@ -97,6 +206,56 @@ def fig(fig_name):
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('1 - ...')
+new_prob('3 - numerical')
+
+# Define symbols
+F_sym, q0_sym, a_sym, b_sym, E_sym, nu_sym, h_sym, r_sym, A1_sym, A2_sym, A3_sym, A4_sym = symbols('F q0 a b E nu h r A1 A2 A3 A4', real = True)
+
+D_sym = 1/12/(1-nu_sym**2)*E_sym*(h_sym**3) # bending stiffness
+
+q_sym = q0_sym*(r_sym-a_sym)/(b_sym-a_sym)          # distributed load
+
+# Formulate general solutions
+w = integrate(1 / r_sym * integrate(r_sym * integrate(1 / r_sym * integrate(q * r_sym / D_sym, r_sym), r_sym), r_sym), r_sym)+\
+    A1_sym * r_sym**2 * log(r_sym / b_sym) + A2_sym * r_sym**2 + A3_sym * log(r_sym / b_sym) + A4_sym # deflection field
+
+wprime = diff(w, r_sym)                          # rotation field
+
+Mr = D_sym * (-diff(wprime, r_sym) - nu_sym / r_sym * wprime )   # radial bending moment field
+Mphi = D_sym * (-1 / r_sym * wprime - nu_sym * diff(wprime, r_sym))  # circumferential bending moment field
+V = diff(Mr, r_sym) + 1 / r_sym * (Mr - Mphi)           # shear force field
+
+# Apply the boundary conditions
+boundary_conditions = [
+Mr.subs(r_sym, a_sym),     # inner boundary radial bending moment free
+V.subs(r_sym, a_sym) - F_sym,    # inner boundary shear force applied
+w.subs(r_sym, b_sym),      # outer boundary deflection fixed
+wprime.subs(r_sym, b_sym), # outer boundary rotation fixed
+]
+
+# Solve for unknown constants
+unknowns = (A1_sym, A2_sym, A3_sym, A4_sym)
+integration_constants= solve(boundary_conditions, unknowns)
+print('\nintegration constants:')
+display(integration_constants)
+
+# Formulate the deflection field
+w_ = w.subs(integration_constants) # constants substituted
+print("w_(r) = ")
+display(w_)
+
+# Plot the deflection field for a given set of parameters
+w_func = lambdify((F_sym, q0_sym, E_sym, nu_sym, h_sym, r_sym), w_, 'numpy')
+
+# w_eval = simplify(w_.subs({F_sym:1., q_sym:0., E:200e3, nu_sym:0.3, a_sym:100, b_sym:500, h_sym:4})) # parameters substituted
+
+r_vals = np.linspace(a_radius, b_radius, 401)
+w_vals = w_func(F, q, E, nu, h, r_vals)
+
+plt.figure()
+plt.plot(r_vals, w_vals, "b-")
+plt.xlabel(r"$r$ [mm]")
+plt.ylabel(r"$w$ [mm]")
+fig('displacement')
 
 #%%
