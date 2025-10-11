@@ -1,6 +1,5 @@
 #%%
 # %matplotlib widget
-from quadmesh import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,6 +26,7 @@ import calfem.utils as cfu
 from scipy.sparse import coo_matrix, csr_matrix
 import matplotlib.cm as cm
 
+from pathlib import Path
 
 def new_prob(string):
     print_string = '\n--------------------------------------------\n' + 'Assignment ' + str(string) + '\n--------------------------------------------\n'
@@ -46,6 +46,13 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 plt.rc('figure', figsize=(8,4))
+
+script_dir = Path(__file__).parent
+
+def sfig(fig_name):
+    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
 
 #%%
 ####################################################################################################
@@ -71,6 +78,7 @@ plt.rc('figure', figsize=(8,4))
 L1 = 3
 L2 = 0.3
 
+sigma_yield = 550 * 10**6 
 E_num = 220 * 10**9
 b_num = 0.05
 h_num = b_num
@@ -147,45 +155,101 @@ integration_constants = solve(boundary_conditions, 'C1, C2, C3, C4', real=True)
 print('\nintegration constants:')
 display(integration_constants)
 
+# displacement function with constants substituted
 solution = w.subs(integration_constants)
 display(simplify(solution))
-
 w_func = lambdify((x, L, q0, P, E, I), solution, 'numpy')
 
-L=L1
-x_vals = np.linspace(0, L, 200)
+# moment function with constants substituted
+M_solution = M.subs(integration_constants)
+M_func = lambdify((x, L, q0, P, E, I), M_solution, 'numpy')
 
-x_vals = np.linspace(0, L, 200)
-w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num)
+# Compute stresses at z = -h/2 (bottom surface)
+z = -h_num/2
 
-plt.figure()
-plt.plot(x_vals, w_vals*1e3, 'b-')
-plt.axhline(0, color='black', linestyle='--')
-plt.title('Beam deflection, combined Loading L=3')
-plt.xlabel('x (m)')
-plt.ylabel('w (mm)')
-plt.grid(True)
-plt.ylim(bottom=min(w_vals)*1e3*1.1)
-plt.xlim(0, L)
-plt.show()
+def euler_bernoulli_analysis(L):
+    
+    x_vals  = np.linspace(0, L, 200)
 
+    w_vals  = w_func(x_vals, L, q0_num, P_num, E_num, I_num)
+    M_vals = M_func(x_vals, L, q0_num, P_num, E_num, I_num)
+    sigma_xx = -M_vals * z / I_num  
+    sigma_vM = np.abs(sigma_xx)  
 
-L=L2
-x_vals = np.linspace(0, L, 200)
-q0 = -h_num * b_num * rho_num * g_num
-x_vals = np.linspace(0, L, 200)
-w_vals = w_func(x_vals, L, q0, P_num, E_num, I_num)
+    # maximum stresses
+    max_sigma_xx = np.max(np.abs(sigma_xx))
+    max_sigma_vM = np.max(sigma_vM)
+    max_stress_location = x_vals[np.argmax(sigma_vM)]
 
-plt.figure()
-plt.plot(x_vals, w_vals*1e3, 'b-')
-plt.axhline(0, color='black', linestyle='--')
-plt.title('Beam deflection, combined Loading (L=0.3)')
-plt.xlabel('x (m)')
-plt.ylabel('w (mm)')
-plt.grid(True)
-plt.ylim(bottom=min(w_vals)*1e3*1.1)
-plt.xlim(0, L)
-plt.show()
+    safety_factor = sigma_yield / max_sigma_vM
+    will_yield = max_sigma_vM > sigma_yield
+    
+    # Plot 1: Deflection
+    plt.figure()
+    plt.plot(x_vals, w_vals*1e3, 'b-')
+    plt.title(f'Beam Deflection at L={L}m')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('Deflection (mm)')
+    plt.grid(True, alpha=0.3)
+    # plt.axhline(0, color='black', linestyle='--')
+    plt.xlim(0, L)
+    plt.tight_layout()
+    sfig('deflection_' + str(L) + '.png')
+    plt.show()
+
+    # Plot 2: Normal stress σ_xx
+    plt.figure()
+    plt.plot(x_vals, sigma_xx/1e6, 'r-')
+    plt.title('Normal Stress σ_xx at z=-h/2 (bottom surface)')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('Normal Stress (MPa)')
+    plt.grid(True, alpha=0.3)
+    plt.axhline(0, color='black', linestyle='--')
+    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
+    # plt.axhline(-sigma_yield/1e6, color='orange', linestyle='--')
+    plt.xlim(0, L)
+    plt.legend()
+    plt.tight_layout()
+    sfig('sigmaxx_' + str(L) + '.png')
+    plt.show()
+
+    # Plot 3: von Mises stress
+    plt.figure()
+    plt.plot(x_vals, sigma_vM/1e6, 'g-')
+    plt.title('von Mises Effective Stress σ_vM at z=-h/2')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('von Mises Stress (MPa)')
+    plt.grid(True, alpha=0.3)
+    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
+    plt.xlim(0, L)
+    plt.legend()
+    plt.tight_layout()
+    sfig('vonmises_' + str(L) + '.png')
+    plt.show()
+    
+    print(f"\n{'='*70}")
+    print(f"STRESS ANALYSIS RESULTS FOR L={L}m")
+    print(f"{'='*70}")
+    print(f"Beam properties:")
+    print(f"  Length: {L} m")
+    print(f"  Cross-section: {b_num*1e3:.1f} mm × {h_num*1e3:.1f} mm")
+    print(f"  Material: Steel (E = {E_num/1e9:.0f} GPa, σ_yield = {sigma_yield/1e6:.0f} MPa)")
+    print(f"\nLoading:")
+    print(f"\nStress at z = -h/2 (bottom surface, maximum tension):")
+    print(f"  Maximum |σ_xx|: {max_sigma_xx/1e6:.2f} MPa")
+    print(f"  Maximum σ_vM: {max_sigma_vM/1e6:.2f} MPa")
+    print(f"  Location of max stress: x = {max_stress_location:.3f} m")
+    print(f"\nYield assessment (von Mises criterion):")
+    print(f"  Yield strength: {sigma_yield/1e6:.0f} MPa")
+    print(f"  Safety factor: {safety_factor:.2f}")
+    if will_yield:
+        print(f"  ⚠️  BEAM WILL YIELD - Maximum stress exceeds yield strength!")
+    else:
+        print(f"  ✓  Beam is safe - No yielding expected")
+    print(f"{'='*70}\n")
+    
+euler_bernoulli_analysis(L1)
+euler_bernoulli_analysis(L2)
 
 # %%
 ####################################################################################################
@@ -294,7 +358,7 @@ plt.grid(True)
 plt.axhline(0, color='black', linestyle='--')
 plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
 plt.xlim(0, L)
-plt.savefig('TIMOSHENKO_1', dpi=dpi, bbox_inches='tight')
+plt.savefig('TIMOSHENKO_1', dpi=dpi, bbox_inches='figures/tight')
 plt.show()
 
 L=L2
