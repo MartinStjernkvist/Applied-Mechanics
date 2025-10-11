@@ -247,8 +247,10 @@ def euler_bernoulli_analysis(L):
         print(f"  ✓  Beam is safe - No yielding expected")
     print(f"{'='*70}\n")
     
-euler_bernoulli_analysis(L1)
-euler_bernoulli_analysis(L2)
+    return x_vals, w_vals, M_vals, sigma_xx, sigma_vM, max_sigma_xx, sigma_vM, max_stress_location, safety_factor, will_yield
+
+x_vals_L1, w_vals_L1, M_vals_L1, sigma_xx_L1, sigma_vM_L1, max_sigma_xx_L1, sigma_vM_L1, max_stress_location_L1, safety_factor_L1, will_yield_L1 = euler_bernoulli_analysis(L1)
+x_vals_L2, w_vals_L2, M_vals_L2, sigma_xx_L2, sigma_vM_L2, max_sigma_xx_L2, sigma_vM_L2, max_stress_location_L2, safety_factor_L2, will_yield_L2 = euler_bernoulli_analysis(L2)
 
 # %%
 ####################################################################################################
@@ -393,9 +395,12 @@ def timoshenko_analysis(L):
     print(f"\nYield assessment (von Mises criterion):")
     print(f"  Safety factor: {safety_factor:.2f}")
     print(f"{'='*70}\n")
+    
+    return x_vals, w_vals, M_vals, sigma_xx, sigma_vM, max_sigma_xx, sigma_vM, max_sigma_xx, max_sigma_vM, max_stress_location,safety_factor, will_yield
 
-timoshenko_analysis(L1)
-timoshenko_analysis(L2)
+# run the analysis function
+x_vals_L1, w_vals_L1, M_vals_L1, sigma_xx_L1, sigma_vM_L1, max_sigma_xx_L1, sigma_vM_L1, max_sigma_xx_L1, max_sigma_vM_L1, max_stress_location_L1,safety_factor_L1, will_yield_L1 = timoshenko_analysis(L1)
+x_vals_L2, w_vals_L2, M_vals_L2, sigma_xx_L2, sigma_vM_L2, max_sigma_xx_L2, sigma_vM_L2, max_sigma_xx_L2, max_sigma_vM_L2, max_stress_location_L2,safety_factor_L2, will_yield_L2 = timoshenko_analysis(L2)
 
 #%%
 ####################################################################################################
