@@ -135,11 +135,11 @@ x, L, q0, P, E, I = symbols('x L q0 P E I')
 
 w = Function('w')(x) # w is a function of x
 
-diffeq1 = Eq(E*I * diff(w, x, 4), q0)
+diffeq1 = Eq(E * I * diff(w, x, 4), q0)
 
 w = dsolve(diffeq1, w).rhs
 
-M = -E*I*w.diff(x, 2)
+M = -E * I * w.diff(x, 2)
 
 # Boundary conditions for distributed load
 boundary_conditions = [ 
@@ -164,15 +164,14 @@ w_func = lambdify((x, L, q0, P, E, I), solution, 'numpy')
 M_solution = M.subs(integration_constants)
 M_func = lambdify((x, L, q0, P, E, I), M_solution, 'numpy')
 
-# Compute stresses at z = -h/2 (bottom surface)
-z = -h_num/2
-
 def euler_bernoulli_analysis(L):
     
-    x_vals  = np.linspace(0, L, 200)
-
-    w_vals  = w_func(x_vals, L, q0_num, P_num, E_num, I_num)
+    x_vals = np.linspace(0, L, 200)
+    w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num)
     M_vals = M_func(x_vals, L, q0_num, P_num, E_num, I_num)
+    
+    # Compute stresses at z = -h/2 (bottom surface)
+    z = -h_num/2
     sigma_xx = -M_vals * z / I_num  
     sigma_vM = np.abs(sigma_xx)  
 
@@ -269,50 +268,12 @@ euler_bernoulli_analysis(L2)
 ####################################################################################################
 new_prob('1 - TIMOSHENKO')
 
-#############
-# Point load
-
 x, q0, E, I, Ks, G, A, L, P = symbols('x q0 E I Ks G A L P', real=True)
 
 f_phi = Function('phi') # phi is a function of x
 
 ## Define the differential equation in terms of phi
-diffeq_phi = Eq(E * I * f_phi(x).diff(x, 3), 0)
-
-## Solve the differential equation for phi(x) (eq. 3.35 LN)
-phi = dsolve(diffeq_phi, f_phi(x)).rhs
-
-## Solve the differential equation for w(x) (eq. 3.36 LN)
-w = Function('w') # w is a function of x
-diffeq_w = Eq(w(x).diff(x), -E * I / (G * Ks * A)*phi.diff(x,2) + phi)
-w        = dsolve(diffeq_w, w(x)).rhs
-
-## Define boundary conditions
-M = -E*I*phi.diff(x)
-bc_eqs = [
-            Eq(w.subs(x, 0), 0),                        # w(0) = 0
-            Eq(diff(w, x).subs(x, 0), 0),               # w'(0) = 0
-            Eq(diff(w, x, 2).subs(x, L), 0),            # w''(L) = 0
-            Eq(diff(w, x, 3).subs(x, L), -P/(E*I))      # w'''(L) = -P/(EI)
-]
-
-## Solve for the integration constants
-integration_constants = solve(bc_eqs, 'C1, C2, C3, C4', real=True)
-
-## Substitute the integration constants into the solution
-solution1 = w.subs(integration_constants)
-display(solution1)
-
-##################
-# Distributed load
-
-## Define symbolic variables
-x, q0, E, I, Ks, G, A, L = symbols('x q0 E I Ks G A L', real=True)
-
-f_phi = Function('phi') # phi is a function of x
-
-## Define the differential equation in terms of phi
-diffeq_phi = Eq(E*I*f_phi(x).diff(x, 3), q0)
+diffeq_phi = Eq(E * I * f_phi(x).diff(x, 3), q0)
 
 ## Solve the differential equation for phi(x) (eq. 3.35 LN)
 phi = dsolve(diffeq_phi, f_phi(x)).rhs
@@ -323,62 +284,118 @@ diffeq_w = Eq(w(x).diff(x), -E*I/(G*Ks*A)*phi.diff(x,2) + phi)
 w        = dsolve(diffeq_w, w(x)).rhs
 
 ## Define boundary conditions
-M = -E * I * phi.diff(x)
-boundary_conditions1 = [ w.subs(x, 0), 0,               #w(0) = 0
-                        w.diff(x).subs(x, 0),           #w'(0) = 0
-                        M.subs(x, L), 0,                #w''(L) = 0
-                        w.diff(x,3).subs(x, L), 0]      #w'''(L) = 0
+M = -E*I*phi.diff(x)
+# Boundary conditions for distributed load
+boundary_conditions = [ w.subs(x, 0),                           #w(0) = 0
+                        w.diff(x).subs(x, 0),                   #w'(0) = 0
+                        M.subs(x, L),                           #w''(L) = 0
+                        w.diff(x,3).subs(x, L) - P/(-E*I)]      #w'''(L) = -P
 
 ## Solve for the integration constants
-integration_constants = solve(boundary_conditions1, 'C1, C2, C3, C4', real=True)
+integration_constants = solve(boundary_conditions, 'C1, C2, C3, C4', real=True)
 
 ## Substitute the integration constants into the solution
-solution2 = w.subs(integration_constants)
-display(solution2)
+solution = w.subs(integration_constants)
+display(solution)
 
-solution_total = solution1 + solution2
-display(simplify(solution_total))
+w_func = lambdify((x, L, q0, P, E, I, Ks, A, G), solution, 'numpy')
 
-w_func = lambdify((x, L, q0, P, E, I, Ks, A, G), solution_total, 'numpy')
+# Create moment function with constants substituted
+M_solution = M.subs(integration_constants)
+M_func = lambdify((x, L, q0, P, E, I, Ks, A, G), M_solution, 'numpy')
 
-## Plugging in values for the length of the beam and plotting
 
-L = L1
-q0_num = -((m_num * g_num)/L)    
+def timoshenko_analysis(L):
+    
+    x_vals = np.linspace(0, L, 200)
+    w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num, A_num, G_num, Ks_num)
+    M_vals = M_func(x_vals, L, q0_num, P_num, E_num, I_num, A_num, G_num, Ks_num)
 
-x_vals = np.linspace(0, L, 200)
-w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num, A_num, G_num, Ks_num)
+    # Compute stresses at z = -h/2
+    z = -h_num/2
+    sigma_xx = -M_vals * z / I_num  # Normal stress from bending
+    sigma_vM = np.abs(sigma_xx)  # von Mises stress
 
-plt.figure()
-plt.plot(x_vals, w_vals * 1e3, 'b-')
-plt.title('Beam Deflection, combined loading (L=3)')
-plt.xlabel('x (m)')
-plt.ylabel('w (mm)')
-plt.grid(True)
-plt.axhline(0, color='black', linestyle='--')
-plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
-plt.xlim(0, L)
-plt.savefig('TIMOSHENKO_1', dpi=dpi, bbox_inches='figures/tight')
-plt.show()
+    # Find maximum stresses
+    max_sigma_xx = np.max(np.abs(sigma_xx))
+    max_sigma_vM = np.max(sigma_vM)
+    max_stress_location = x_vals[np.argmax(sigma_vM)]
+    safety_factor = sigma_yield / max_sigma_vM
+    will_yield = max_sigma_vM > sigma_yield
 
-L=L2
-q0_num = -((m_num * g_num)/L2)
+    plt.figure()
+    plt.plot(x_vals, w_vals*1e3, 'b-')
+    plt.title(f'Beam Deflection at L={L}m (Timoshenko)')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('Deflection (mm)')
+    plt.grid(True, alpha=0.3)
+    # plt.axhline(0, color='black', linestyle='--')
+    plt.xlim(0, L)
+    plt.tight_layout()
+    sfig('deflection_timo_' + str(L) + '.png')
+    plt.show()
 
-x_vals = np.linspace(0, L, 200)
-w_vals = w_func(x_vals, L, q0_num, P_num, E_num, I_num, A_num, G_num, Ks_num)
+    plt.figure()
+    plt.plot(x_vals, sigma_xx/1e6, 'r-')
+    plt.title('Normal Stress σ_xx at z=-h/2 (bottom surface)')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('Normal Stress (MPa)')
+    plt.grid(True, alpha=0.3)
+    plt.axhline(0, color='black', linestyle='--')
+    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
+    # plt.axhline(-sigma_yield/1e6, color='orange', linestyle='--')
+    plt.xlim(0, L)
+    plt.legend()
+    plt.tight_layout()
+    sfig('sigmaxx_timo_' + str(L) + '.png')
+    plt.show()
 
-plt.figure()
-plt.plot(x_vals, w_vals*1e3, 'b-', linewidth=2)
-plt.title('Beam deflection, combined loading (L=0.3)')
-plt.xlabel('x (m)')
-plt.ylabel('w (mm)')
-plt.grid(True)
-plt.axhline(0, color='black', linestyle='--')
-plt.ylim(bottom=min(w_vals) * 1e3 * 1.1)
-plt.xlim(0, L)
-plt.savefig('TIMOSHENKO_2', dpi=dpi, bbox_inches='tight')
-plt.show()
+    plt.figure()
+    plt.plot(x_vals, sigma_vM/1e6, 'g-')
+    plt.title('von Mises Effective Stress σ_vM at z=-h/2')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('von Mises Stress (MPa)')
+    plt.grid(True, alpha=0.3)
+    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
+    plt.xlim(0, L)
+    plt.legend()
+    plt.tight_layout()
+    sfig('vonmises_timo_' + str(L) + '.png')
+    plt.show()
 
+
+    sigma_MPa = sigma_xx / 1e6
+    # Create a DataFrame
+    df = pd.DataFrame({
+        'Position (m)': x_vals,
+        'Normal Stress (MPa)': sigma_MPa
+    })
+
+    # Save to CSV
+    df.to_csv('normal_stress_timo_3m.csv', index=False)
+
+    print(f"\n{'='*70}")
+    print(f"STRESS ANALYSIS RESULTS FOR L={L}m (Timoshenko Beam Theory)")
+    print(f"{'='*70}")
+    print(f"Beam properties:")
+    print(f"  Length: {L} m")
+    print(f"  Cross-section: {b_num*1e3:.1f} mm × {h_num*1e3:.1f} mm")
+    print(f"  Material: Steel (E = {E_num/1e9:.0f} GPa, G = {G_num/1e9:.1f} GPa)")
+    print(f"  Shear correction factor Ks: {Ks_num:.3f}")
+    print(f"  Yield strength: {sigma_yield/1e6:.0f} MPa")
+    print(f"\nLoading:")
+    print(f"  Distributed load q₀: {q0_num:.2f} N/m")
+    print(f"  Point load P: {P_num:.2f} N (at free end)")
+    print(f"\nStress at z = -h/2 (bottom surface, maximum tension):")
+    print(f"  Maximum |σ_xx|: {max_sigma_xx/1e6:.2f} MPa")
+    print(f"  Maximum σ_vM: {max_sigma_vM/1e6:.2f} MPa")
+    print(f"  Location of max stress: x = {max_stress_location:.3f} m")
+    print(f"\nYield assessment (von Mises criterion):")
+    print(f"  Safety factor: {safety_factor:.2f}")
+    print(f"{'='*70}\n")
+
+timoshenko_analysis(L1)
+timoshenko_analysis(L2)
 
 #%%
 ####################################################################################################
