@@ -266,7 +266,7 @@ x_vals_bernoulli_L2, w_vals_bernoulli_L2, sigma_xx_bernoulli_L2 = euler_bernoull
 
 
 
-# Assigment 1 - TIMOSHENKO
+# Assigment 1 - timoshenko
 
 
 
@@ -274,7 +274,7 @@ x_vals_bernoulli_L2, w_vals_bernoulli_L2, sigma_xx_bernoulli_L2 = euler_bernoull
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('1 - TIMOSHENKO')
+new_prob('1 - timoshenko')
 
 x, q0, E, I, Ks, G, A, L, P = symbols('x q0 E I Ks G A L P', real=True)
 
@@ -484,7 +484,6 @@ def calfem_analysis_A1(L):
         # Applying the force to f vector
         f[eltopo[5] - 1] += nodal_force  
         f[eltopo[7] - 1] += nodal_force  
-
 
     # Applying distributed load along the right edge
     right_elements = range(nelx - 1, nelx * nely, nelx)
@@ -893,7 +892,7 @@ plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, w_vals_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
-# plt.plot(x_vals_calfem_L1, deflection_calfem_L1, label='Calfem')
+# plt.plot(x_vals_calfem_L1, deflection_calfem_L1, linestyle ='dashed', label='Calfem')
 plt.plot(x_vals_abaqus_L1, deflection_abaqus_L1, linestyle ='dotted', label='Abaqus')
 
 plt.title('Deflection comparison (L=3m)')
