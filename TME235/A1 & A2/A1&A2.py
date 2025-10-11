@@ -51,7 +51,7 @@ plt.rc('figure', figsize=(8,4))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures2" / fig_name
+    fig_output_file = script_dir / "figures_final" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     
@@ -108,20 +108,11 @@ G_num = E_num / (2 * (1 + poisson_num))
 # ASSIGNMENT 2 - Axissymetry
 # --------------------------------------------
 
-a_num = 150 # mm
-b_num = 250 # mm
-h0_num = 20 # mm
+a_radius_num = 150 * 10**(-3) # m
+b_radius_num = 250 * 10**(-3) # m
+h0_num = 20 * 10**(-3) # m
 p_num = 120 * 10**6 # Pa
 E2_num = 200 * 10**9 # Pa
-
-# for calfem calculations:
-thickness = h0_num
-Emod = E2_num
-# lower left corner
-p1 = [a_num, 0]
-# upper right corner
-p2 = [b_num, h0_num]
-
 
 #%% 
 
@@ -358,7 +349,7 @@ def timoshenko_analysis(L):
     plt.xlabel('Position along beam (m)')
     plt.ylabel('Normal Stress (MPa)')
     plt.grid(True, alpha=0.3)
-    plt.axhline(0, color='black', linestyle='--')
+    # plt.axhline(0, color='black', linestyle='--')
     # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
     # plt.axhline(-sigma_yield/1e6, color='orange', linestyle='--')
     plt.xlim(0, L)
@@ -429,7 +420,7 @@ x_vals_timoshenko_L2, w_vals_timoshenko_L2, sigma_xx_timoshenko_L2 = timoshenko_
 
 
 
-# Assignment 1 - calfem
+# Assignment 1 - calfem analysis
 
 
 
@@ -656,20 +647,6 @@ def calfem_analysis_A1(L):
     sfig('calfem_normal_stress_' + str(L) + '.png')
     plt.legend()
 
-    # Convert stress to MPa (same as in your plot)
-    sigma_MPa = stress_xx_tot_avg / 1e6
-
-    # Create DataFrame
-    df = pd.DataFrame({
-        'Position (m)': x_unique,
-        'Normal Stress (MPa)': sigma_MPa
-    })
-
-    # Save to CSV
-    # df.to_csv(fr'normal_stress_calfem_L=3m.csv', index=False)
-
-    # print("Data saved to 'total_normal_stress.csv'")
-
     # Von mises
     plt.figure()
     plt.plot(x_unique, von_mises_avg/1e6, 'r-', linewidth=2.5, label='von Mises')
@@ -683,8 +660,90 @@ def calfem_analysis_A1(L):
     sfig('calfem_von_mises_' + str(L) + '.png')
     plt.show()
     
-calfem_analysis_A1(L1)
-calfem_analysis_A1(L2)
+    return x_unique, stress_xx_tot_avg
+    
+x_vals_calfem_L1, stress_calfem_L1 = calfem_analysis_A1(L1)
+x_vals_calfem_L2, stress_calfem_L2 = calfem_analysis_A1(L2)
+
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 1 - calfem mesh convergence
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('1 - calfem mesh convergence')
+
+# Data 1 from mesh study (L=3)
+data1 = [
+    (2000, -96.8837),
+    (3000, -107.1399),
+    (3000, -96.8784),
+    (3600, -102.2611),
+    (3600, -109.9881),
+    (4000, -111.2657),
+    (4500, -107.1336),
+    (5000, -113.2861),
+    (6000, -114.4148),
+    (7500, -113.2799),
+    (8000, -115.5584),
+    (10000, -116.0937),
+    (12000, -116.3842),
+    (13000, -116.4816)
+]
+
+# Data 2 from mesh study (L=?)
+data2 = [
+    (80, -0.0979),
+    (450, -0.1013),
+    (600, -0.1024),
+    (750, -0.1028),
+    (1500, -0.1035),
+    (2000, -0.1035),
+    (4000, -0.1037)
+]
+
+# Function to process data
+def process_data(data):
+    # Remove duplicates and sort by cells
+    unique_data = {}
+    for cells_val, disp_val in data:
+        if cells_val not in unique_data:
+            unique_data[cells_val] = disp_val
+    
+    # Sort by cells
+    sorted_pairs = sorted(unique_data.items(), key=lambda x: x[0])
+    cells_sorted = [pair[0] for pair in sorted_pairs]
+    displacement_sorted = [pair[1] for pair in sorted_pairs]
+    
+    return cells_sorted, displacement_sorted
+
+# Process both datasets
+cells1, displacement1 = process_data(data1)
+cells2, displacement2 = process_data(data2)
+
+plt.figure()
+plt.plot(cells1, displacement1, 'b-o', label='Maximum Displacement')
+plt.xlabel('Number of Cells')
+plt.ylabel('Maximum Displacement (mm)')
+plt.title('Mesh Convergence Study (L = 3 m)')
+fig('mesh convergence calfem L1')
+
+plt.figure()
+plt.plot(cells2, displacement2, 'r-s', label='Maximum Displacement')
+plt.xlabel('Number of Cells')
+plt.ylabel('Maximum Displacement (mm)')
+plt.title('Mesh Convergence Study (L = 0.3)')
+fig('mesh convergence calfem L2')
 
 # %%
 ####################################################################################################
@@ -695,7 +754,7 @@ calfem_analysis_A1(L2)
 
 
 
-# Assignment 1 - Read Abaqus data
+# Assignment 1 - read Abaqus data
 
 
 
@@ -704,7 +763,7 @@ calfem_analysis_A1(L2)
 ####################################################################################################
 ####################################################################################################
 
-# Read abaqus_results.rpt
+# read abaqus_results.rpt
 datasets = {}
 current_data = []
 current_name = None
@@ -830,13 +889,10 @@ plt.show()
 ####################################################################################################
 new_prob('1 - Comparison between models')
 
-
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, w_vals_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
-# plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashed', label='Timoshenko')
-# plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dotted', label='Timoshenko')
 # plt.plot(x_vals_calfem_L1, deflection_calfem_L1, label='Calfem')
 plt.plot(x_vals_abaqus_L1, deflection_abaqus_L1, linestyle ='dotted', label='Abaqus')
 
@@ -863,8 +919,8 @@ plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, sigma_xx_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, sigma_xx_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
-# plt.plot(x_vals_calfem_L1, stress_calfem_L1, linestyle ='dashed', label='Calfem')
-plt.plot(x_vals_abaqus_L1, -stress_abaqus_L1, linestyle ='dotted', label='Abaqus')
+plt.plot(x_vals_calfem_L1, -stress_calfem_L1, linestyle ='dashed', label='Calfem (switched sign)')
+plt.plot(x_vals_abaqus_L1, -stress_abaqus_L1, linestyle ='dotted', label='Abaqus (switched sign)')
 
 plt.title('Normal stress comparison (L=3m)')
 plt.xlabel('x (m)')
@@ -876,8 +932,8 @@ plt.figure()
 
 plt.plot(x_vals_bernoulli_L2, sigma_xx_bernoulli_L2, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L2, sigma_xx_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
-# plt.plot(x_vals_calfem_L2, stress_calfem_L2, linestyle ='dashed', label='Calfem')
-plt.plot(x_vals_abaqus_L2, -stress_abaqus_L2, linestyle ='dotted', label='Abaqus')
+plt.plot(x_vals_calfem_L2, -stress_calfem_L2, linestyle ='dashed', label='Calfem (switched sign)')
+plt.plot(x_vals_abaqus_L2, -stress_abaqus_L2, linestyle ='dotted', label='Abaqus (switched sign)')
 
 plt.title('Normal stress comparison (L=0.3m)')
 plt.xlabel('x (m)')
@@ -892,7 +948,7 @@ fig('comparison stress 03m')
 
 
 
-# Assignment 2 - numerical v2
+# Assignment 2 - numerical
 
 
 
@@ -900,8 +956,7 @@ fig('comparison stress 03m')
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-
-p_num = 120 * 10**6
+new_prob('2 - numerical')
 
 # Define symbols
 p, q0, a, b, E, nu, h, r, f_r, A1, A2 = symbols('p q0 a b E nu h r f_r A1 A2', real = True)
@@ -934,9 +989,9 @@ print("w(r) = ")
 display(w_)
 
 # Plot the deflection field for a given set of parameters
-wp_f = simplify(w_.subs({f_r:0, p:p_num, q0:0, E:E2_num, nu:poisson_num, a:a_num, b:b_num, h:h0_num})) # parameters substituted
+wp_f = simplify(w_.subs({f_r:0, p:p_num, q0:0, E:E2_num, nu:poisson_num, a:a_radius_num, b:b_radius_num, h:h0_num})) # parameters substituted
 
-r_num  = np.linspace(150, 250, 401)
+r_num  = np.linspace(a_radius_num, b_radius_num, 401)
 wr_num = [wp_f.subs({r:val}) for val in r_num]
 
 print(r_num)
@@ -944,15 +999,13 @@ print(wr_num)
 
 plt.figure()
 plt.plot(r_num, wr_num, "b-")
-plt.axvline(a_num, color='black', linestyle='--', label='a')
-plt.axvline(b_num, color='grey', linestyle='--', label='b')
+plt.axvline(a_radius_num, color='black', linestyle='--', label='a')
+plt.axvline(b_radius_num, color='grey', linestyle='--', label='b')
 plt.title('Radial deflection')
 plt.xlabel(r"$r$ [mm]")
 plt.ylabel(r"$w$ [mm]")
-plt.grid()
-plt.legend()
-plt.savefig('Radial deflection', dpi=dpi, bbox_inches='tight')
-plt.show()
+fig('Radial deflection')
+
 
 # Substitute the solution constants
 sigma_rr_ = simplify(sigma_r.subs(sol))
@@ -961,22 +1014,19 @@ print("sigma_rr(r) = ")
 display(sigma_rr_)
 
 # Plot the radial stress field for the same parameters
-sigma_rr_f = simplify(sigma_rr_.subs({f_r: 0, p:p_num, q0:0, E:E2_num, nu:poisson_num, a:a_num, b:b_num, h:h0_num}))
+sigma_rr_f = simplify(sigma_rr_.subs({f_r: 0, p:p_num, q0:0, E:E2_num, nu:poisson_num, a:a_radius_num, b:b_radius_num, h:h0_num}))
 
 sigma_rr_num = [sigma_rr_f.subs({r:val}) for val in r_num]
 
 plt.figure()
 plt.plot(r_num, sigma_rr_num, "r-")
-plt.axvline(a_num, color='black', linestyle='--', label='a')
-plt.axvline(b_num, color='grey', linestyle='--', label='b')
-plt.axhline(0, color='gray', linestyle='-', linewidth=0.5)
+plt.axvline(a_radius_num, color='black', linestyle='--', label='a')
+plt.axvline(b_radius_num, color='grey', linestyle='--', label='b')
 plt.title('Normal stress')
 plt.xlabel(r"$r$ [mm]")
 plt.ylabel(r"$\sigma_{rr}$ [Pa]")
-plt.grid()
-plt.legend()
-plt.savefig('Normal stress', dpi=dpi, bbox_inches='tight')
-plt.show()
+fig('Normal stress')
+
 # %%
 ####################################################################################################
 ####################################################################################################
@@ -994,23 +1044,19 @@ plt.show()
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('2 - Calfem')
+new_prob('2 - calfem, constant area')
 
-b_outer = 0.25
-nu=0.3
-E=200e9
-h0 = 0.02
-Width = b
-num_el = 6
+num_el = 500
 nnodes = num_el + 1
-a_inner = 0.15
 
-coords = np.linspace(b_outer, a_inner, nnodes)
+coords = np.linspace(a_radius_num, b_radius_num, nnodes)
+
+display(coords)
 #coords = coords.reshape(-1,1)
 
 Edof = np.zeros((num_el, 2), dtype=int)
 for i in range(num_el):
-    Edof[i, 0] = i + 1 
+    Edof[i, 0] = i + 1       
     Edof[i, 1] = i + 2       
 
 #display(coords)
@@ -1022,10 +1068,10 @@ num_dofs = np.max(Edof)
                                  #[nu,1]])
 
 num_dofs = np.max(Edof)
-K = np.zeros((num_dofs, num_dofs))
+K_num = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
-print("K shape:", K.shape)
+print("K shape:", K_num.shape)
 
 for el in range(num_el):
     r1 = coords[el]
@@ -1034,45 +1080,39 @@ for el in range(num_el):
     r_mean = 0.5 * (r1 + r2)
     
     # Constant thickness
-    h_e = h0
+    h_e = h0_num
 
     print('h_e',np.shape(h_e))
     print('r_mean',np.shape(r_mean))
 
-    
-    Ke = (2 * np.pi * E * h_e * r_mean / Le) * np.array([[1, -1],
+    # local stiffness (axisymmetric linear element)
+    Ke = (2 * np.pi * E2_num * h_e * r_mean / Le) * np.array([[1, -1],
                                                         [-1,  1]])
-    cfc.assem(Edof[el, :], K, Ke)
+    cfc.assem(Edof[el, :], K_num, Ke)
 
-# Bcs
-bc = np.array([nnodes])  
+# BCs
+bc = np.array([1])  # fix inner radius
 bcVal = np.array([0.0])
 
 # Applying distributed load
-sigma_r = -120e6  # 1 MPa
-r_inner = coords[0]
-h_inner = h0
-f[0, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
+sigma_r = -120e6 
+r_outer = coords[-1]
+h_inner = h0_num
+f[-1, 0] = 2 * np.pi * r_outer * h_inner * sigma_r  # negative radial direction
 
-
-a, r= cfc.solveq(K, f, bc, bcVal)
-
+a, r = cfc.solveq(K_num, f, bc, bcVal)
 
 plt.figure()
-plt.plot(coords, a * 1e3, 'o-', label='$u_r(r)$ [mm]')
+plt.plot(coords, a, 'o-', label='$u_r(r)$ [mm]')
 plt.xlabel('r [m]')
-plt.ylabel('Radial displacement [mm]')
-plt.title('Axisymmetric radial displacement')
-plt.grid(True)
-plt.legend()
-plt.savefig('Axisymmetric radial displacement (constant height)', dpi=dpi, bbox_inches='tight')
-plt.show()
-
+plt.ylabel('Radial displacement [m]')
+plt.title('Axisymmetric radial displacement of disc, constant height')
+fig('Axisymmetric radial displacement of disc, constant height')
 
 for i in range(nnodes):
     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
 
-# Computing radial stress
+# Computing normal stress
 sigma_rr_vals = np.zeros(num_el)
 r_centers = np.zeros(num_el)
 
@@ -1088,20 +1128,21 @@ for el in range(num_el):
     du_dr = (u2 - u1) / Le
 
     # Plane stress approximation
-    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
+    sigma_rr = E2_num / (1 - poisson_num**2) * (du_dr + poisson_num * (u1 + u2) / (2 * r_mean))
     sigma_rr_vals[el] = sigma_rr
 
 # Plotting radial stress
 plt.figure()
-plt.plot(r_centers, sigma_rr_vals/1e6, 'o-', label=r'$\sigma_{rr}$ [MPa]')
+plt.plot(r_centers, sigma_rr_vals)
 plt.xlabel('r [m]')
-plt.ylabel(r'$\sigma_{rr}$ [MPa]')
-plt.title('Radial stress distribution σ_rr(r)')
-plt.grid(True)
-plt.legend()
-plt.savefig('Radial stress distribution (constant height)', dpi=dpi, bbox_inches='tight')
-plt.show()
+plt.ylabel(r'$\sigma_{rr}$ [Pa]')
+plt.title('Radial stress distribution, constant height')
+fig('Radial stress distribution, constant height')
 
+print("Total reaction force:", np.sum(r))
+print("Expected load:", 2 * np.pi * coords[-1] * h0_num * (-sigma_r))
+print(f"Applying σ_rr = {sigma_r/1e6:.1f} MPa at r = {r_outer:.3f} m")
+print(f"Equivalent nodal force = {f[-1,0]:.2f} N")
 
 # %%
 ####################################################################################################
@@ -1120,18 +1161,12 @@ plt.show()
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
+new_prob('2 - calfem, varying area')
 
-
-b_outer = 0.25
-nu=0.3
-E=200e9
-h0 = 0.02
-Width = b
-num_el = 6
+num_el = 500
 nnodes = num_el + 1
-a_inner = 0.15
 
-coords = np.linspace(b_outer, a_inner, nnodes)
+coords = np.linspace(a_radius_num, b_radius_num, nnodes)
 
 display(coords)
 #coords = coords.reshape(-1,1)
@@ -1150,10 +1185,10 @@ num_dofs = np.max(Edof)
                                  #[nu,1]])
 
 num_dofs = np.max(Edof)
-K = np.zeros((num_dofs, num_dofs))
+K_num = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
-print("K shape:", K.shape)
+print("K shape:", K_num.shape)
 
 for el in range(num_el):
     r1 = coords[el]
@@ -1162,46 +1197,40 @@ for el in range(num_el):
     r_mean = 0.5 * (r1 + r2)
     
     # variable thickness
-    h_e = h0 * (r_mean - a_inner) / (b_outer - a_inner) + h0
+    h_e = h0_num * (r_mean - a_radius_num) / (b_radius_num - a_radius_num) + h0_num
 
     print('h_e',np.shape(h_e))
     print('r_mean',np.shape(r_mean))
 
     # local stiffness (axisymmetric linear element)
-    Ke = (2 * np.pi * E * h_e * r_mean / Le) * np.array([[1, -1],
+    Ke = (2 * np.pi * E2_num * h_e * r_mean / Le) * np.array([[1, -1],
                                                         [-1,  1]])
-    cfc.assem(Edof[el, :], K, Ke)
+    cfc.assem(Edof[el, :], K_num, Ke)
 
-# --- Boundary conditions ---
-bc = np.array([nnodes])  # fix outer radius (clamped)
+# BCs
+bc = np.array([1])  # fix inner radius
 bcVal = np.array([0.0])
 
 # Applying distributed load
 sigma_r = -120e6 
-r_inner = coords[0]
-h_inner = h0
-f[0, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
+r_inner = coords[-1]
+h_inner = h0_num
+f[-1, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
 
 
-a, r= cfc.solveq(K, f, bc, bcVal)
-
+a, r = cfc.solveq(K_num, f, bc, bcVal)
 
 plt.figure()
-plt.plot(coords, a * 1e3, 'o-', label='$u_r(r)$ [mm]')
+plt.plot(coords, a)
 plt.xlabel('r [m]')
-plt.ylabel('Radial displacement [mm]')
-plt.title('Axisymmetric radial displacement')
-plt.grid(True)
-plt.legend()
-plt.savefig('Axisymmetric radial displacement (varying height)', dpi=dpi, bbox_inches='tight')
-plt.show()
-
+plt.ylabel('Radial displacement [m]')
+plt.title('Axisymmetric radial displacement of disc, varying height')
+fig('Axisymmetric radial displacement of disc, varying height')
 
 for i in range(nnodes):
     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
 
-# Computing normal stress, radial
-
+# Computinging normal stress
 sigma_rr_vals = np.zeros(num_el)
 r_centers = np.zeros(num_el)
 
@@ -1217,17 +1246,15 @@ for el in range(num_el):
     du_dr = (u2 - u1) / Le
 
     # Plane stress approximation
-    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
+    sigma_rr = E2_num / (1 - poisson_num*2) * (du_dr + poisson_num * (u1 + u2) / (2 * r_mean))
     sigma_rr_vals[el] = sigma_rr
 
 # Plotting radial stress
 plt.figure()
-plt.plot(r_centers, sigma_rr_vals/1e6, 'o-', label=r'$\sigma_{rr}$ [MPa]')
+plt.plot(r_centers, sigma_rr_vals)
 plt.xlabel('r [m]')
-plt.ylabel(r'$\sigma_{rr}$ [MPa]')
-plt.title('Radial stress distribution σ_rr(r)')
-plt.grid(True)
-plt.legend()
-plt.savefig('Radial stress distribution (varying height)', dpi=dpi, bbox_inches='tight')
-plt.show()
+plt.ylabel(r'$\sigma_{rr}$ [Pa]')
+plt.title('Radial stress distribution, varying height')
+fig('Radial stress distribution, varying height')
+
 #%%
