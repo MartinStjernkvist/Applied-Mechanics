@@ -51,9 +51,18 @@ plt.rc('figure', figsize=(8,4))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file = script_dir / "figures2" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
+    
+def fig(fig_name):
+    '''
+    standard matplotlib commands
+    '''
+    plt.legend()
+    plt.grid(True, alpha = 0.3)
+    sfig(fig_name)
+    plt.show()
 
 #%%
 ####################################################################################################
@@ -695,6 +704,7 @@ calfem_analysis_A1(L2)
 ####################################################################################################
 ####################################################################################################
 
+# Read abaqus_results.rpt
 datasets = {}
 current_data = []
 current_name = None
@@ -721,8 +731,51 @@ with open('abaqus_results.rpt', 'r') as f:
     # Save last dataset
     if current_name and current_data:
         datasets[current_name] = np.array(current_data)
-        
-print(datasets.items())
+
+print("Available datasets from abaqus_results.rpt:")
+for name in datasets.keys():
+    print(f"  - '{name}'")
+print()
+
+# Read abaqus_results_mises.rpt
+datasets_mises = {}
+current_data = []
+current_name = None
+
+with open('abaqus_results_mises.rpt', 'r') as f:
+    for line in f:
+        # Detect dataset header: line with at least two words, first is 'X'
+        tokens = line.strip().split()
+        if len(tokens) >= 2 and tokens[0] == 'X':
+            # Save previous dataset
+            if current_name and current_data:
+                datasets_mises[current_name] = np.array(current_data)
+            # Start new dataset
+            current_name = ' '.join(tokens)
+            current_data = []
+        elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+            # Try to parse data lines
+            try:
+                values = [float(x.replace('E', 'e')) for x in line.split()]
+                if len(values) == 2:
+                    current_data.append(values)
+            except Exception:
+                pass  # skip lines that can't be parsed
+    # Save last dataset
+    if current_name and current_data:
+        datasets_mises[current_name] = np.array(current_data)
+
+print("Available datasets from abaqus_results_mises.rpt:")
+for name in datasets_mises.keys():
+    print(f"  - '{name}'")
+print()
+
+x_vals_abaqus_L1 = datasets['X s11_bottom_X_3m'][:, 0]
+deflection_abaqus_L1 = datasets['X u2_middle_X_3m'][:, 1]
+stress_abaqus_L1 = datasets['X s11_bottom_X_3m'][:, 1]
+x_vals_abaqus_L2 = datasets['X s11_bottom_X_03m'][:, 0]
+deflection_abaqus_L2 = datasets['X u2_middle_X_03m'][:, 1]
+stress_abaqus_L2 = datasets['X s11_bottom_X_03m'][:, 1]
 
 # Plot all datasets
 for name, data in datasets.items():
@@ -732,10 +785,11 @@ for name, data in datasets.items():
     plt.ylabel(name.split()[1] if len(name.split()) > 1 else '')
     plt.title(name)
     plt.legend()
-    plt.savefig(str(name), dpi=400, bbox_inches='tight')
+    sfig(str(name))
     plt.show()
 
-    
+
+# Mesh convergence data
 u2_3m = [-1.016e-4, -1.032e-4, -1.038e-4, -1.038e-4]
 u2_03m = [-1.148e-1, -1.165e-1, -1.170e-1, -1.170e-1]
 meshsize = [0.01, 0.005, 0.001, 0.0005]
@@ -757,57 +811,6 @@ plt.xlabel('meshsize (m)')
 plt.ylabel('displacement $w$')
 sfig(str(name))
 plt.show()
-
-
-datasets = {}
-current_data = []
-current_name = None
-
-with open('abaqus_results_mises.rpt', 'r') as f:
-    for line in f:
-        # Detect dataset header: line with at least two words, first is 'X'
-        tokens = line.strip().split()
-        if len(tokens) >= 2 and tokens[0] == 'X':
-            # Save previous dataset
-            if current_name and current_data:
-                datasets[current_name] = np.array(current_data)
-            # Start new dataset
-            current_name = ' '.join(tokens)
-            current_data = []
-        elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
-            # Try to parse data lines
-            try:
-                values = [float(x.replace('E', 'e')) for x in line.split()]
-                if len(values) == 2:
-                    current_data.append(values)
-            except Exception:
-                pass  # skip lines that can't be parsed
-    # Save last dataset
-    if current_name and current_data:
-        datasets[current_name] = np.array(current_data)
-        
-print(datasets.items())
-
-# Plot all datasets
-for name, data in datasets.items():
-    if name == 'X 3m':
-        plt.figure()
-        plt.plot(data[:, 0], data[:, 1], label= 'smises_bottom_X_03m')
-        plt.xlabel(name.split()[0])
-        plt.ylabel('smises_bottom_X_03m')
-        plt.title('smises_bottom_X_03m')
-        plt.legend()
-        sfig('smises_bottom_X_03m')
-        plt.show()
-    if name == 'X m':
-        plt.figure()
-        plt.plot(data[:, 0], data[:, 1], label= 'smises_bottom_X_3m')
-        plt.xlabel(name.split()[0])
-        plt.ylabel('smises_bottom_X_3m')
-        plt.title('smises_bottom_X_3m')
-        plt.legend()
-        sfig('smises_bottom_X_3m')
-        plt.show()
 
 #%%
 ####################################################################################################
@@ -831,69 +834,55 @@ new_prob('1 - Comparison between models')
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, w_vals_bernoulli_L1, label='Euler-Bernoulli')
-plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, label='Timoshenko')
-# plt.plot(x_vals_L1, deflection_calfem_3, label='Calfem')
-# plt.plot(x_vals_L1, deflection_abaqus_3, label='Abaqus')
+plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
+# plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashed', label='Timoshenko')
+# plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dotted', label='Timoshenko')
+# plt.plot(x_vals_calfem_L1, deflection_calfem_L1, label='Calfem')
+plt.plot(x_vals_abaqus_L1, deflection_abaqus_L1, linestyle ='dotted', label='Abaqus')
 
 plt.title('Deflection comparison (L=3m)')
 plt.xlabel('x (m)')
 plt.ylabel('w (mm)')
-plt.grid(True)
-plt.legend()
-plt.savefig('comparison deflection 3m', dpi=dpi, bbox_inches='tight')
-plt.show()
-
+fig('comparison deflection 3m')
 
 
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L2, w_vals_bernoulli_L2, label='Euler-Bernoulli')
-plt.plot(x_vals_timoshenko_L2, w_vals_timoshenko_L2, label='Timoshenko')
-# plt.plot(x_vals_L2, deflection_calfem_03, label='Calfem')
-# plt.plot(x_vals_L2, deflection_abaqus_03, label='Abaqus')
+plt.plot(x_vals_timoshenko_L2, w_vals_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
+# plt.plot(x_vals_calfem_L2, deflection_calfem_L2, linestyle ='dashed', label='Calfem')
+plt.plot(x_vals_abaqus_L2, deflection_abaqus_L2, linestyle ='dotted', label='Abaqus')
 
 plt.title(f'Deflection comparison (L= 0.3m)')
 plt.xlabel('x (m)')
 plt.ylabel('w (mm)')
-plt.grid(True)
-plt.legend()
-sfig('comparison deflection 03m')
-plt.show()
+fig('comparison deflection 03m')
 
 
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, sigma_xx_bernoulli_L1, label='Euler-Bernoulli')
-plt.plot(x_vals_timoshenko_L1, sigma_xx_timoshenko_L1, label='Timoshenko')
-# plt.plot(x_vals_L1, stress_calfem_3, label='Calfem')
-# plt.plot(x_vals_L1, stress_abaqus_3, label='Abaqus')
+plt.plot(x_vals_timoshenko_L1, sigma_xx_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
+# plt.plot(x_vals_calfem_L1, stress_calfem_L1, linestyle ='dashed', label='Calfem')
+plt.plot(x_vals_abaqus_L1, -stress_abaqus_L1, linestyle ='dotted', label='Abaqus')
 
 plt.title('Normal stress comparison (L=3m)')
 plt.xlabel('x (m)')
 plt.ylabel('sigma (mm)')
-plt.grid(True)
-plt.legend()
-sfig('comparison stress 3m')
-plt.show()
+fig('comparison stress 3m')
 
 
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L2, sigma_xx_bernoulli_L2, label='Euler-Bernoulli')
-plt.plot(x_vals_timoshenko_L2, sigma_xx_timoshenko_L2, label='Timoshenko')
-# plt.plot(x_vals_L2, stress_calfem_03, label='Calfem')
-# plt.plot(x_vals_L2, stress_abaqus_03, label='Abaqus')
+plt.plot(x_vals_timoshenko_L2, sigma_xx_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
+# plt.plot(x_vals_calfem_L2, stress_calfem_L2, linestyle ='dashed', label='Calfem')
+plt.plot(x_vals_abaqus_L2, -stress_abaqus_L2, linestyle ='dotted', label='Abaqus')
 
 plt.title('Normal stress comparison (L=0.3m)')
 plt.xlabel('x (m)')
 plt.ylabel('sigma (mm)')
-plt.grid(True)
-plt.legend()
-sfig('comparison stress 03m')
-plt.show()
-
-
-
+fig('comparison stress 03m')
 
 #%%
 ####################################################################################################
