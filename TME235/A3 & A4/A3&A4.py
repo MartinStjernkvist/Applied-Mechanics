@@ -91,7 +91,7 @@ E_num = 210 * 10**9 # Pa
 nu_num = 0.3
 sigma_y_num = 400 * 10**6 # Pa
 F_num = 0
-
+z_num = -h_num / 2
 # --------------------------------------------
 # ASSIGNMENT 3 - Axisymmetric disc
 # --------------------------------------------
@@ -154,24 +154,37 @@ w_func = lambdify((r, q, b, a, E, nu, h), w_solution, 'numpy')
 print(w_func)
 
 # normal stress function
-# sigma_rr_solution = simplify(sigma_rr.subs(integration_constants))
-# print('sigma_rr: ')
-# display(sigma_rr_solution)
-# sigma_rr_func = lambdify((r, q, b, a, E, nu, h), sigma_rr_solution, 'numpy')
-# print(sigma_rr_func)
+sigma_rr_solution = simplify(sigma_rr.subs(integration_constants))
+print('sigma_rr: ')
+display(sigma_rr_solution)
+sigma_rr_func = lambdify((r, q, b, a, E, nu, h, z), sigma_rr_solution, 'numpy')
+print(sigma_rr_func)
 
 r_vals = np.linspace(a_radius, b_radius, 401)
+
 w_vals = w_func(r_vals, q_num, b_radius, a_radius, E_num, nu_num, h_num)
+sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a_radius, E_num, nu_num, h_num, z_num)
+
 
 plt.figure()
 plt.plot(r_vals, w_vals)
-plt.axvline(a_radius, colo='black', linestyle='--', label='a')
+plt.axvline(a_radius, color='black', linestyle='--', label='a')
 plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+plt.title('Radial deflection')
 plt.xlabel('r [m]')
 plt.ylabel('w [m]')
-plt.title('Radial deflection')
 fig('test')
 
+
+plt.figure()
+plt.plot(r_vals, sigma_rr_vals)
+plt.axvline(a_radius, color='black', linestyle='--', label='a')
+plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+plt.axhline(-sigma_y_num, color='orange', linestyle='--', label='yield strength')
+plt.title('Radial stress')
+plt.xlabel('r [m]')
+plt.ylabel('sigma [Pa]')
+fig('test')
 
 #%%
 
