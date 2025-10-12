@@ -91,7 +91,6 @@ E_num = 210 * 10**9 # Pa
 nu_num = 0.3
 sigma_y_num = 400 * 10**6 # Pa
 F_num = 0
-z_num = -h_num / 2
 # --------------------------------------------
 # ASSIGNMENT 3 - Axisymmetric disc
 # --------------------------------------------
@@ -160,153 +159,38 @@ display(sigma_rr_solution)
 sigma_rr_func = lambdify((r, q, b, a, E, nu, h, z), sigma_rr_solution, 'numpy')
 print(sigma_rr_func)
 
-r_vals = np.linspace(a_radius, b_radius, 401)
 
-w_vals = w_func(r_vals, q_num, b_radius, a_radius, E_num, nu_num, h_num)
-sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a_radius, E_num, nu_num, h_num, z_num)
-
-
-plt.figure()
-plt.plot(r_vals, w_vals)
-plt.axvline(a_radius, color='black', linestyle='--', label='a')
-plt.axvline(b_radius, color='grey', linestyle='--', label='b')
-plt.title('Radial deflection')
-plt.xlabel('r [m]')
-plt.ylabel('w [m]')
-fig('test')
-
-
-plt.figure()
-plt.plot(r_vals, sigma_rr_vals)
-plt.axvline(a_radius, color='black', linestyle='--', label='a')
-plt.axvline(b_radius, color='grey', linestyle='--', label='b')
-plt.axhline(-sigma_y_num, color='orange', linestyle='--', label='yield strength')
-plt.title('Radial stress')
-plt.xlabel('r [m]')
-plt.ylabel('sigma [Pa]')
-fig('test')
-
-#%%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#%%
-####################################################################################################
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-# Assignment 3 - numerical
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_prob('3 - numerical')
-
-# Define symbols
-F_sym, q0_sym, a_sym, b_sym, E_sym, nu_sym, h_sym, r_sym, A1_sym, A2_sym, A3_sym, A4_sym = symbols('F q0 a b E nu h r A1 A2 A3 A4', real = True)
-
-D_sym = 1/12/(1-nu_sym**2)*E_sym*(h_sym**3) # bending stiffness
-
-q_sym = q0_sym*(r_sym-a_sym)/(b_sym-a_sym)          # distributed load
-
-# Formulate general solutions
-w = integrate(1 / r_sym * integrate(r_sym * integrate(1 / r_sym * integrate(q * r_sym / D_sym, r_sym), r_sym), r_sym), r_sym)+\
-    A1_sym * r_sym**2 * log(r_sym / b_sym) + A2_sym * r_sym**2 + A3_sym * log(r_sym / b_sym) + A4_sym # deflection field
-
-wprime = diff(w, r_sym)                          # rotation field
-
-Mr = D_sym * (-diff(wprime, r_sym) - nu_sym / r_sym * wprime )   # radial bending moment field
-Mphi = D_sym * (-1 / r_sym * wprime - nu_sym * diff(wprime, r_sym))  # circumferential bending moment field
-V = diff(Mr, r_sym) + 1 / r_sym * (Mr - Mphi)           # shear force field
-
-# Apply the boundary conditions
-boundary_conditions = [
-Mr.subs(r_sym, a_sym),     # inner boundary radial bending moment free
-V.subs(r_sym, a_sym) - F_sym,    # inner boundary shear force applied
-w.subs(r_sym, b_sym),      # outer boundary deflection fixed
-wprime.subs(r_sym, b_sym), # outer boundary rotation fixed
-]
-
-# Solve for unknown constants
-unknowns = (A1_sym, A2_sym, A3_sym, A4_sym)
-integration_constants= solve(boundary_conditions, unknowns)
-print('\nintegration constants:')
-display(integration_constants)
-
-# Formulate the deflection field
-w_ = w.subs(integration_constants) # constants substituted
-print("w_(r) = ")
-display(w_)
-
-# Plot the deflection field for a given set of parameters
-w_func = lambdify((F_sym, q0_sym, E_sym, nu_sym, h_sym, r_sym), w_, 'numpy')
-
-# w_eval = simplify(w_.subs({F_sym:1., q_sym:0., E:200e3, nu_sym:0.3, a_sym:100, b_sym:500, h_sym:4})) # parameters substituted
-
-r_vals = np.linspace(a_radius, b_radius, 401)
-w_vals = w_func(F, q, E, nu, h, r_vals)
-
-plt.figure()
-plt.plot(r_vals, w_vals, "b-")
-plt.xlabel(r"$r$ [mm]")
-plt.ylabel(r"$w$ [mm]")
-fig('displacement')
+def numerical_analysis(a, h):
+    
+    r_vals = np.linspace(a, b_radius, 401)
+    z_num = -h / 2
+
+    w_vals = w_func(r_vals, q_num, b_radius, a, E_num, nu_num, h)
+    sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
+
+
+    plt.figure()
+    plt.plot(r_vals, -w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.title('Radial deflection')
+    plt.xlabel('r [m]')
+    plt.ylabel('w [m] (negative sign)')
+    fig('test')
+
+
+    plt.figure()
+    plt.plot(r_vals, sigma_rr_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.axhline(-sigma_y_num, color='orange', linestyle='--', label='yield strength')
+    plt.title('Radial stress')
+    plt.xlabel('r [m]')
+    plt.ylabel('sigma [Pa]')
+    fig('test')
+    
+numerical_analysis(a_radius, h_num)
+numerical_analysis(a_radius/2, h_num)
+numerical_analysis(a_radius, h_num/2)
 
 #%%
