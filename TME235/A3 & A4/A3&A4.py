@@ -168,7 +168,6 @@ def numerical_analysis(a, h):
     w_vals = w_func(r_vals, q_num, b_radius, a, E_num, nu_num, h)
     sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
 
-
     plt.figure()
     plt.plot(r_vals, -w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
     plt.axvline(a, color='black', linestyle='--', label='a')
@@ -177,7 +176,6 @@ def numerical_analysis(a, h):
     plt.xlabel('r [m]')
     plt.ylabel('w [m] (negative sign)')
     fig('test')
-
 
     plt.figure()
     plt.plot(r_vals, sigma_rr_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
