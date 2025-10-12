@@ -83,15 +83,14 @@ def fig(fig_name):
 # --------------------------------------------
 # ASSIGNMENT 3 - Axisymmetric disc
 # --------------------------------------------
-# q = 15 * 10**6 # Pa
-# b_radius = 0.3 # m
-# a_radius = 0.1 # m
-# h = a_radius / 4
-# E = 210 * 10**9 # Pa
-# nu = 0.3
-# sigma_y = 400 * 10**6 # Pa
-# F = 0
-
+q_num = 15 * 10**6 # Pa
+b_radius = 0.3 # m
+a_radius = 0.1 # m
+h_num = a_radius / 4
+E_num = 210 * 10**9 # Pa
+nu_num = 0.3
+sigma_y_num = 400 * 10**6 # Pa
+F_num = 0
 
 # --------------------------------------------
 # ASSIGNMENT 3 - Axisymmetric disc
@@ -115,25 +114,64 @@ def fig(fig_name):
 new_prob('3 - numerical')
 
 # define symbols
-r, q0, b, a, E, nu, h, A1, A2, A3, A4 = symbols('r q0 b a E nu h A1 A2 A3 A4', real = True)
+r, q, b, a, E, nu, h, z, A1, A2, A3, A4 = symbols('r q b a E nu h z A1 A2 A3 A4', real = True)
 
-q = q0 * (r - a) / (b - a)
-
+# bending stiffness
 D = E * h**3 / (12 * (1 - nu**2))
-w = integrate(1 /r * integrate(r * integrate(1 / r * integrate(q * r / D, r), r), r), r) + A1 * r**2 * log(r / b) + A2 * r**2 + A3 * log(r / b) * A4
 
+# deflection field
+w = integrate(1 /r * integrate(r * integrate(1 / r * integrate(q * r / D, r), r), r), r) + A1 * r**2 * log(r / b) + A2 * r**2 + A3 * log(r / b) + A4
+
+# radial and circumferential bending moment
 M_r = D *(- w.diff(r, 2) - nu * w.diff(r, 1) / r)
 M_phi = D * (-w.diff(r, 1) - nu * w.diff(r, 2))
 
+# shear force field
 V = M_r.diff(r, 1) +  1 / r * (M_r - M_phi)
 
 sigma_rr = E / (1 - nu**2) * (-z * w.diff(r, 2) - nu * z * w.diff(r, 1))
 sigma_phiphi = E / (1 - nu**2) * (-nu * z * w.diff(r, 2) - z * w.diff(r, 1))
 
-boundary_condition = [
-    M_r.subs(r, a),
-    M_phi.subs()        
+boundary_conditions = [
+    M_r.subs(r, a),  # inner boundary radial bending moment free
+    w.subs(r, b), # outer boundary zero deflection
+    M_r.subs(r, b), # outer boundary radial bending moment free
+    V.subs(r, a)
 ]
+
+unknowns = (A1, A2, A3, A4)
+
+# solve for the integration constants through the boundary conditions
+integration_constants = solve(boundary_conditions, unknowns, real = True)
+print('integration constants:')
+display(integration_constants)
+
+# displacement function
+w_solution = simplify(w.subs(integration_constants))
+print('w(r): ')
+display(w_solution)
+w_func = lambdify((r, q, b, a, E, nu, h), w_solution, 'numpy')
+print(w_func)
+
+# normal stress function
+# sigma_rr_solution = simplify(sigma_rr.subs(integration_constants))
+# print('sigma_rr: ')
+# display(sigma_rr_solution)
+# sigma_rr_func = lambdify((r, q, b, a, E, nu, h), sigma_rr_solution, 'numpy')
+# print(sigma_rr_func)
+
+r_vals = np.linspace(a_radius, b_radius, 401)
+w_vals = w_func(r_vals, q_num, b_radius, a_radius, E_num, nu_num, h_num)
+
+plt.figure()
+plt.plot(r_vals, w_vals)
+plt.axvline(a_radius, colo='black', linestyle='--', label='a')
+plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+plt.xlabel('r [m]')
+plt.ylabel('w [m]')
+plt.title('Radial deflection')
+fig('test')
+
 
 #%%
 
