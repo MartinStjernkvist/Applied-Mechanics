@@ -128,14 +128,14 @@ M_phi = D * (-w.diff(r, 1) - nu * w.diff(r, 2))
 # shear force field
 V = M_r.diff(r, 1) +  1 / r * (M_r - M_phi)
 
-sigma_rr = E / (1 - nu**2) * (-z * w.diff(r, 2) - nu * z * w.diff(r, 1))
+sigma_rr = E / (1 - nu**2) * (-z * w.diff(r, 2) - nu * z * w.diff(r, 1) / r)
 sigma_phiphi = E / (1 - nu**2) * (-nu * z * w.diff(r, 2) - z * w.diff(r, 1))
 
 boundary_conditions = [
     M_r.subs(r, a),  # inner boundary radial bending moment free
     w.subs(r, b), # outer boundary zero deflection
     M_r.subs(r, b), # outer boundary radial bending moment free
-    V.subs(r, a)
+    V.subs(r, a) # inner boundary no shear
 ]
 
 unknowns = (A1, A2, A3, A4)
@@ -158,7 +158,6 @@ print('sigma_rr: ')
 display(sigma_rr_solution)
 sigma_rr_func = lambdify((r, q, b, a, E, nu, h, z), sigma_rr_solution, 'numpy')
 print(sigma_rr_func)
-
 
 def numerical_analysis(a, h):
     
