@@ -123,7 +123,7 @@ w = integrate(1 /r * integrate(r * integrate(1 / r * integrate(q * r / D, r), r)
 
 # radial and circumferential bending moment
 M_r = D *(- w.diff(r, 2) - nu * w.diff(r, 1) / r)
-M_phi = D * (-w.diff(r, 1) - nu * w.diff(r, 2))
+M_phi = D * (-w.diff(r, 1) / r - nu * w.diff(r, 2))
 
 # shear force field
 V = M_r.diff(r, 1) +  1 / r * (M_r - M_phi)
@@ -135,7 +135,7 @@ boundary_conditions = [
     M_r.subs(r, a),  # inner boundary radial bending moment free
     w.subs(r, b), # outer boundary zero deflection
     M_r.subs(r, b), # outer boundary radial bending moment free
-    V.subs(r, a) # inner boundary no shear
+    V.subs(r, a)
 ]
 
 unknowns = (A1, A2, A3, A4)
@@ -168,13 +168,13 @@ def numerical_analysis(a, h):
     sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
 
     plt.figure()
-    plt.plot(r_vals, -w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
+    plt.plot(r_vals, w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
     plt.axvline(a, color='black', linestyle='--', label='a')
     plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.title('Radial deflection')
     plt.xlabel('r [m]')
-    plt.ylabel('w [m] (negative sign)')
-    fig('test')
+    plt.ylabel('w [m]')
+    fig('radial deflection a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
 
     plt.figure()
     plt.plot(r_vals, sigma_rr_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
@@ -184,7 +184,7 @@ def numerical_analysis(a, h):
     plt.title('Radial stress')
     plt.xlabel('r [m]')
     plt.ylabel('sigma [Pa]')
-    fig('test')
+    fig('radial stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
     
 numerical_analysis(a_radius, h_num)
 numerical_analysis(a_radius/2, h_num)
