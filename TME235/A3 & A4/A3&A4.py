@@ -341,6 +341,7 @@ read_abaqus_data('a1h1_right_bottom_results.rpt') # right bottom support
 # sigma = G * (lam**2 - 1)
 
 
+'''
 # --------------------------------------------
 # Example 17
 # --------------------------------------------
@@ -379,6 +380,83 @@ print("\nS =")
 display(S)
 print("\nsigma =")
 display(sigma_simplified)
+
+
+
+# --- Material parameters for natural rubber ---
+Emod = 20          # Young's modulus
+v = 0.45           # Poisson's ratio
+G = Emod / (2 * (1 + v))                           # Shear modulus
+lmbda = v * Emod / ((1 + v) * (1 - 2 * v))         # Lame's first parameter
+c2 = -G / 10
+c3 = G / 30
+Kb = lmbda + 2 * G / 3
+
+# --- Deformation setup ---
+npoints = 1000
+epsilon = np.linspace(-0.5, 1.5, npoints)
+
+# --- Preallocate arrays ---
+sigma11NH = np.zeros(npoints)
+sigma11Y = np.zeros(npoints)
+
+# --- Loop over strains ---
+for i in range(npoints):
+    # Deformation gradient
+    F = np.eye(3)
+    F[0, 0] += epsilon[i]
+    
+    # Right Cauchy–Green tensor
+    C = F.T @ F
+    J = np.linalg.det(F)
+    Cinv = np.linalg.inv(C)
+    
+    # --- Neo-Hookean model ---
+    S = G * (np.eye(3) - Cinv) + lmbda * np.log(J) * Cinv
+    sigma = (1 / J) * F @ S @ F.T
+    sigma11NH[i] = sigma[0, 0]
+    
+    # --- Yeoh model ---
+    I1 = np.trace(C)
+    S = (G * (np.eye(3) - Cinv)
+         + lmbda * np.log(J) * Cinv
+         + (4 * c2 * (I1 - 3) + 6 * c3 * (I1 - 3)**2) * np.eye(3))
+    sigma = (1 / J) * F @ S @ F.T
+    sigma11Y[i] = sigma[0, 0]
+
+# --- Plot results ---
+plt.plot(epsilon, sigma11NH, 'b-', label='Neo-Hookean')
+plt.plot(epsilon, sigma11Y, 'r--', label='Yeoh')
+plt.xlabel('Engineering strain ε')
+plt.ylabel('σ₁₁ (stress)')
+plt.legend()
+plt.grid(True)
+plt.title('Uniaxial stress–strain response for natural rubber')
+plt.show()
+'''
+
+# --------------------------------------------
+# Own attempt
+# --------------------------------------------
+# Emod = 20 # Young's modulus
+# v = 0.45 # Poisson's ratio
+# G = Emod / (2 * (1 + v)) # Shear modulus
+G_rubber = E_rubber / (2 * (1 + nu_rubber))
+
+npoints = 1000
+lmbda = np.linspace(0.1, 1.9, npoints)
+
+sigma11 = np.zeros(npoints)
+
+for i in range(npoints):
+    sigma11[i] = G_rubber * (1 - 1/lmbda[i]**2)
+    
+plt.figure()
+plt.plot(lmbda, sigma11, 'b-')
+plt.xlabel('lambda')
+plt.ylabel('σ₁₁ (stress)')
+plt.title('Uniaxial stress response for natural rubber')
+fig('rubber simulation')
 
 #%%
 
