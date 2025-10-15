@@ -159,13 +159,23 @@ display(sigma_rr_solution)
 sigma_rr_func = lambdify((r, q, b, a, E, nu, h, z), sigma_rr_solution, 'numpy')
 print(sigma_rr_func)
 
+# circumferential stress function
+sigma_phiphi_solution = simplify(sigma_phiphi.subs(integration_constants))
+print('sigma_phiphi: ')
+display(sigma_phiphi_solution)
+sigma_phiphi_func = lambdify((r, q, b, a, E, nu, h, z), sigma_phiphi_solution, 'numpy')
+print(sigma_phiphi_func)
+
 def numerical_analysis(a, h):
     
     r_vals = np.linspace(a, b_radius, 401)
-    z_num = -h / 2
+    z_num = h / 2
 
     w_vals = w_func(r_vals, q_num, b_radius, a, E_num, nu_num, h)
     sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
+    sigma_phiphi_vals = sigma_phiphi_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
+    
+    sigma_vm_vals = np.sqrt((sigma_rr_vals - sigma_phiphi_vals)**2)
 
     plt.figure()
     plt.plot(r_vals, w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
@@ -180,8 +190,18 @@ def numerical_analysis(a, h):
     plt.plot(r_vals, sigma_rr_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
     plt.axvline(a, color='black', linestyle='--', label='a')
     plt.axvline(b_radius, color='grey', linestyle='--', label='b')
-    plt.axhline(-sigma_y_num, color='orange', linestyle='--', label='yield strength')
+    plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('Radial stress')
+    plt.xlabel('r [m]')
+    plt.ylabel('sigma [Pa]')
+    fig('radial stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
+    
+    plt.figure()
+    plt.plot(r_vals, sigma_vm_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
+    plt.title('von Mises stress')
     plt.xlabel('r [m]')
     plt.ylabel('sigma [Pa]')
     fig('radial stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
