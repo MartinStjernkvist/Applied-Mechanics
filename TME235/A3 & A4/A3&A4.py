@@ -305,7 +305,7 @@ def read_abaqus_data(results_file):
     plt.title('von Mises stress')
     plt.xlabel('r [m]')
     plt.ylabel('sigma [Pa]')
-    fig(results_file.strip('.') + 'von mises stress a')
+    fig(results_file.strip('.rpt') + 'von mises stress a')
     
     return datasets, X, u2, s11, svm
 
@@ -540,6 +540,10 @@ _D_1 = lam / 2
 print('C_10: ', f'{C_10:.0f}')
 print('D_1: 1/', f'{_D_1:.0f}')
 
+traction = 10000 / (b2 * h2)
+print(traction)
+print(10_000 / (0.05 * 0.05))
+
 #%%
 
 
@@ -599,17 +603,15 @@ def read_abaqus_data_2(results_file):
     
     plt.figure()
     plt.plot(X, u2, color='blue', label=results_file)
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.title('Deflection')
     plt.xlabel('r [m]')
     plt.ylabel('w [m]')
-    fig(results_file.strip('.') + 'deflection')
+    fig(results_file.strip('.rpt') + 'deflection')
     
     return datasets, X, u2
 
-read_abaqus_data_2('a4_p_10.rpt')
-read_abaqus_data_2('a4_p_minus_10.rpt')
+read_abaqus_data_2('a4_p_10_results.rpt')
+read_abaqus_data_2('a4_p_minus_10_results.rpt')
 
 #%%
 
