@@ -580,4 +580,186 @@ new_prob('4 - abaqus, P = 10 kN')
 ####################################################################################################
 new_prob('4 - abaqus, P = -10 kN')
 
+
+
+
+ Beam properties
+I = (b * h**3) / 12  # Second moment of area
+EI = E_steel * I  # Bending stiffness
+
+print("="*70)
+print("ANALYTICAL SOLUTIONS: EULER-BERNOULLI BEAM")
+print("="*70)
+print(f"\nBeam properties:")
+print(f"  Length L = {L} m")
+print(f"  Cross-section: b × h = {b*1000} × {h*1000} mm²")
+print(f"  I = {I*1e12:.4f} mm⁴")
+print(f"  EI = {EI:.2f} N·m²")
+
+# Example load (you should replace with your actual load)
+# Assuming distributed load q or point load P
+q = 10000  # N/m (example distributed load)
+P = 5000  # N (example point load at end)
+
+print(f"\nExample loads (replace with your actual loads):")
+print(f"  Distributed load q = {q} N/m")
+print(f"  Point load P = {P} N")
+
+# ============================================================================
+# CASE 1: Cantilever beam WITHOUT support (free end)
+# ============================================================================
+print("\n" + "="*70)
+print("CASE 1: Cantilever WITHOUT Support")
+print("="*70)
+
+# For distributed load q over length L:
+# Maximum deflection at free end: δ = qL⁴/(8EI)
+delta_distributed_no_support = (q * L**4) / (8 * EI)
+
+# For point load P at free end:
+# Maximum deflection: δ = PL³/(3EI)
+delta_point_no_support = (P * L**3) / (3 * EI)
+
+print(f"\nUnder distributed load q = {q} N/m:")
+print(f"  δ_max = qL⁴/(8EI) = {delta_distributed_no_support*1000:.2f} mm")
+print(f"\nUnder point load P = {P} N at tip:")
+print(f"  δ_max = PL³/(3EI) = {delta_point_no_support*1000:.2f} mm")
+
+# ============================================================================
+# CASE 2: Cantilever beam WITH rubber support
+# ============================================================================
+print("\n" + "="*70)
+print("CASE 2: Cantilever WITH Rubber Support")
+print("="*70)
+print("\nApproximation approaches:")
+
+# APPROACH A: Linear elastic spring at the support location
+print("\n--- Approach A: Elastic Spring Support ---")
+
+# Rubber support dimensions (assumed at tip)
+h_rubber = 0.05  # m (height of rubber support)
+A_rubber = b * h  # m² (contact area)
+
+# Spring stiffness: k = EA/L for compression
+# Using rubber properties
+k_spring = (E_rubber * A_rubber) / h_rubber
+
+print(f"  Rubber support: {h_rubber*1000} mm height, {A_rubber*1e6:.0f} mm² area")
+print(f"  Spring stiffness k = EA/h = {k_spring/1e6:.2f} MN/m")
+
+# For cantilever with spring support at tip under point load P:
+# δ = P/(k + 3EI/L³)
+# This comes from: k*δ + (P - k*δ) causes beam deflection
+delta_with_spring = P / (k_spring + 3*EI/L**3)
+
+print(f"  Deflection with spring support: δ = {delta_with_spring*1000:.2f} mm")
+print(f"  Reduction: {(1 - delta_with_spring/delta_point_no_support)*100:.1f}%")
+
+# APPROACH B: Winkler foundation (distributed elastic support)
+print("\n--- Approach B: Winkler Foundation ---")
+print("  If rubber acts as continuous foundation:")
+
+# Foundation modulus: k_w = E_rubber / h_rubber (per unit length)
+k_winkler = E_rubber * b / h_rubber  # N/m per m
+
+print(f"  Foundation modulus k_w = {k_winkler/1e6:.2f} MN/m²")
+print("  Solution requires solving: EI·d⁴w/dx⁴ + k_w·w = q")
+print("  → Requires numerical solution or Laplace transform")
+
+# Characteristic length
+lambda_char = (4 * EI / k_winkler)**(1/4)
+print(f"  Characteristic length λ = {lambda_char:.3f} m")
+
+# APPROACH C: Simple support (roller) - upper bound
+print("\n--- Approach C: Rigid Support (Upper Bound) ---")
+print("  Assuming rubber is very stiff → acts like rigid support")
+
+# Simply supported beam with overhang
+# For cantilever with roller support at distance a from fixed end
+a = L  # Support at tip
+# Deflection is essentially zero at support point
+delta_rigid_support = 0.0
+
+print(f"  Deflection at support ≈ {delta_rigid_support} mm (rigid)")
+print("  This is an upper bound on support stiffness effect")
+
+# ============================================================================
+# VISUALIZATION
+# ============================================================================
+print("\n" + "="*70)
+print("DEFLECTION COMPARISON")
+print("="*70)
+
+x = np.linspace(0, L, 100)
+
+# Deflection shapes (for point load P at tip)
+# Without support
+w_no_support = (P / (6*EI)) * x**2 * (3*L - x)
+
+# With spring support (approximate)
+# This is approximate - exact solution more complex
+delta_tip_spring = delta_with_spring
+w_with_spring = w_no_support * (delta_tip_spring / delta_point_no_support)
+
+# With rigid support
+w_rigid = np.zeros_like(x)
+
+# Plot
+plt.figure(figsize=(12, 7))
+plt.plot(x, w_no_support*1000, 'b-', linewidth=2.5, label='No support')
+plt.plot(x, w_with_spring*1000, 'r--', linewidth=2.5, label=f'Rubber support (k={k_spring/1e6:.1f} MN/m)')
+plt.plot(x, w_rigid*1000, 'g:', linewidth=2, label='Rigid support (ideal)')
+plt.xlabel('Position x (m)', fontsize=12)
+plt.ylabel('Deflection (mm)', fontsize=12)
+plt.title('Beam Deflection: Comparison of Support Conditions', fontsize=14, fontweight='bold')
+plt.grid(True, alpha=0.3)
+plt.legend(fontsize=11)
+plt.axhline(0, color='k', linewidth=0.5)
+
+# Mark fixed end and support location
+plt.plot(0, 0, 'ks', markersize=12, label='Fixed end')
+plt.plot(L, 0, 'ro', markersize=10, label='Support location')
+
+plt.tight_layout()
+plt.show()
+
+# ============================================================================
+# SUMMARY TABLE
+# ============================================================================
+print("\nSummary of tip deflections:")
+print(f"{'Case':<30} | {'Deflection (mm)':<15} | {'Ratio':<10}")
+print("-" * 60)
+print(f"{'No support':<30} | {delta_point_no_support*1000:>15.2f} | {1.0:>10.2f}")
+print(f"{'With rubber (spring k)':<30} | {delta_with_spring*1000:>15.2f} | {delta_with_spring/delta_point_no_support:>10.2f}")
+print(f"{'Rigid support':<30} | {0.0:>15.2f} | {0.0:>10.2f}")
+
+print("\n" + "="*70)
+print("RECOMMENDATIONS FOR YOUR COMPARISON")
+print("="*70)
+print("""
+1. CHOOSE YOUR APPROXIMATION based on problem setup:
+   - If rubber is localized at tip: Use SPRING MODEL (Approach A)
+   - If rubber extends along beam: Use WINKLER FOUNDATION (Approach B)
+   - For bounds: Compare with NO SUPPORT and RIGID SUPPORT
+
+2. EXPECTED RESULTS (reasonableness check):
+   - FE deflection should be between "no support" and "rigid support"
+   - Rubber with E=20 MPa is relatively soft → expect significant deflection
+   - Deflection should be much closer to "no support" than "rigid"
+   - Typical reduction: 10-30% compared to no support (rough estimate)
+
+3. IN YOUR REPORT:
+   - State your approximation clearly and justify it
+   - Compare FE results from (b) and (c) with these analytical bounds
+   - Discuss whether results are reasonable based on:
+     * Rubber stiffness (E_rubber << E_steel)
+     * Support geometry
+     * Loading conditions
+   - Comment on nonlinear effects (rubber neo-Hookean vs linear assumption)
+
+4. REPLACE THE EXAMPLE VALUES:
+   - Use your actual loads from parts (b) and (c)
+   - Adjust rubber geometry if different
+   - Insert your FE results for comparison
+""")
 #%%
