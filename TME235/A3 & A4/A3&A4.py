@@ -550,7 +550,7 @@ print('D_1: 1/', f'{_D_1:.0f}')
 
 
 
-# Assignment 4 - abaqus, P = 10 kN
+# Assignment 4 - abaqus, P = 10 kN, P = -10 kN
 
 
 
@@ -558,28 +558,58 @@ print('D_1: 1/', f'{_D_1:.0f}')
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('4 - abaqus, P = 10 kN')
+new_prob('4 - abaqus, P = 10 kN, P = -10 kN')
 
+def read_abaqus_data_2(results_file):
+    
+    datasets = {}
+    current_data = []
+    current_name = None
+    
+    with open(results_file, 'r') as f:
+        for line in f:
+            # Detect dataset header: line with at least two words, first is 'X'
+            tokens = line.strip().split()
+            if len(tokens) >= 2 and tokens[0] == 'X':
+                # Save previous dataset
+                if current_name and current_data:
+                    datasets[current_name] = np.array(current_data)
+                # Start new dataset
+                current_name = ' '.join(tokens)
+                current_data = []
+            elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+                # Try to parse data lines
+                try:
+                    values = [float(x.replace('E', 'e')) for x in line.split()]
+                    if len(values) == 2:
+                        current_data.append(values)
+                except Exception:
+                    pass  # skip lines that can't be parsed
+        # Save last dataset
+        if current_name and current_data:
+            datasets[current_name] = np.array(current_data)
 
-#%%
+    print("Available datasets from" + results_file)
+    for name in datasets.keys():
+        print(f"  - '{name}'")
+    print()
+    
+    X = datasets['X u2_mid_X'][:, 0]
+    u2 = datasets['X u2_mid_X'][:, 1]
+    
+    plt.figure()
+    plt.plot(X, u2, color='blue', label=results_file)
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.title('Deflection')
+    plt.xlabel('r [m]')
+    plt.ylabel('w [m]')
+    fig(results_file.strip('.') + 'deflection')
+    
+    return datasets, X, u2
 
-####################################################################################################
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-# Assignment 4 - abaqus, P = -10 kN
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_prob('4 - abaqus, P = -10 kN')
-
+read_abaqus_data_2('a4_p_10.rpt')
+read_abaqus_data_2('a4_p_minus_10.rpt')
 
 #%%
 
