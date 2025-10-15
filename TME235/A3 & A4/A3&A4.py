@@ -216,9 +216,11 @@ def numerical_analysis(a, h):
     plt.ylabel('sigma [Pa]')
     fig('von mises stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
     
-numerical_analysis(a_radius, h_num)
-numerical_analysis(a_radius/2, h_num)
-numerical_analysis(a_radius, h_num/2)
+    return r_vals, w_vals, sigma_rr_vals, sigma_vm_vals
+    
+a1h1_r_vals, a1h1_w_vals, a1h1_sigma_rr_vals, a1h1_sigma_vm_vals = numerical_analysis(a_radius, h_num)
+a2h1_r_vals, a2h1_w_vals, a2h1_sigma_rr_vals, a2h1_sigma_vm_vals = numerical_analysis(a_radius/2, h_num)
+a1h2_r_vals, a1h2_w_vals, a1h2_sigma_rr_vals, a1h2_sigma_vm_vals = numerical_analysis(a_radius, h_num/2)
 
 #%%
 
@@ -241,66 +243,123 @@ new_prob('3 - abaqus')
 
 def read_abaqus_data(results_file):
     
-    datasets = {}
-    current_data = []
-    current_name = None
-    
+    """
+    Parse Abaqus .rpt file with multiple columns.
+    """
     with open(results_file, 'r') as f:
-        for line in f:
-            # Detect dataset header: line with at least two words, first is 'X'
-            tokens = line.strip().split()
-            if len(tokens) >= 2 and tokens[0] == 'X':
-                # Save previous dataset
-                if current_name and current_data:
-                    datasets[current_name] = np.array(current_data)
-                # Start new dataset
-                current_name = ' '.join(tokens)
-                current_data = []
-            elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
-                # Try to parse data lines
-                try:
-                    values = [float(x.replace('E', 'e')) for x in line.split()]
-                    if len(values) == 2:
-                        current_data.append(values)
-                except Exception:
-                    pass  # skip lines that can't be parsed
-        # Save last dataset
-        if current_name and current_data:
-            datasets[current_name] = np.array(current_data)
-
-    print("Available datasets from" + results_file)
+        lines = f.readlines()
+    
+    # Find header line (starts with X and contains column names)
+    header_line = None
+    data_start_idx = None
+    
+    for i, line in enumerate(lines):
+        tokens = line.strip().split()
+        if len(tokens) >= 2 and tokens[0] == 'X':
+            header_line = tokens
+            data_start_idx = i + 1
+            break
+    
+    if header_line is None:
+        raise ValueError("Could not find header line starting with 'X'")
+    
+    print(f"Found header: {header_line}")
+    print(f"Number of columns: {len(header_line)}")
+    
+    # Parse data
+    data = []
+    for line in lines[data_start_idx:]:
+        line = line.strip()
+        if not line:  # Skip empty lines
+            continue
+        try:
+            # Replace 'E' with 'e' for scientific notation and split
+            values = [float(x.replace('E', 'e')) for x in line.split()]
+            if len(values) == len(header_line):  # Match number of columns
+                data.append(values)
+        except ValueError:
+            # Skip lines that can't be parsed as numbers
+            continue
+    
+    data = np.array(data)
+    print(f"Parsed {len(data)} data rows")
+    
+    # Create dictionary with column names
+    datasets = {}
+    for i, col_name in enumerate(header_line):
+        datasets[col_name] = data[:, i]
+    
+    print(f"\nAvailable columns:")
     for name in datasets.keys():
         print(f"  - '{name}'")
     print()
     
-    X = datasets['X u2_mid_X'][:, 0]
-    u2 = datasets['X u2_mid_X'][:, 1]
-    s11 = datasets['X s11_top_X'][:, 1]
-    svm = datasets['X svm_top_X'][:, 1]
+    # Extract specific columns
+    X = datasets['X']
+    u2 = datasets['u2_mid_X']
+    s11 = datasets['s11_top_X']
+    svm = datasets['svm_top_X']
+    
+    # datasets = {}
+    # current_data = []
+    # current_name = None
+    
+    # with open(results_file, 'r') as f:
+    #     for line in f:
+    #         # Detect dataset header: line with at least two words, first is 'X'
+    #         tokens = line.strip().split()
+    #         if len(tokens) >= 2 and tokens[0] == 'X':
+    #             # Save previous dataset
+    #             if current_name and current_data:
+    #                 datasets[current_name] = np.array(current_data)
+    #             # Start new dataset
+    #             current_name = ' '.join(tokens)
+    #             current_data = []
+    #         elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+    #             # Try to parse data lines
+    #             try:
+    #                 values = [float(x.replace('E', 'e')) for x in line.split()]
+    #                 if len(values) == 2:
+    #                     current_data.append(values)
+    #             except Exception:
+    #                 pass  # skip lines that can't be parsed
+    #     # Save last dataset
+    #     if current_name and current_data:
+    #         datasets[current_name] = np.array(current_data)
+
+    # print("Available datasets from" + results_file)
+    # for name in datasets.keys():
+    #     print(f"  - '{name}'")
+    # print()
+    
+    # X = datasets['X u2_mid_X'][:, 0]
+    # u2 = datasets['X u2_mid_X'][:, 1]
+    # s11 = datasets['X s11_top_X'][:, 1]
+    # svm = datasets['X svm_top_X'][:, 1]
     
     plt.figure()
     plt.plot(X, u2, color='blue', label=results_file)
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    # plt.axvline(a, color='black', linestyle='--', label='a')
+    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.title('Radial deflection')
     plt.xlabel('r [m]')
     plt.ylabel('w [m]')
-    fig(results_file.strip('.') + 'radial deflection a')
+    fig(results_file.strip('.rpt') + 'radial deflection a')
 
     plt.figure()
     plt.plot(X, s11, color='red', label=results_file)
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    # plt.axvline(a, color='black', linestyle='--', label='a')
+    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('Radial stress')
     plt.xlabel('r [m]')
     plt.ylabel('sigma [Pa]')
-    fig(results_file.strip('.') + 'radial stress a')
+    fig(results_file.strip('.rpt') + 'radial stress a')
     
     plt.figure()
     plt.plot(X, svm, color='green', label=results_file)
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    # plt.axvline(a, color='black', linestyle='--', label='a')
+    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('von Mises stress')
     plt.xlabel('r [m]')
@@ -309,11 +368,62 @@ def read_abaqus_data(results_file):
     
     return datasets, X, u2, s11, svm
 
-read_abaqus_data('a1h1_results.rpt') # left bottom support
-read_abaqus_data('a1h2_results.rpt') # left bottom support
-read_abaqus_data('a2h1_results.rpt') # left bottom support
-read_abaqus_data('a1h1_left_mid_results.rpt') # left middle support
-read_abaqus_data('a1h1_right_bottom_results.rpt') # right bottom support
+_, a1h1_X, a1h1_u2, a1h1_s11, a1h1_svm = read_abaqus_data('a1h1_results.rpt') # left bottom support
+_, a1h2_X, a1h2_u2, a1h2_s11, a1h2_svm = read_abaqus_data('a1h2_results.rpt') # left bottom support
+_, a2h1_X, a2h1_u2, a2h1_s11, a2h1_svm = read_abaqus_data('a2h1_results.rpt') # left bottom support
+# _, a1h1_X, a1h1_u2, a1h1_s11, a1h1_svm = read_abaqus_data('a1h1_left_mid_results.rpt') # left middle support
+_, a1h1_radialfix_X, a1h1_radialfix_u2, a1h1_radialfix_s11, a1h1_radialfix_svm = read_abaqus_data('a1h1_radialfix_results.rpt') # right bottom, radial fixed support
+
+#%%
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 3 - comparison plot
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('3 - comparison plot')
+
+
+# plt.figure()
+#     plt.plot(a1h1_r_vals, a1h1_w_vals, color='blue', label='numerical')
+#     plt.plot(X, u2, color='blue', label ='abaqus')
+#     # plt.axvline(a, color='black', linestyle='--', label='a')
+#     # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+#     plt.title('Radial deflection')
+#     plt.xlabel('r [m]')
+#     plt.ylabel('w [m]')
+#     fig('comparison radial deflection')
+
+#     plt.figure()
+#     plt.plot(X, s11, color='red', label=results_file)
+#     # plt.axvline(a, color='black', linestyle='--', label='a')
+#     # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+#     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
+#     plt.title('Radial stress')
+#     plt.xlabel('r [m]')
+#     plt.ylabel('sigma [Pa]')
+#     fig('comparison radial stress')
+    
+#     plt.figure()
+#     plt.plot(X, svm, color='green', label=results_file)
+#     # plt.axvline(a, color='black', linestyle='--', label='a')
+#     # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+#     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
+#     plt.title('von Mises stress')
+#     plt.xlabel('r [m]')
+#     plt.ylabel('sigma [Pa]')
+#     fig('comparison von mises stress')
 
 
 #%%
