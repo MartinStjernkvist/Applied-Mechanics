@@ -128,8 +128,8 @@ M_phi = D * (-w.diff(r, 1) / r - nu * w.diff(r, 2))
 # shear force field
 V = M_r.diff(r, 1) +  1 / r * (M_r - M_phi)
 
-sigma_rr = E / (1 - nu**2) * (-z * w.diff(r, 2) - nu * z * w.diff(r, 1) / r)
-sigma_phiphi = E / (1 - nu**2) * (-nu * z * w.diff(r, 2) - z * w.diff(r, 1))
+sigma_rr = E / (1 - nu**2) * ((-z * w.diff(r, 2)) + nu * (-z * w.diff(r, 1) / r))
+sigma_phiphi = E / (1 - nu**2) * (nu * (- z * w.diff(r, 2)) + (- z * w.diff(r, 1) / r))
 
 boundary_conditions = [
     M_r.subs(r, a),  # inner boundary radial bending moment free
@@ -187,7 +187,7 @@ def numerical_analysis(a, h):
     fig('radial deflection a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
 
     plt.figure()
-    plt.plot(r_vals, sigma_rr_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
+    plt.plot(r_vals, sigma_rr_vals, color='red', label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
     plt.axvline(a, color='black', linestyle='--', label='a')
     plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
@@ -197,7 +197,7 @@ def numerical_analysis(a, h):
     fig('radial stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
     
     plt.figure()
-    plt.plot(r_vals, sigma_vm_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
+    plt.plot(r_vals, sigma_vm_vals, color='green', label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
     plt.axvline(a, color='black', linestyle='--', label='a')
     plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
