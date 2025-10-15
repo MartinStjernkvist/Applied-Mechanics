@@ -334,12 +334,51 @@ read_abaqus_data('a1h1_right_bottom_results.rpt') # right bottom support
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('4 - simulate rubber behaviour')
+# new_prob('4 - simulate rubber behaviour')
 
 
 # eqn (9.6)
-sigma = G * (lam**2 - 1)
+# sigma = G * (lam**2 - 1)
 
+
+# --------------------------------------------
+# Example 17
+# --------------------------------------------
+# Define symbols
+lambda_ = Symbol('lambda', positive=True)
+Gmod, lambdamod, c2, c3, Kb = symbols('Gmod lambdamod c2 c3 Kb', real=True)
+
+# Define deformation gradient F
+F = Matrix([
+    [lambda_, 0, 0],
+    [0, 1/sqrt(lambda_), 0],
+    [0, 0, 1/sqrt(lambda_)]
+])
+
+# Compute C = Fᵀ * F
+C = F.T * F
+
+# Compute determinant J = det(F)
+J = F.det()
+
+# Define S = Gmod*(I - C⁻¹) + lambdamod*log(det(F))*C⁻¹
+S = Gmod * (eye(3) - C.inv()) + lambdamod * log(J) * C.inv()
+
+# Compute sigma = (1/det(F)) * F * S * Fᵀ
+sigma = (1/J) * F * S * F.T
+
+# Optionally, simplify results
+sigma_simplified = simplify(sigma)
+
+# Display results
+print("C =")
+display(C)
+print("\nJ =")
+display(J)
+print("\nS =")
+display(S)
+print("\nsigma =")
+display(sigma_simplified)
 
 #%%
 

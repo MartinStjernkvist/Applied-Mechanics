@@ -48,16 +48,10 @@ plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
-def sfig(fig_name):
+def fig(fig_name):
     fig_output_file = script_dir / "fig" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
-    
-def fig(fig_name):
-    '''
-    standard matplotlib commands
-    '''
     plt.legend()
     plt.grid(True, alpha = 0.3)
-    sfig(fig_name)
+    plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     plt.show()
