@@ -457,51 +457,36 @@ plt.title('Uniaxial stress–strain response for natural rubber')
 plt.show()
 '''
 
-
 # Two formulations
 sigma_eq96 = G_rubber * (lambda_vals**2 - 1)  # Eq. (9.6)
 sigma_uniaxial = G_rubber * (lambda_vals**2 - 1/lambda_vals)  # Uniaxial stress
 
 # Deviatoric stress (should be identical)
-sigma22_eq96 = G_rubber * (1/lambda_vals - 1)
-mean_96 = (sigma_eq96 + 2*sigma22_eq96) / 3
+sigma22_eq96 = G_rubber * (1 / lambda_vals - 1)
+mean_96 = (sigma_eq96 + 2 * sigma22_eq96) / 3
 dev_96 = sigma_eq96 - mean_96
-dev_uni = sigma_uniaxial - sigma_uniaxial/3
+dev_uni = sigma_uniaxial - sigma_uniaxial / 3
 
-# Plot
-fig, axes = plt.subplots(2, 1, figsize=(10, 10))
+plt.figure()
+plt.plot(lambda_vals, sigma_eq96, 'b-', label='Eq. (9.6)')
+plt.plot(lambda_vals, sigma_uniaxial, 'r--', label='Uniaxial')
+plt.axhline(0, color='k', linestyle='--', alpha=0.3)
+plt.axvline(1, color='k', linestyle='--', alpha=0.3)
+plt.xlabel('Stretch λ')
+plt.ylabel('Stress σ₁₁ (Pa)')
+plt.title('Neo-Hookean: Two Formulations')
+fig('Neo-Hookean: Two Formulations')
 
-# Total stress
-axes[0].plot(lambda_vals, sigma_eq96, 'b-', linewidth=2, label='Eq. (9.6): σ = G(λ² - 1)')
-axes[0].plot(lambda_vals, sigma_uniaxial, 'r--', linewidth=2, label='Uniaxial: σ₁₁ = G(λ² - λ⁻¹)')
-axes[0].axhline(0, color='k', linestyle='--', alpha=0.3)
-axes[0].axvline(1, color='k', linestyle='--', alpha=0.3)
-axes[0].grid(True, alpha=0.3)
-axes[0].set_xlabel('Stretch λ')
-axes[0].set_ylabel('Stress σ₁₁ (MPa)')
-axes[0].set_title('Neo-Hookean: Two Formulations')
-axes[0].legend()
+plt.figure()
+plt.plot(lambda_vals, dev_96, 'b-', linewidth=2.5, label='Eq. (9.6) deviatoric')
+plt.plot(lambda_vals, dev_uni, 'r--', label='Uniaxial deviatoric')
+plt.axhline(0, color='k', linestyle='--', alpha=0.3)
+plt.axvline(1, color='k', linestyle='--', alpha=0.3)
+plt.xlabel('Stretch λ')
+plt.ylabel('Deviatoric Stress (Pa)')
+plt.title('Deviatoric Stress: Identical')
+fig('Deviatoric Stress: Identical')
 
-# Deviatoric stress (identical)
-axes[1].plot(lambda_vals, dev_96, 'b-', linewidth=2.5, label='Eq. (9.6) deviatoric')
-axes[1].plot(lambda_vals, dev_uni, 'r--', linewidth=2, label='Uniaxial deviatoric')
-axes[1].axhline(0, color='k', linestyle='--', alpha=0.3)
-axes[1].axvline(1, color='k', linestyle='--', alpha=0.3)
-axes[1].grid(True, alpha=0.3)
-axes[1].set_xlabel('Stretch λ')
-axes[1].set_ylabel('Deviatoric Stress (MPa)')
-axes[1].set_title('Deviatoric Stress: Identical (Same Material)')
-axes[1].legend()
-
-plt.tight_layout()
-plt.show()
-
-# Summary
-print("Key Results:")
-print(f"At λ = 0.5: σ (Eq 9.6) = {G_rubber * (0.5**2 - 1):.2f} MPa, "
-      f"σ (Uniaxial) = {G_rubber * (0.5**2 - 1/0.5):.2f} MPa")
-print(f"At λ = 1.5: σ (Eq 9.6) = {G_rubber * (1.5**2 - 1):.2f} MPa, "
-      f"σ (Uniaxial) = {G_rubber * (1.5**2 - 1/1.5):.2f} MPa")
 print("\nBoth give IDENTICAL deviatoric stress → same material behavior!")
 
 #%%
