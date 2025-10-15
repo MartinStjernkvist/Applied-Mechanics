@@ -489,6 +489,27 @@ fig('Deviatoric Stress: Identical')
 
 print("\nBoth give IDENTICAL deviatoric stress → same material behavior!")
 
+
+# Incompressible neo-Hookean: σ₁₁ = G(λ² - λ⁻¹)
+# This assumes uniaxial stress state (σ₂₂ = σ₃₃ = 0)
+sigma11 = G_rubber * (lambda_vals**2 - 1/lambda_vals)
+
+# Plot stress-stretch response
+plt.figure(figsize=(10, 7))
+plt.plot(lambda_vals, sigma11, 'b-', linewidth=2.5)
+plt.axhline(0, color='k', linestyle='--', linewidth=1, alpha=0.5)
+plt.axvline(1, color='k', linestyle='--', linewidth=1, alpha=0.5)
+plt.grid(True, alpha=0.3)
+plt.xlabel('Stretch λ₁', fontsize=12)
+plt.ylabel('Cauchy Stress σ₁₁ (MPa)', fontsize=12)
+plt.title('Incompressible Neo-Hookean Rubber: Uniaxial Loading', fontsize=14, fontweight='bold')
+plt.xlim([0.1, 1.9])
+
+# Annotations
+plt.text(0.4, -10, 'Compression', fontsize=11, ha='center', color='red')
+plt.text(1.5, 15, 'Tension', fontsize=11, ha='center', color='green')
+plt.text(1.0, -2, 'λ = 1\n(undeformed)', fontsize=10, ha='center')
+
 #%%
 
 
