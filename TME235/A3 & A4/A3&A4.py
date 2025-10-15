@@ -204,10 +204,105 @@ def numerical_analysis(a, h):
     plt.title('von Mises stress')
     plt.xlabel('r [m]')
     plt.ylabel('sigma [Pa]')
-    fig('radial stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
+    fig('von mises stress a' + str(int(a_radius/a)) + 'h' + str(int(h_num/h)))
     
 numerical_analysis(a_radius, h_num)
 numerical_analysis(a_radius/2, h_num)
 numerical_analysis(a_radius, h_num/2)
+
+#%%
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 3 - abaqus
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('3 - abaqus')
+
+def read_abaqus_data(results_file):
+    
+    datasets = {}
+    current_data = []
+    current_name = None
+    
+    with open(results_file, 'r') as f:
+        for line in f:
+            # Detect dataset header: line with at least two words, first is 'X'
+            tokens = line.strip().split()
+            if len(tokens) >= 2 and tokens[0] == 'X':
+                # Save previous dataset
+                if current_name and current_data:
+                    datasets[current_name] = np.array(current_data)
+                # Start new dataset
+                current_name = ' '.join(tokens)
+                current_data = []
+            elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+                # Try to parse data lines
+                try:
+                    values = [float(x.replace('E', 'e')) for x in line.split()]
+                    if len(values) == 2:
+                        current_data.append(values)
+                except Exception:
+                    pass  # skip lines that can't be parsed
+        # Save last dataset
+        if current_name and current_data:
+            datasets[current_name] = np.array(current_data)
+
+    print("Available datasets from" + results_file)
+    for name in datasets.keys():
+        print(f"  - '{name}'")
+    print()
+    
+    X = datasets['X u2_mid_X'][:, 0]
+    u2 = datasets['X u2_mid_X'][:, 1]
+    s11 = datasets['X s11_top_X'][:, 1]
+    svm = datasets['X svm_top_X'][:, 1]
+    
+    plt.figure()
+    plt.plot(X, u2, color='blue', label=results_file)
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.title('Radial deflection')
+    plt.xlabel('r [m]')
+    plt.ylabel('w [m]')
+    fig(results_file.strip('.') + 'radial deflection a')
+
+    plt.figure()
+    plt.plot(X, s11, color='red', label=results_file)
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
+    plt.title('Radial stress')
+    plt.xlabel('r [m]')
+    plt.ylabel('sigma [Pa]')
+    fig(results_file.strip('.') + 'radial stress a')
+    
+    plt.figure()
+    plt.plot(X, svm, color='green', label=results_file)
+    plt.axvline(a, color='black', linestyle='--', label='a')
+    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
+    plt.title('von Mises stress')
+    plt.xlabel('r [m]')
+    plt.ylabel('sigma [Pa]')
+    fig(results_file.strip('.') + 'von mises stress a')
+    
+    return datasets, X, u2, s11, svm
+
+read_abaqus_data('a1h1_results.rpt') # left bottom support
+read_abaqus_data('a1h2_results.rpt') # left bottom support
+read_abaqus_data('a2h1_results.rpt') # left bottom support
+read_abaqus_data('a1h1_left_mid_results.rpt') # left middle support
+read_abaqus_data('a1h1_right_bottom_results.rpt') # right bottom support
 
 #%%
