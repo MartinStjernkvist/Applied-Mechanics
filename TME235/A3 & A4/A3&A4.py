@@ -446,12 +446,7 @@ new_prob('3 - comparison plot')
 ####################################################################################################
 # new_prob('4 - simulate rubber behaviour')
 
-
-# eqn (9.6)
-# sigma = G * (lam**2 - 1)
-
-
-
+'''
 # --------------------------------------------
 # Example 17
 # --------------------------------------------
@@ -514,7 +509,7 @@ plt.ylabel('σ₁₁ (stress)')
 plt.title('Uniaxial stress response for natural rubber')
 fig('rubber simulation')
 
-'''
+
 # --- Material parameters for natural rubber ---
 Emod = 20          # Young's modulus
 v = 0.45           # Poisson's ratio
@@ -567,39 +562,45 @@ plt.title('Uniaxial stress–strain response for natural rubber')
 plt.show()
 '''
 
+
+npoints = 1000
+lambda_vals = np.linspace(0.1, 1.9, npoints)
+
+# G = Emod / (2 * (1 + v)) # Shear modulus
+G_rubber = E_rubber / (2 * (1 + nu_rubber))
+
 # Two formulations
 sigma_eq96 = G_rubber * (lambda_vals**2 - 1)  # Eq. (9.6)
-sigma_uniaxial = G_rubber * (lambda_vals**2 - 1/lambda_vals)  # Uniaxial stress
+# sigma_uniaxial = G_rubber * (lambda_vals**2 - 1/lambda_vals)  # Uniaxial stress
 
 # Deviatoric stress (should be identical)
 sigma22_eq96 = G_rubber * (1 / lambda_vals - 1)
 mean_96 = (sigma_eq96 + 2 * sigma22_eq96) / 3
 dev_96 = sigma_eq96 - mean_96
-dev_uni = sigma_uniaxial - sigma_uniaxial / 3
+# dev_uni = sigma_uniaxial - sigma_uniaxial / 3
 
 plt.figure()
 plt.plot(lambda_vals, sigma_eq96, 'b-', label='Eq. (9.6)')
-plt.plot(lambda_vals, sigma_uniaxial, 'r--', label='Uniaxial')
+# plt.plot(lambda_vals, sigma_uniaxial, 'r--', label='Uniaxial')
 plt.axhline(0, color='k', linestyle='--', alpha=0.3)
 plt.axvline(1, color='k', linestyle='--', alpha=0.3)
 plt.xlabel('Stretch λ')
 plt.ylabel('Stress σ₁₁ (Pa)')
-plt.title('Neo-Hookean: Two Formulations')
-fig('Neo-Hookean: Two Formulations')
+plt.title('Material behaviour')
+fig('Material behaviour')
 
 plt.figure()
 plt.plot(lambda_vals, dev_96, 'b-', linewidth=2.5, label='Eq. (9.6) deviatoric')
-plt.plot(lambda_vals, dev_uni, 'r--', label='Uniaxial deviatoric')
+# plt.plot(lambda_vals, dev_uni, 'r--', label='Uniaxial deviatoric')
 plt.axhline(0, color='k', linestyle='--', alpha=0.3)
 plt.axvline(1, color='k', linestyle='--', alpha=0.3)
 plt.xlabel('Stretch λ')
 plt.ylabel('Deviatoric Stress (Pa)')
-plt.title('Deviatoric Stress: Identical')
-fig('Deviatoric Stress: Identical')
-
-print("\nBoth give IDENTICAL deviatoric stress → same material behavior!")
+plt.title('Deviatoric Stress')
+fig('Deviatoric Stress')
 
 
+'''
 # Incompressible neo-Hookean: σ₁₁ = G(λ² - λ⁻¹)
 # This assumes uniaxial stress state (σ₂₂ = σ₃₃ = 0)
 sigma11 = G_rubber * (lambda_vals**2 - 1/lambda_vals)
@@ -619,7 +620,7 @@ plt.xlim([0.1, 1.9])
 plt.text(0.4, -10, 'Compression', fontsize=11, ha='center', color='red')
 plt.text(1.5, 15, 'Tension', fontsize=11, ha='center', color='green')
 plt.text(1.0, -2, 'λ = 1\n(undeformed)', fontsize=10, ha='center')
-
+'''
 #%%
 
 
