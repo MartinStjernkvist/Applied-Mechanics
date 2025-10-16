@@ -918,4 +918,427 @@ fig('Cantilever with Spring Support')
 R_s = k_spring * w[idx_a]
 print(f"Spring reaction force = {R_s:.3f} N")
 print(f"Tip deflection = {w[-1]:.6e} m")
+
+
+"""
+CANTILEVER BEAM WITH ROLLER SUPPORT
+====================================
+Beam configuration:
+- Fixed support at x = 0
+- Roller support at x = a
+- Point load P at x = L (free end)
+
+Method: Solve using Euler-Bernoulli beam equation
+EI * d⁴w/dx⁴ = q(x)
+"""
+
+# ============================================================================
+# BEAM PARAMETERS
+# ============================================================================
+L = 2.0        # Total beam length [m]
+a = 1.5        # Roller support position [m]
+P = 5000.0     # Point load at free end [N]
+E = 210e9      # Young's modulus [Pa] (steel)
+h = 0.05       # Beam height [m]
+b = 0.05       # Beam width [m]
+
+I = (b * h**3) / 12  # Second moment of area [m⁴]
+EI = E * I           # Bending stiffness [N·m²]
+
+print("="*70)
+print("CANTILEVER BEAM WITH ROLLER SUPPORT - NUMERICAL SOLUTION")
+print("="*70)
+print(f"Beam length L = {L} m")
+print(f"Roller support at a = {a} m")
+print(f"Point load P = {P} N at x = {L} m")
+print(f"Bending stiffness EI = {EI:.2e} N·m²")
+
+# ============================================================================
+# METHOD 1: SUPERPOSITION (ANALYTICAL-NUMERICAL HYBRID)
+# ============================================================================
+print("\n" + "="*70)
+print("METHOD 1: SUPERPOSITION")
+print("="*70)
+
+def solve_superposition(L, a, P, EI):
+    """
+    Solve using superposition:
+    1. Cantilever with load P at tip → deflection w₁(x)
+    2. Find reaction R at roller such that w₁(a) + w₂(a) = 0
+    3. w₂(x) is deflection due to reaction R at position a
+    """
+    
+    # Step 1: Find roller reaction R
+    # Deflection of cantilever at x=a due to P at x=L:
+    # w₁(a) = P/(6EI) * a² * (3L - a)
+    
+    # Deflection at x=a due to upward force R at x=a:
+    # For cantilever with point load at distance 'a', deflection at load point:
+    # w₂(a) = -R*a³/(3EI)
+    
+    # Boundary condition: w₁(a) + w₂(a) = 0
+    # P/(6EI) * a² * (3L - a) - R*a³/(3EI) = 0
+    
+    R = P * (3*L - a) / (2*a)
+    
+    print(f"\nRoller reaction R = {R:.2f} N")
+    print(f"Check: Fixed end reaction = {P - R:.2f} N")
+    print(f"       Fixed end moment = {P*L - R*a:.2f} N·m")
+    
+    # Step 2: Compute deflection along beam
+    x = np.linspace(0, L, 200)
+    w = np.zeros_like(x)
+    
+    for i, xi in enumerate(x):
+        # Region 1: 0 ≤ x ≤ a (before roller)
+        if xi <= a:
+            # Deflection due to P at x=L
+            w1 = (P / (6*EI)) * xi**2 * (3*L - xi)
+            # Deflection due to R at x=a
+            w2 = -(R / (6*EI)) * xi**2 * (3*a - xi)
+            w[i] = w1 + w2
+            
+        # Region 2: a < x ≤ L (after roller)
+        else:
+            # Deflection due to P at x=L
+            w1 = (P / (6*EI)) * xi**2 * (3*L - xi)
+            # Deflection due to R at x=a (now in other segment)
+            w2 = -(R / (6*EI)) * (a**2 * (3*xi - a))
+            w[i] = w1 + w2
+    
+    return x, w, R
+
+x_super, w_super, R_super = solve_superposition(L, a, P, EI)
+
+print(f"\nDeflection at roller (should be ~0): {np.interp(a, x_super, w_super)*1000:.6f} mm")
+print(f"Deflection at tip: {w_super[-1]*1000:.4f} mm")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+init_printing()
+
+"""
+CANTILEVER BEAM WITH ROLLER SUPPORT - SYMBOLIC SOLUTION
+========================================================
+Configuration:
+- Fixed at x = 0
+- Roller support at x = a (unknown reaction R)
+- Point load P at x = L
+
+Strategy: Solve in two segments
+- Segment 1: 0 ≤ x ≤ a (with reaction R at x=a)
+- Segment 2: a ≤ x ≤ L (after roller)
+"""
+
+print("="*80)
+print("SYMBOLIC SOLUTION: CANTILEVER WITH ROLLER SUPPORT")
+print("="*80)
+
+# Define symbols
+x, L, a, P, E, I, R = symbols('x L a P E I R', real=True, positive=True)
+
+# ============================================================================
+# SEGMENT 1: 0 ≤ x ≤ a (before roller)
+# ============================================================================
+print("\n" + "="*80)
+print("SEGMENT 1: 0 ≤ x ≤ a")
+print("="*80)
+
+w1 = Function('w1')(x)
+
+# Differential equation: EI * d⁴w/dx⁴ = 0 (no distributed load)
+diffeq1 = Eq(E * I * diff(w1, x, 4), 0)
+print("\nDifferential equation:")
+print(diffeq1)
+
+# General solution
+w1_general = dsolve(diffeq1, w1).rhs
+print("\nGeneral solution w1(x):")
+print(w1_general)
+
+# Moment and shear for segment 1
+M1 = -E * I * w1_general.diff(x, 2)
+V1 = -E * I * w1_general.diff(x, 3)
+
+# ============================================================================
+# SEGMENT 2: a ≤ x ≤ L (after roller)
+# ============================================================================
+print("\n" + "="*80)
+print("SEGMENT 2: a ≤ x ≤ L")
+print("="*80)
+
+w2 = Function('w2')(x)
+
+# Differential equation: EI * d⁴w/dx⁴ = 0
+diffeq2 = Eq(E * I * diff(w2, x, 4), 0)
+
+# General solution
+w2_general = dsolve(diffeq2, w2).rhs
+print("\nGeneral solution w2(x):")
+print(w2_general)
+
+# Moment and shear for segment 2
+M2 = -E * I * w2_general.diff(x, 2)
+V2 = -E * I * w2_general.diff(x, 3)
+
+# ============================================================================
+# BOUNDARY CONDITIONS
+# ============================================================================
+print("\n" + "="*80)
+print("BOUNDARY CONDITIONS")
+print("="*80)
+
+# We have 8 unknowns (C1, C2, C3, C4 for w1 and C5, C6, C7, C8 for w2)
+# Need 8 equations:
+
+# At x = 0 (fixed support):
+BC1 = w1_general.subs(x, 0)  # w1(0) = 0
+BC2 = w1_general.diff(x).subs(x, 0)  # w1'(0) = 0 (slope = 0)
+
+# At x = a (roller support - continuity and support conditions):
+BC3 = w1_general.subs(x, a)  # w1(a) = 0 (roller constrains deflection)
+BC4 = Eq(w1_general.diff(x).subs(x, a), w2_general.diff(x).subs(x, a))  # θ1(a) = θ2(a) (slope continuity)
+BC5 = Eq(M1.subs(x, a), M2.subs(x, a))  # M1(a) = M2(a) (moment continuity)
+# Jump in shear at roller due to reaction R:
+BC6 = Eq(V1.subs(x, a) - V2.subs(x, a), R)  # V1(a) - V2(a) = R
+
+# At x = L (free end):
+BC7 = M2.subs(x, L)  # M2(L) = 0 (no moment at free end)
+BC8 = Eq(V2.subs(x, L), -P)  # V2(L) = -P (shear force = -P)
+
+boundary_conditions = [BC1, BC2, BC3, BC4, BC5, BC6, BC7, BC8]
+
+print("\nBoundary conditions:")
+for i, bc in enumerate(boundary_conditions, 1):
+    print(f"BC{i}: {bc}")
+
+# ============================================================================
+# SOLVE FOR INTEGRATION CONSTANTS AND REACTION R
+# ============================================================================
+print("\n" + "="*80)
+print("SOLVING FOR INTEGRATION CONSTANTS...")
+print("="*80)
+
+# Get the constants from the general solutions
+from sympy import symbols as syms
+C1, C2, C3, C4, C5, C6, C7, C8 = syms('C1 C2 C3 C4 C5 C6 C7 C8', real=True)
+
+# Substitute constant symbols into general solutions
+w1_general = w1_general.subs({'C1': C1, 'C2': C2, 'C3': C3, 'C4': C4})
+w2_general = w2_general.subs({'C1': C5, 'C2': C6, 'C3': C7, 'C4': C8})
+
+# Recompute M and V with new constants
+M1 = -E * I * w1_general.diff(x, 2)
+V1 = -E * I * w1_general.diff(x, 3)
+M2 = -E * I * w2_general.diff(x, 2)
+V2 = -E * I * w2_general.diff(x, 3)
+
+# Recreate boundary conditions with substituted constants
+BC1 = w1_general.subs(x, 0)
+BC2 = w1_general.diff(x).subs(x, 0)
+BC3 = w1_general.subs(x, a)
+BC4 = Eq(w1_general.diff(x).subs(x, a), w2_general.diff(x).subs(x, a))
+BC5 = Eq(M1.subs(x, a), M2.subs(x, a))
+BC6 = Eq(V1.subs(x, a) - V2.subs(x, a), R)
+BC7 = M2.subs(x, L)
+BC8 = Eq(V2.subs(x, L), -P)
+
+boundary_conditions = [BC1, BC2, BC3, BC4, BC5, BC6, BC7, BC8]
+
+# Solve for constants and R
+print("Solving system of 8 equations for 8 unknowns + R...")
+constants_solution = solve(boundary_conditions, [C1, C2, C3, C4, C5, C6, C7, C8, R])
+
+print("\nIntegration constants and roller reaction:")
+for key, val in constants_solution.items():
+    print(f"{key} = {simplify(val)}")
+
+# ============================================================================
+# FINAL SOLUTIONS
+# ============================================================================
+print("\n" + "="*80)
+print("FINAL DEFLECTION FUNCTIONS")
+print("="*80)
+
+# Substitute constants back
+w1_solution = simplify(w1_general.subs(constants_solution))
+w2_solution = simplify(w2_general.subs(constants_solution))
+R_solution = simplify(constants_solution[R])
+
+print("\nSegment 1 (0 ≤ x ≤ a):")
+print(f"w1(x) = {w1_solution}")
+
+print("\nSegment 2 (a ≤ x ≤ L):")
+print(f"w2(x) = {w2_solution}")
+
+print("\nRoller reaction:")
+print(f"R = {R_solution}")
+
+# Moment solutions
+M1_solution = simplify(M1.subs(constants_solution))
+M2_solution = simplify(M2.subs(constants_solution))
+
+print("\nBending moments:")
+print(f"M1(x) = {M1_solution}")
+print(f"M2(x) = {M2_solution}")
+
+# ============================================================================
+# NUMERICAL EVALUATION
+# ============================================================================
+print("\n" + "="*80)
+print("NUMERICAL EVALUATION")
+print("="*80)
+
+# Convert to numerical functions
+w1_func = lambdify((x, L, a, P, E, I), w1_solution, 'numpy')
+w2_func = lambdify((x, L, a, P, E, I), w2_solution, 'numpy')
+R_func = lambdify((L, a, P, E, I), R_solution, 'numpy')
+M1_func = lambdify((x, L, a, P, E, I), M1_solution, 'numpy')
+M2_func = lambdify((x, L, a, P, E, I), M2_solution, 'numpy')
+
+# Numerical parameters
+L_val = 2.0        # m
+a_val = 1.5        # m
+P_val = 5000.0     # N
+E_val = 210e9      # Pa
+h_val = 0.05       # m
+b_val = 0.05       # m
+I_val = (b_val * h_val**3) / 12  # m⁴
+
+print(f"\nNumerical parameters:")
+print(f"L = {L_val} m")
+print(f"a = {a_val} m")
+print(f"P = {P_val} N")
+print(f"EI = {E_val * I_val:.2e} N·m²")
+
+# Calculate roller reaction
+R_val = R_func(L_val, a_val, P_val, E_val, I_val)
+print(f"\nRoller reaction R = {R_val:.2f} N")
+print(f"Fixed support reaction = {P_val - R_val:.2f} N")
+
+# Generate deflection curve
+x1_vals = np.linspace(0, a_val, 100)
+x2_vals = np.linspace(a_val, L_val, 100)
+
+w1_vals = w1_func(x1_vals, L_val, a_val, P_val, E_val, I_val)
+w2_vals = w2_func(x2_vals, L_val, a_val, P_val, E_val, I_val)
+
+M1_vals = M1_func(x1_vals, L_val, a_val, P_val, E_val, I_val)
+M2_vals = M2_func(x2_vals, L_val, a_val, P_val, E_val, I_val)
+
+print(f"\nDeflection at roller: {w1_func(a_val, L_val, a_val, P_val, E_val, I_val)*1000:.6f} mm")
+print(f"Deflection at tip: {w2_vals[-1]*1000:.4f} mm")
+
+# ============================================================================
+# PLOTTING
+# ============================================================================
+fig, axes = plt.subplots(2, 1, figsize=(12, 10))
+
+# Plot 1: Deflection
+axes[0].plot(x1_vals, w1_vals*1000, 'b-', linewidth=2.5, label='Segment 1 (0 ≤ x ≤ a)')
+axes[0].plot(x2_vals, w2_vals*1000, 'r-', linewidth=2.5, label='Segment 2 (a ≤ x ≤ L)')
+axes[0].axhline(0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+axes[0].axvline(a_val, color='g', linestyle='--', linewidth=1.5, alpha=0.7, label=f'Roller at x={a_val} m')
+axes[0].plot(0, 0, 'ks', markersize=15, label='Fixed support')
+axes[0].plot(a_val, 0, 'go', markersize=12, label='Roller support')
+axes[0].plot(L_val, w2_vals[-1]*1000, 'rv', markersize=12, label=f'Load P={P_val} N')
+axes[0].set_xlabel('Position x [m]', fontsize=12)
+axes[0].set_ylabel('Deflection w [mm]', fontsize=12)
+axes[0].set_title('Beam Deflection (Symbolic Solution)', fontsize=14, fontweight='bold')
+axes[0].grid(True, alpha=0.3)
+axes[0].legend(fontsize=10)
+
+# Plot 2: Bending Moment
+axes[1].plot(x1_vals, M1_vals/1000, 'b-', linewidth=2.5, label='Segment 1')
+axes[1].plot(x2_vals, M2_vals/1000, 'r-', linewidth=2.5, label='Segment 2')
+axes[1].axhline(0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+axes[1].axvline(a_val, color='g', linestyle='--', linewidth=1.5, alpha=0.7)
+axes[1].set_xlabel('Position x [m]', fontsize=12)
+axes[1].set_ylabel('Bending Moment M [kN·m]', fontsize=12)
+axes[1].set_title('Bending Moment Diagram', fontsize=14, fontweight='bold')
+axes[1].grid(True, alpha=0.3)
+axes[1].legend(fontsize=10)
+
+plt.tight_layout()
+plt.savefig('cantilever_roller_symbolic.png', dpi=300)
+plt.show()
+
+print("\n" + "="*80)
+print("SOLUTION COMPLETE")
+print("="*80)
+
+
+
+#%%
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 4 - comparison with euler-bernoulli
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('4 - comparison with euler-bernoulli')
+
+x, L, q0, P, E, I = symbols('x L q0 P E I')
+
+w = Function('w')(x) # w is a function of x
+
+diffeq1 = Eq(E * I * diff(w, x, 4), q0)
+
+w = dsolve(diffeq1, w).rhs
+
+M = -E * I * w.diff(x, 2)
+
+# Boundary conditions for distributed load
+boundary_conditions = [ 
+                        w.subs(x, 0),                               #w(0) = 0
+                        w.diff(x).subs(x, 0),                       #w'(0) = 0
+                        M.subs(x, 11 * L / 20),                     #w''(L) = 0
+                        w.subs(x, 11 * L / 20)      #w'''(L) = -P
+                        ]
+print('\nboundary conditions:')
+display(boundary_conditions)
+
+integration_constants = solve(boundary_conditions, 'C1, C2, C3, C4', real=True)
+print('\nintegration constants:')
+display(integration_constants)
+
+# displacement function with constants substituted
+solution = w.subs(integration_constants)
+display(simplify(solution))
+w_func = lambdify((x, L, q0, P, E, I), solution, 'numpy')
+
+# moment function with constants substituted
+M_solution = M.subs(integration_constants)
+M_func = lambdify((x, L, q0, P, E, I), M_solution, 'numpy')
+
 #%%
