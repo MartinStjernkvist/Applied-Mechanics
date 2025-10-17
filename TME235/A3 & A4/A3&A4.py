@@ -715,15 +715,249 @@ def read_abaqus_data_2(results_file):
     plt.figure()
     plt.plot(X, u2, color='blue', label=results_file)
     plt.title('Deflection')
-    plt.xlabel('r [m]')
+    plt.xlabel('x [m]')
     plt.ylabel('w [m]')
     fig(results_file.strip('.rpt') + 'deflection')
     
     return datasets, X, u2
 
-read_abaqus_data_2('a4_p_10_results.rpt')
-read_abaqus_data_2('a4_p_minus_10_results.rpt')
+_, X_10, u2_10 = read_abaqus_data_2('a4_p_10_results.rpt')
+_, X_minus_10, u2_minus_10 = read_abaqus_data_2('a4_p_minus_10_results.rpt')
 
+
+
+
+#%%
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 4 - numerical solution, roller support, P = -
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('4 - numerical solution, roller support, P = -')
+
+# Define symbols
+x, Fr, P, L1, L2, E4, I4, C1, C2, C3, C4 = symbols('x Fr P L1 L2 V4 E4 C1 C2 C3 C4', real=True) 
+
+# functions
+M1 = (P + Fr) * x - (Fr * L1 + P * L2)
+M2 = - P * (L2 - x)
+
+V1 = M1.diff(x, 1)
+V2 = M2.diff(x, 1)
+
+# valid for 0 =< x =< L1
+w1 = 1 / (E4 * I4) * (integrate(integrate(M1, x), x)) + C1 * x + C2 
+
+# valid for L1 < x =< L2
+w2 = 1 / (E4 * I4) * (integrate(integrate(M2, x), x)) + C3 * x + C4
+
+bc = [
+    w1.subs(x, 0),
+    w1.diff(x).subs(x, 0),
+    w1.subs(x, L1),
+    w1.subs(x, L1) - w2.subs(x, L1),
+    w1.diff(x).subs(x, L1) - w2.diff(x).subs(x, L1)
+]
+
+# bc = [
+#     w1.subs(x, 0),
+#     w1.diff(x).subs(x, 0),
+#     V1.subs(x, 0) - P + Fr,
+#     w1.subs(x, L1),
+#     M2.subs(x, L2),
+#     V2.subs(x, L2) + P
+# ]
+
+unknowns = [Fr, C1, C2, C3, C4]
+ic = solve(bc, unknowns)
+print('integration constants:')
+display(ic)
+w1_ = w1.subs(ic)
+w2_ = w2.subs(ic)
+
+print('w1_:')
+display(simplify(w1_))
+print('w2_:')
+display(simplify(w2_))
+
+w1_func = lambdify((x, P, L1, L2, E4, I4), w1_, 'numpy')
+w2_func = lambdify((x, P, L1, L2, E4, I4), w2_, 'numpy')
+
+E4_num = E_steel
+L2_num = 2
+L1_num = 11/20 * L2_num
+I4_num = b2 * h2 *3 / 12 #moment of inertia
+P_num = 4_000_000
+
+x_num = L1_num
+
+
+print(w1_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
+print(w2_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
+
+x1_vals = np.linspace(0, L1_num, 401)
+x2_vals = np.linspace(L1_num, L2_num, 401)
+
+w1_vals = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w2_vals = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+
+plt.figure()
+plt.plot(x1_vals, w1_vals)
+plt.plot(x2_vals, w2_vals)
+plt.show()
+
+
+plt.figure()
+plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.plot(X_minus_10, u2_minus_10, color='red', label='abaqus results')
+plt.title('Deflection')
+plt.xlabel('x [m]')
+plt.ylabel('w [m]')
+fig('deflection comparison minus 10')
+
+
+#%%
+
+#%%
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 4 - numerical solution, roller support, P = -
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('4 - numerical solution, roller support, P = -')
+
+# Define symbols
+x, Fr, P, L1, L2, E4, I4, C1, C2, C3, C4 = symbols('x Fr P L1 L2 V4 E4 C1 C2 C3 C4', real=True) 
+
+# functions
+M1 = (P + Fr) * x - (Fr * L1 + P * L2)
+M2 = - P * (L2 - x)
+
+V1 = M1.diff(x, 1)
+V2 = M2.diff(x, 1)
+
+# valid for 0 =< x =< L1
+w1 = 1 / (E4 * I4) * (integrate(integrate(M1, x), x)) + C1 * x + C2 
+
+# valid for L1 < x =< L2
+w2 = 1 / (E4 * I4) * (integrate(integrate(M2, x), x)) + C3 * x + C4
+
+bc = [
+    w1.subs(x, 0),
+    w1.diff(x).subs(x, 0),
+    w1.subs(x, L1),
+    w1.subs(x, L1) - w2.subs(x, L1),
+    w1.diff(x).subs(x, L1) - w2.diff(x).subs(x, L1)
+]
+
+# bc = [
+#     w1.subs(x, 0),
+#     w1.diff(x).subs(x, 0),
+#     V1.subs(x, 0) - P + Fr,
+#     w1.subs(x, L1),
+#     M2.subs(x, L2),
+#     V2.subs(x, L2) + P
+# ]
+
+unknowns = [Fr, C1, C2, C3, C4]
+ic = solve(bc, unknowns)
+print('integration constants:')
+display(ic)
+w1_ = w1.subs(ic)
+w2_ = w2.subs(ic)
+
+print('w1_:')
+display(simplify(w1_))
+print('w2_:')
+display(simplify(w2_))
+
+w1_func = lambdify((x, P, L1, L2, E4, I4), w1_, 'numpy')
+w2_func = lambdify((x, P, L1, L2, E4, I4), w2_, 'numpy')
+
+E4_num = E_steel
+L2_num = 2
+L1_num = 11/20 * L2_num
+I4_num = b2 * h2 *3 / 12 #moment of inertia
+
+# validation:
+x_num = L1_num
+print(w1_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
+print(w2_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
+
+
+P_num = 4_000_000
+
+x1_vals = np.linspace(0, L1_num, 401)
+x2_vals = np.linspace(L1_num, L2_num, 401)
+
+w1_vals = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w2_vals = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+
+plt.figure()
+plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.title('Deflection')
+plt.xlabel('x [m]')
+plt.ylabel('w [m]')
+fig('deflection numerical minus 10')
+
+plt.figure()
+plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.plot(X_minus_10, u2_minus_10, color='red', label='abaqus results')
+plt.title('Deflection')
+plt.xlabel('x [m]')
+plt.ylabel('w [m]')
+fig('deflection comparison minus 10')
+
+P_num = -4_000_000
+
+x1_vals = np.linspace(0, L1_num, 401)
+x2_vals = np.linspace(L1_num, L2_num, 401)
+
+w1_vals = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w2_vals = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+
+plt.figure()
+plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.title('Deflection')
+plt.xlabel('x [m]')
+plt.ylabel('w [m]')
+fig('deflection numerical 10')
+
+
+plt.figure()
+plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.plot(X_10, u2_10, color='red', label='abaqus results')
+plt.title('Deflection')
+plt.xlabel('x [m]')
+plt.ylabel('w [m]')
+fig('deflection comparison minus 10')
 
 #%%
 """
@@ -1345,26 +1579,5 @@ M_func = lambdify((x, L, q0, P, E, I), M_solution, 'numpy')
 
 
 """
-#%%
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-# Assignment 4 - new attempt
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_prob('4 - new attempt')
-
-
-
 
 #%%
