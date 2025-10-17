@@ -724,8 +724,9 @@ def read_abaqus_data_2(results_file):
 read_abaqus_data_2('a4_p_10_results.rpt')
 read_abaqus_data_2('a4_p_minus_10_results.rpt')
 
-#%%
 
+#%%
+"""
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
@@ -921,17 +922,17 @@ print(f"Spring reaction force = {R_s:.3f} N")
 print(f"Tip deflection = {w[-1]:.6e} m")
 
 
-"""
-CANTILEVER BEAM WITH ROLLER SUPPORT
-====================================
-Beam configuration:
-- Fixed support at x = 0
-- Roller support at x = a
-- Point load P at x = L (free end)
+# ====================================
+# CANTILEVER BEAM WITH ROLLER SUPPORT
+# ====================================
+# Beam configuration:
+# - Fixed support at x = 0
+# - Roller support at x = a
+# - Point load P at x = L (free end)
 
-Method: Solve using Euler-Bernoulli beam equation
-EI * d⁴w/dx⁴ = q(x)
-"""
+# Method: Solve using Euler-Bernoulli beam equation
+# EI * d⁴w/dx⁴ = q(x)
+
 
 # ============================================================================
 # BEAM PARAMETERS
@@ -962,12 +963,12 @@ print("METHOD 1: SUPERPOSITION")
 print("="*70)
 
 def solve_superposition(L, a, P, EI):
-    """
-    Solve using superposition:
-    1. Cantilever with load P at tip → deflection w₁(x)
-    2. Find reaction R at roller such that w₁(a) + w₂(a) = 0
-    3. w₂(x) is deflection due to reaction R at position a
-    """
+
+    # Solve using superposition:
+    # 1. Cantilever with load P at tip → deflection w₁(x)
+    # 2. Find reaction R at roller such that w₁(a) + w₂(a) = 0
+    # 3. w₂(x) is deflection due to reaction R at position a
+
     
     # Step 1: Find roller reaction R
     # Deflection of cantilever at x=a due to P at x=L:
@@ -1038,18 +1039,18 @@ print(f"Deflection at tip: {w_super[-1]*1000:.4f} mm")
 
 init_printing()
 
-"""
-CANTILEVER BEAM WITH ROLLER SUPPORT - SYMBOLIC SOLUTION
-========================================================
-Configuration:
-- Fixed at x = 0
-- Roller support at x = a (unknown reaction R)
-- Point load P at x = L
 
-Strategy: Solve in two segments
-- Segment 1: 0 ≤ x ≤ a (with reaction R at x=a)
-- Segment 2: a ≤ x ≤ L (after roller)
-"""
+# CANTILEVER BEAM WITH ROLLER SUPPORT - SYMBOLIC SOLUTION
+# ========================================================
+# Configuration:
+# - Fixed at x = 0
+# - Roller support at x = a (unknown reaction R)
+# - Point load P at x = L
+
+# Strategy: Solve in two segments
+# - Segment 1: 0 ≤ x ≤ a (with reaction R at x=a)
+# - Segment 2: a ≤ x ≤ L (after roller)
+
 
 print("="*80)
 print("SYMBOLIC SOLUTION: CANTILEVER WITH ROLLER SUPPORT")
@@ -1341,5 +1342,29 @@ w_func = lambdify((x, L, q0, P, E, I), solution, 'numpy')
 # moment function with constants substituted
 M_solution = M.subs(integration_constants)
 M_func = lambdify((x, L, q0, P, E, I), M_solution, 'numpy')
+
+
+"""
+#%%
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 4 - new attempt
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('4 - new attempt')
+
+
+
 
 #%%
