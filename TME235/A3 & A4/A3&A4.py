@@ -832,7 +832,7 @@ plt.axhline(0, color='k')
 # Mark fixed end and support location
 plt.plot(0, 0, 'ks', label='Fixed end')
 plt.plot(L, 0, 'ro', label='Support location')
-fig('Beam Deflection: Comparison of Support Conditions')
+fig('Beam Deflection Comparison of Support Conditions')
 
 # ============================================================================
 # SUMMARY TABLE

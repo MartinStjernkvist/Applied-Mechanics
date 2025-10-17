@@ -481,8 +481,6 @@ plt.savefig('E3_1', dpi=dpi, bbox_inches='tight')
 plt.show()
 
 
-
-
 plt.figure()
 
 plt.contourf(x1_2d, x2_2d, np.log(v1_2d/v2_2d), levels=20, cmap='plasma')
@@ -501,6 +499,8 @@ plt.show()
 
 
 dv1_dx1, dv1_dx2 = np.gradient(v1_2d, x1_2d[:,0], x2_2d[0,:])
+print('dv1_dx1: ', dv1_dx1)
+print('shape: ', np.shape(dv1_dx1))
 
 # plt.figure()
 

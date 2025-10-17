@@ -1,6 +1,9 @@
 #%%
 # %matplotlib widget
 
+from pl_vect import *
+from dphidx_dy import *
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sympy import *
@@ -89,7 +92,7 @@ def fig(fig_name):
 
 
 
-# Assignment 1 - ...
+# Assignment 3.5
 
 
 
@@ -97,6 +100,13 @@ def fig(fig_name):
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('1 - ...')
+new_prob('3.5')
+
+'''
+i = 1 terms
+eqn 11.30
+'''
+
+print()
 
 #%%
