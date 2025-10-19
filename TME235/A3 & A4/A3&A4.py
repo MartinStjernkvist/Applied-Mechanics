@@ -368,10 +368,10 @@ def read_abaqus_data(results_file):
     
     return datasets, X, u2, s11, svm
 
-_, a1h1_X, a1h1_u2, a1h1_s11, a1h1_svm = read_abaqus_data('a1h1_results.rpt') # left bottom support
-_, a1h2_X, a1h2_u2, a1h2_s11, a1h2_svm = read_abaqus_data('a1h2_results.rpt') # left bottom support
-_, a2h1_X, a2h1_u2, a2h1_s11, a2h1_svm = read_abaqus_data('a2h1_results.rpt') # left bottom support
-# _, a1h1_X, a1h1_u2, a1h1_s11, a1h1_svm = read_abaqus_data('a1h1_left_mid_results.rpt') # left middle support
+_, a1h1_X, a1h1_u2, a1h1_s11, a1h1_svm = read_abaqus_data('a1h1_results.rpt')
+_, a1h2_X, a1h2_u2, a1h2_s11, a1h2_svm = read_abaqus_data('a1h2_results.rpt') 
+_, a2h1_X, a2h1_u2, a2h1_s11, a2h1_svm = read_abaqus_data('a2h1_results.rpt') 
+_, a1h_mid_X, a1h1_mid_u2, a1h1_mid_s11, a1h1_mid_svm = read_abaqus_data('a1h1_mid_results.rpt') # middle support
 _, a1h1_radialfix_X, a1h1_radialfix_u2, a1h1_radialfix_s11, a1h1_radialfix_svm = read_abaqus_data('a1h1_radialfix_results.rpt') # right bottom, radial fixed support
 
 #%%
