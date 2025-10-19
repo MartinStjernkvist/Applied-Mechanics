@@ -611,7 +611,7 @@ fig('difference deflection')
 
 
 
-# Assignment 4 - numerical solution, roller support, P = -
+# Assignment 4 - numerical solution, roller support
 
 
 
@@ -619,13 +619,13 @@ fig('difference deflection')
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('4 - numerical solution, roller support, P = -')
+new_prob('4 - numerical solution, roller support')
 
 # Define symbols
 x, Fr, P, L1, L2, E4, I4, C1, C2, C3, C4 = symbols('x Fr P L1 L2 V4 E4 C1 C2 C3 C4', real=True) 
 
 # functions
-M1 = (P + Fr) * x - (Fr * L1 + P * L2)
+M1 = - (P + Fr) * x + (Fr * L1 + P * L2)
 M2 = - P * (L2 - x)
 
 V1 = M1.diff(x, 1)
@@ -675,25 +675,16 @@ print(w2_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
 x1_vals = np.linspace(0, L1_num, 401)
 x2_vals = np.linspace(L1_num, L2_num, 401)
 
-w1_vals = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
-w2_vals = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w1_vals_pos = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w2_vals_pos = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
 
 plt.figure()
-plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
-plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.plot(x1_vals, w1_vals_pos, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals_pos, label='numerical solution, roller support, w2')
 plt.title('Deflection')
 plt.xlabel('x [m]')
 plt.ylabel('w [m]')
 fig('deflection numerical minus 10')
-
-plt.figure()
-plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
-plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
-plt.plot(X_minus_10, u2_minus_10, color='red', label='abaqus results')
-plt.title('Deflection')
-plt.xlabel('x [m]')
-plt.ylabel('w [m]')
-fig('deflection comparison minus 10')
 
 P_num = -4_000_000
 
@@ -711,14 +702,53 @@ plt.xlabel('x [m]')
 plt.ylabel('w [m]')
 fig('deflection numerical 10')
 
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 4 - comparison plots
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('4 - comparison plots')
+
+x_vals = np.linspace(0, L2_num, 401)
+
+def euler_bernoulli(x, P):
+    return (P * x**3) / (3 * E4_num * I4_num)
+
+P_num = 4_000_000
+
+euler_bernoulli_10_vals = euler_bernoulli(x_vals, P_num)
+euler_bernoulli_minus_10_vals = euler_bernoulli(x_vals, -P_num)
+
+plt.figure()
+plt.plot(x1_vals, w1_vals_pos, label='numerical solution, roller support, w1')
+plt.plot(x2_vals, w2_vals_pos, label='numerical solution, roller support, w2')
+plt.plot(X_10, u2_10, color='red', label='abaqus results')
+plt.plot(x_vals, euler_bernoulli_10_vals, color='purple', label='numerical, no support')
+plt.title('Deflection')
+plt.xlabel('x [m]')
+plt.ylabel('w [m]')
+fig('deflection comparison 10')
 
 plt.figure()
 plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
 plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
-plt.plot(X_10, u2_10, color='red', label='abaqus results')
+plt.plot(X_minus_10, u2_minus_10, color='red', label='abaqus results')
+plt.plot(x_vals, euler_bernoulli_minus_10_vals, color='purple', label='numerical, no support')
 plt.title('Deflection')
 plt.xlabel('x [m]')
 plt.ylabel('w [m]')
 fig('deflection comparison minus 10')
+
 
 #%%
