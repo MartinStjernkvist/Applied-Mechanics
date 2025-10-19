@@ -62,6 +62,7 @@ def fig(fig_name):
     plt.grid(True, alpha = 0.3)
     sfig(fig_name)
     plt.show()
+    print('figure name: ', fig_name)
 
 #%%
 ####################################################################################################
@@ -684,7 +685,7 @@ plt.plot(x2_vals, w2_vals_pos, label='numerical solution, roller support, w2')
 plt.title('Deflection')
 plt.xlabel('x [m]')
 plt.ylabel('w [m]')
-fig('deflection numerical minus 10')
+fig('deflection numerical 10')
 
 P_num = -4_000_000
 
@@ -700,7 +701,8 @@ plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
 plt.title('Deflection')
 plt.xlabel('x [m]')
 plt.ylabel('w [m]')
-fig('deflection numerical 10')
+fig('deflection numerical minus 10')
+
 
 #%%
 ####################################################################################################
