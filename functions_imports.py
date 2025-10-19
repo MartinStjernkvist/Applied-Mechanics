@@ -55,3 +55,4 @@ def fig(fig_name):
     plt.grid(True, alpha = 0.3)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     plt.show()
+    print('figure name: ', fig_name)
