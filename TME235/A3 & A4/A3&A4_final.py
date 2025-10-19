@@ -190,8 +190,8 @@ def numerical_analysis(a, h):
 
     plt.figure()
     plt.plot(r_vals, w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    # plt.axvline(a, color='black', linestyle='--', label='a')
+    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.title('Radial deflection')
     plt.xlabel('r [m]')
     plt.ylabel('w [m]')
@@ -199,8 +199,8 @@ def numerical_analysis(a, h):
 
     plt.figure()
     plt.plot(r_vals, sigma_rr_vals, color='red', label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    # plt.axvline(a, color='black', linestyle='--', label='a')
+    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('Radial stress')
     plt.xlabel('r [m]')
@@ -209,8 +209,8 @@ def numerical_analysis(a, h):
     
     plt.figure()
     plt.plot(r_vals, sigma_vm_vals, color='green', label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
-    plt.axvline(a, color='black', linestyle='--', label='a')
-    plt.axvline(b_radius, color='grey', linestyle='--', label='b')
+    # plt.axvline(a, color='black', linestyle='--', label='a')
+    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('von Mises stress')
     plt.xlabel('r [m]')
