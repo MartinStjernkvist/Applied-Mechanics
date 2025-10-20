@@ -101,7 +101,7 @@ print("Vb inlet", V_b[0], "m/s")
 print("Vb outlet", V_b[-1], "m/s")
 
 plt.figure()
-plt.plot(x1_2d[:, 0], V_b, "o-", label="Bulk velocity")
+plt.plot(x1_2d[:, 0], V_b, label="Bulk velocity")
 plt.xlabel("$x_1$")
 plt.ylabel("Velocity [m/s]")
 plt.title("Bulk velocity vs x1 position")
@@ -128,8 +128,8 @@ print(f"ΔP_sim: {deltaP_sim:.3e} Pa")
 print(f"ΔP_Bernoulli:  {deltaP_bern:.3e} Pa")
 
 plt.figure()
-plt.plot(x1_position, P_bulk_sim, "o-", label="STAR-CCM+ bulk pressure")
-plt.plot(x1_position, P_Bern, "s--", label="Bernoulli pressure")
+plt.plot(x1_position, P_bulk_sim, label="STAR-CCM+ bulk pressure")
+plt.plot(x1_position, P_Bern, label="Bernoulli pressure")
 plt.xlabel("$x_1$")
 plt.ylabel("Pressure [Pa]")
 plt.title("Bulk Pressure vs x1 position")
@@ -142,7 +142,7 @@ fig("31 Bulk Pressure vs x1 position")
 P_dyn = 0.5 * rho * V_b**2
 
 plt.figure()
-plt.plot(x1_position, P_dyn, "o-")
+plt.plot(x1_position, P_dyn)
 plt.xlabel("$x_1$")
 plt.ylabel("Pressure [Pa]")
 plt.title("Dynamic pressure vs x1 position")
@@ -242,9 +242,9 @@ wall_shear_stresses_top = df.iloc[:, column_to_extract].to_numpy()
 
 plt.figure()
 plt.plot(
-    x1_position, wall_shear_stresses_bottom, "o-", label="Bottom wall shear stress"
+    x1_position, wall_shear_stresses_bottom, label="Bottom wall shear stress"
 )
-plt.plot(x1_position, wall_shear_stresses_top, "o-", label="Top wall shear stress")
+plt.plot(x1_position, wall_shear_stresses_top, label="Top wall shear stress")
 plt.xlabel("$x_1$")
 plt.ylabel("Stress [Pa]")
 plt.title("Wall shear stress vs x1 position")
@@ -261,8 +261,8 @@ for i in range(len(wall_shear_stresses_top)):
 # print(np.shape(Cf_top))
 
 plt.figure()
-plt.plot(x1_position, Cf_bottom, "o-", label="Bottom wall skin friction")
-plt.plot(x1_position, Cf_top, "o-", label="Top wall skin friction")
+plt.plot(x1_position, Cf_bottom, label="Bottom wall skin friction")
+plt.plot(x1_position, Cf_top, label="Top wall skin friction")
 plt.xlabel("$x_1$")
 plt.ylabel("Skin friction")
 plt.title("Skin friction vs x1 position")
@@ -345,13 +345,13 @@ fig("34 Turbulent Viscosity")
 
 plt.figure()
 i = 50
-plt.plot(ratio[i, :], x2_2d[i, :], "o-", label=f"i={i}, x1={x1_2d[i,0]:.3f}")
+plt.plot(ratio[i, :], x2_2d[i, :], label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 i = 100
-plt.plot(ratio[i, :], x2_2d[i, :], "o-", label=f"i={i}, x1={x1_2d[i,0]:.3f}")
+plt.plot(ratio[i, :], x2_2d[i, :], label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 i = 150
-plt.plot(ratio[i, :], x2_2d[i, :], "o-", label=f"i={i}, x1={x1_2d[i,0]:.3f}")
+plt.plot(ratio[i, :], x2_2d[i, :], label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 i = 199
-plt.plot(ratio[i, :], x2_2d[i, :], "o-", label=f"i={i}, x1={x1_2d[i,0]:.3f}")
+plt.plot(ratio[i, :], x2_2d[i, :], label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 plt.ylabel("$x_2$")
 plt.xlabel("Skin friction")
 plt.title("Skin friction vs x1 position")
@@ -384,7 +384,7 @@ indices = [5, 50, 100, 150]  # Indices of x1 stations to plot
 # Plotting mu_t/mu versus x2 for selected x1 stations
 plt.figure()
 for i in indices:
-    plt.plot(ratio[i, :], x2_2d[i, :], "-o", label=f"i={i}, x1≈{x1_2d[i,0]:.3f}")
+    plt.plot(ratio[i, :], x2_2d[i, :], label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 plt.xlabel(r"$\mu_t/\mu$")
 plt.ylabel(r"$x_2$ [m]")
 plt.title(r"Viscosity ratio $\mu_t/\mu$ vs $x_2$ at selected $x_1$ stations")
@@ -399,15 +399,14 @@ for i in indices:
     order = np.argsort(x2p)
     x2p_s = x2p[order]
     y_s = y[order]
-    plt.plot(x2p_s, y_s, "-o", label=f"i={i}, x1={x1_2d[i,0]:.3f}")
+    plt.plot(x2p_s, y_s, label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 
 plt.xscale("log")
 plt.xlabel(r"$x_2^+ = ux_2 / \nu$")
 plt.ylabel(r"$\mu_t/\mu$")
 plt.title(r"Viscosity ratio $\mu_t/\mu$ vs $x_2^+$ (bottom wall)")
-fig("34 Viscosity ratio (bottom wall)")
 plt.grid(True, which="both", ls="--", alpha=0.6)
-
+fig("34 Viscosity ratio (bottom wall)")
 
 # %%
 ####################################################################################################
@@ -574,16 +573,16 @@ eps_model_top = 2.0 * nu * k_top / (x2_top**2)
 x1 = x1_2d[:, 0]  # x1-coordinate for the plot
 
 plt.figure()
-plt.plot(x1_position, eps_ccm_bot, "o-", label="$\epsilon_{ccm}$ (Starccm+)")
-plt.plot(x1_position, eps_model_bot, "s--", label="$\epsilon_{model}$ (Eq. 11.166)")
+plt.plot(x1_position, eps_ccm_bot, label="$\epsilon_{ccm}$ (Starccm+)")
+plt.plot(x1_position, eps_model_bot, label="$\epsilon_{model}$ (Eq. 11.166)")
 plt.xlabel("$x_1$ [m]")
 plt.ylabel(r"$\varepsilon$ [m$^2$/s$^3$]")
 plt.title("Bottom Wall-Adjacent Cells")
 fig("37 Bottom Wall-Adjacent Cells (bottom wall)")
 
 plt.figure()
-plt.plot(x1_position, eps_ccm_top, "o-", label="$\epsilon_{ccm}$ (Starccm+)")
-plt.plot(x1_position, eps_model_top, "s--", label="$\epsilon_{model}$ (Eq. 11.166)")
+plt.plot(x1_position, eps_ccm_top, label="$\epsilon_{ccm}$ (Starccm+)")
+plt.plot(x1_position, eps_model_top, label="$\epsilon_{model}$ (Eq. 11.166)")
 plt.xlabel("$x_1$ [m]")
 plt.ylabel(r"$\varepsilon$ [m$^2$/s$^3$]")
 plt.title("Top Wall-Adjacent Cells")
