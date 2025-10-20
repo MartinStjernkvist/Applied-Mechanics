@@ -65,7 +65,7 @@ script_dir = Path(__file__).parent
 def fig(fig_name):
     fig_output_file = script_dir / "figures" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
-    plt.legend(loc='best')
+    plt.legend(loc="best")
     plt.grid(True, alpha=0.3)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches="tight")
     plt.show()
@@ -90,33 +90,26 @@ new_prob("3.1")
 
 x2_min = x2_2d[:, 0]
 x2_max = x2_2d[:, -1]
-
+x1_position = x1_2d[:, 0]
 
 h_x1 = x2_max - x2_min  # Height of the channel at each x1 position
 
-
 integral_V1_dx2 = np.trapz(v1_2d, x=x2_2d, axis=1)  # Integrate V1 over x2 for each x1
 
-
 V_b = integral_V1_dx2 / h_x1  # Calculate bulk velocity profile
-
-x1_position = x1_2d[:, 0]
-
-plt.figure()
-plt.plot(x1_position, V_b, "o-", label="Bulk velocity")
-plt.xlabel("$x_1$")
-plt.ylabel("Pressure [Pa]")
-plt.title("Bulk Pressure vs x1 position")
-fig("Bulk Pressure vs x1 position")
-
 print("Vb inlet", V_b[0], "m/s")
 print("Vb outlet", V_b[-1], "m/s")
 
+plt.figure()
+plt.plot(x1_2d[:, 0], V_b, "o-", label="Bulk velocity")
+plt.xlabel("$x_1$")
+plt.ylabel("Velocity [m/s]")
+plt.title("Bulk velocity vs x1 position")
+fig("31 Bulk velocity vs x1 position")
 
 # --------------------------------------------
 # ...
 # --------------------------------------------
-
 
 integral_P_dx2 = np.trapz(p_2d, x=x2_2d, axis=1)
 P_bulk_sim = integral_P_dx2 / h_x1
@@ -140,7 +133,7 @@ plt.plot(x1_position, P_Bern, "s--", label="Bernoulli pressure")
 plt.xlabel("$x_1$")
 plt.ylabel("Pressure [Pa]")
 plt.title("Bulk Pressure vs x1 position")
-fig("Bulk Pressure vs x1 position")
+fig("31 Bulk Pressure vs x1 position")
 
 # --------------------------------------------
 # ...
@@ -153,7 +146,7 @@ plt.plot(x1_position, P_dyn, "o-")
 plt.xlabel("$x_1$")
 plt.ylabel("Pressure [Pa]")
 plt.title("Dynamic pressure vs x1 position")
-fig("Dynamic pressure vs x1 position")
+fig("31 Dynamic pressure vs x1 position")
 
 
 # --------------------------------------------
@@ -163,10 +156,8 @@ fig("Dynamic pressure vs x1 position")
 # Given Reynolds number
 Re = 37000
 
-
 def g(f):
     return 1.0 / math.sqrt(f) - 1.930 * math.log10(Re * math.sqrt(f)) + 0.537
-
 
 # Secant method implementation
 def secant(f0, f1, tol=1e-12, maxiter=100):
@@ -181,7 +172,6 @@ def secant(f0, f1, tol=1e-12, maxiter=100):
             return f2
         f0, f1 = f1, f2
     raise RuntimeError("Secant method did not converge")
-
 
 # Initial guesses
 f_guess1 = 0.01
@@ -222,9 +212,7 @@ new_prob("3.2")
 
 mu = 1.002e-5  # Dynamic viscosity of water at at 20C
 
-dv1_dx2_at_wall = v1_2d[:, 1] / (
-    x2_2d[:, 1] - x2_2d[:, 0]
-)  # Calculating the gradient at the wall using first two points
+dv1_dx2_at_wall = v1_2d[:, 1] / (x2_2d[:, 1] - x2_2d[:, 0])  # Calculating the gradient at the wall using first two points
 
 tau_w = mu * dv1_dx2_at_wall
 
@@ -233,7 +221,7 @@ plt.plot(x1_2d[:, 0], tau_w, "r-", label="$\\tau_w$")
 plt.xlabel("Streamwise position ($x_1$)")
 plt.ylabel("Wall Shear Stress ($\\tau_w$) [Pa]")
 plt.title("Wall Shear Stress Along the Bottom Surface")
-fig("Wall Shear Stress Along the Bottom Surface")
+fig("32 Wall Shear Stress Along the Bottom Surface")
 
 # --------------------------------------------
 # ...
@@ -243,15 +231,14 @@ column_to_extract = 2  # The third column which contains wall shear stress magni
 
 df = pd.read_csv("InternalTableBottom.csv")
 wall_shear_stresses_bottom = df.iloc[:, column_to_extract].to_numpy()
-print(f"Data type of wall_shear_stresses_top: {wall_shear_stresses_bottom.dtype}")
-print(f"Data type of V_b: {V_b.dtype}")
+# print(f"Data type of wall_shear_stresses_top: {wall_shear_stresses_bottom.dtype}")
+# print(f"Data type of V_b: {V_b.dtype}")
 
 df = pd.read_csv("InternalTableTop.csv")
 wall_shear_stresses_top = df.iloc[:, column_to_extract].to_numpy()
-print(f"Data type of wall_shear_stresses_top: {wall_shear_stresses_top.dtype}")
-print(f"Data type of V_b: {V_b.dtype}")
-
-print(np.shape(wall_shear_stresses_bottom))
+# print(f"Data type of wall_shear_stresses_top: {wall_shear_stresses_top.dtype}")
+# print(f"Data type of V_b: {V_b.dtype}")
+# print(np.shape(wall_shear_stresses_bottom))
 
 plt.figure()
 plt.plot(
@@ -261,7 +248,7 @@ plt.plot(x1_position, wall_shear_stresses_top, "o-", label="Top wall shear stres
 plt.xlabel("$x_1$")
 plt.ylabel("Stress [Pa]")
 plt.title("Wall shear stress vs x1 position")
-fig("Wall shear stress vs x1 position")
+fig("32 Wall shear stress vs x1 position")
 
 
 Cf_top = np.zeros(len(wall_shear_stresses_top))
@@ -271,7 +258,7 @@ for i in range(len(wall_shear_stresses_top)):
     Cf_top[i] = wall_shear_stresses_top[i] / (0.5 * rho * V_b[i] ** 2)
     Cf_bottom[i] = wall_shear_stresses_bottom[i] / (0.5 * rho * V_b[i] ** 2)
 
-print(np.shape(Cf_top))
+# print(np.shape(Cf_top))
 
 plt.figure()
 plt.plot(x1_position, Cf_bottom, "o-", label="Bottom wall skin friction")
@@ -279,7 +266,7 @@ plt.plot(x1_position, Cf_top, "o-", label="Top wall skin friction")
 plt.xlabel("$x_1$")
 plt.ylabel("Skin friction")
 plt.title("Skin friction vs x1 position")
-fig("Skin friction vs x1 position")
+fig("32 Skin friction vs x1 position")
 
 # %%
 ####################################################################################################
@@ -313,7 +300,7 @@ plt.title(
     r"Vorticity Contours: $\omega_3 = \partial v_2 / \partial x_1 - \partial v_1 / \partial x_2$"
 )
 plt.axis("equal")
-fig("Vorticity Contours")
+fig("33 Vorticity Contours")
 
 max_i = np.unravel_index(np.argmax(vorticity, axis=None), vorticity.shape)[0]
 
@@ -350,7 +337,7 @@ plt.xlabel(r"$x_1$")
 plt.ylabel(r"$x_2$")
 plt.title("$\\mu_t / \\mu$")
 # plt.axis('equal')
-fig("Turbulent Viscosity")
+fig("34 Turbulent Viscosity")
 
 # --------------------------------------------
 # ...
@@ -368,7 +355,7 @@ plt.plot(ratio[i, :], x2_2d[i, :], "o-", label=f"i={i}, x1={x1_2d[i,0]:.3f}")
 plt.ylabel("$x_2$")
 plt.xlabel("Skin friction")
 plt.title("Skin friction vs x1 position")
-fig("Skin friction vs x1 position")
+fig("34 Skin friction vs x1 position")
 
 # --------------------------------------------
 # ...
@@ -401,7 +388,7 @@ for i in indices:
 plt.xlabel(r"$\mu_t/\mu$")
 plt.ylabel(r"$x_2$ [m]")
 plt.title(r"Viscosity ratio $\mu_t/\mu$ vs $x_2$ at selected $x_1$ stations")
-fig("Viscosity ratio")
+fig("34 Viscosity ratio at selected $x_1$ stations")
 
 # Plotting mu_t/mu versus x2+ for selected x1 stations
 plt.figure()
@@ -418,7 +405,7 @@ plt.xscale("log")
 plt.xlabel(r"$x_2^+ = ux_2 / \nu$")
 plt.ylabel(r"$\mu_t/\mu$")
 plt.title(r"Viscosity ratio $\mu_t/\mu$ vs $x_2^+$ (bottom wall)")
-fig("Viscosity ratio")
+fig("34 Viscosity ratio (bottom wall)")
 plt.grid(True, which="both", ls="--", alpha=0.6)
 
 
@@ -471,7 +458,7 @@ for i in indices:
 plt.xlabel("Diffusion [m/s^2]")
 plt.ylabel("$x_2$ [m]")
 plt.title("Diff. components vs $x_2$")
-fig("Diff components vs $x_2$")
+fig("35 Diff components vs $x_2$")
 
 # Plotting vs x2+ (bottom wall)
 plt.figure()
@@ -486,7 +473,7 @@ plt.xlabel(r"$x_2^+ = ux_2 / \nu$")
 plt.ylabel("Diffusion [m/s^2]")
 plt.title("Diff. components vs $x_2^+$ at bottom wall")
 plt.grid(True, which="both", ls="--", alpha=0.6)
-fig("Diff components vs $x_2^+$ at bottom wall")
+fig("35 Diff components vs $x_2^+$ at bottom wall")
 
 
 # %%
@@ -523,16 +510,16 @@ plt.colorbar(cf, label="k [J/kg]")
 plt.title("Turbulent kinetic energy k")
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-fig("Turbulent kinetic energy k")
+fig("36 Turbulent kinetic energy k")
 
 # Plotting P^k
 plt.figure()
-cf = plt.contourf(x1_2d, x2_2d, Pk, 60, cmap="inferno")
-plt.colorbar(cf, label=r"$P^k$")
+cf = plt.contourf(x1_2d, x2_2d, np.log(Pk), 60, cmap="inferno")
+plt.colorbar(cf, label=r"$P^k$, log scale")
 plt.title(r"Production $P^k$")
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-fig("Production $P^k$")
+fig("36 Production $P^k$")
 
 # Plotting nu_t
 plt.figure()
@@ -541,7 +528,7 @@ plt.colorbar(cf, label=r"$\nu_t$ [m$^2$/s]")
 plt.title(r"Turbulent viscosity $\nu_t$ (kinematic)")
 plt.xlabel("$x_1$")
 plt.ylabel("$x_2$")
-fig("Turbulent viscosity")
+fig("36 Turbulent viscosity")
 
 
 # %%
@@ -584,26 +571,23 @@ eps_model_top = 2.0 * nu * k_top / (x2_top**2)
 # print(k_top)
 # print(eps_model_bot)
 
-# Plotting comparison vs x1
 x1 = x1_2d[:, 0]  # x1-coordinate for the plot
 
-# Bottom wall plot
 plt.figure()
 plt.plot(x1_position, eps_ccm_bot, "o-", label="$\epsilon_{ccm}$ (Starccm+)")
 plt.plot(x1_position, eps_model_bot, "s--", label="$\epsilon_{model}$ (Eq. 11.166)")
 plt.xlabel("$x_1$ [m]")
 plt.ylabel(r"$\varepsilon$ [m$^2$/s$^3$]")
 plt.title("Bottom Wall-Adjacent Cells")
-fig("Bottom Wall-Adjacent Cells")
+fig("37 Bottom Wall-Adjacent Cells (bottom wall)")
 
-# Top wall plot
 plt.figure()
 plt.plot(x1_position, eps_ccm_top, "o-", label="$\epsilon_{ccm}$ (Starccm+)")
 plt.plot(x1_position, eps_model_top, "s--", label="$\epsilon_{model}$ (Eq. 11.166)")
 plt.xlabel("$x_1$ [m]")
 plt.ylabel(r"$\varepsilon$ [m$^2$/s$^3$]")
 plt.title("Top Wall-Adjacent Cells")
-fig("Top Wall-Adjacent Cells")
+fig("37 Top Wall-Adjacent Cells (top wall)")
 
 # %%
 ####################################################################################################
@@ -668,6 +652,6 @@ plt.plot(v1_Exp_8, y_8, "gH", label="x/h = 8")
 plt.xlabel("$V_1$")
 plt.ylabel("$x_2$")
 plt.title("Velocity")
-fig("Velocity")
+fig("39 Velocity")
 
 # %%
