@@ -210,7 +210,7 @@ print(delta_p, "Pa")
 ####################################################################################################
 new_prob("3.2")
 
-mu = 1.002e-5  # Dynamic viscosity of water at at 20C
+mu = 1.002e-3  # Dynamic viscosity of water at at 20C
 
 dv1_dx2_at_wall = v1_2d[:, 1] / (x2_2d[:, 1] - x2_2d[:, 0])  # Calculating the gradient at the wall using first two points
 
@@ -292,8 +292,8 @@ print("x2_2d shape:", x2_2d.shape)
 
 plt.figure()
 plt.clf()
-contour = plt.contourf(x1_2d, x2_2d, vorticity, 100, cmap="RdBu_r")
-plt.colorbar(contour, label=r"$\omega_3$ [1/s]")
+contour = plt.contourf(x1_2d, x2_2d, np.log(vorticity), 100, cmap="RdBu_r")
+plt.colorbar(contour, label=r"$\omega_3$ [1/s], log scale")
 plt.xlabel(r"$x_1$")
 plt.ylabel(r"$x_2$")
 plt.title(
@@ -425,30 +425,26 @@ fig("34 Viscosity ratio (bottom wall)")
 new_prob("3.5")
 
 # physical viscosities
-nu_t = vist_2d.copy()  # kinematic turbulent viscosity from starccm+
+nu_t = vist_2d.copy()        # kinematic turbulent viscosity from starccm+
 
 # Calculating the two components of diffusion separately
-viscous_component = 2.0 * (nu) * dv1dx1_2d  # 2(ν) * ∂v1/∂x1
-turbulent_component = (nu_t) * (dv1dx2_2d + dv2dx1_2d)  # (ν_t) * (∂v1/∂x2 + ∂v2/∂x1)
+viscous_component = 2.0 * (nu) * dv1dx1_2d               # 2(ν) * ∂v1/∂x1
+turbulent_component = (nu_t) * (dv1dx2_2d + dv2dx1_2d)       # (ν_t) * (∂v1/∂x2 + ∂v2/∂x1)
 
 # Computing divergences
-grad_viscous_component, _ = dphidx_dy(
-    x1_2d[0:-1, 0:-1], x2_2d[0:-1, 0:-1], viscous_component
-)
-_, grad_turbulent_component = dphidx_dy(
-    x1_2d[0:-1, 0:-1], x2_2d[0:-1, 0:-1], turbulent_component
-)
+grad_viscous_component, _ = dphidx_dy(x1_2d[0:-1,0:-1], x2_2d[0:-1,0:-1], viscous_component)
+_, grad_turbulent_component = dphidx_dy(x1_2d[0:-1,0:-1], x2_2d[0:-1,0:-1], turbulent_component)
 
 # Contributions and total
 viscous_component = grad_viscous_component
 turbulent_component = grad_turbulent_component
 Diffusion_total = viscous_component + turbulent_component
 
-# Choosing i stations (including hill-top)
-i_hill = (np.abs(hmax - x1_2d[:, 1])).argmin()
-indices = [i_hill, 50, 150]  # Indices of x1 stations to plot
 
-# Ploting x -y graphs (diffusion vs x2) at selected x1 stations
+# Choosing i stations (including hill-top)
+i_hill = (np.abs(hmax - x1_2d[:,1])).argmin()
+indices = [i_hill, 50, 150] # Indices of x1 stations to plot
+
 plt.figure()
 for i in indices:
     plt.plot(viscous_component[i, :], x2_2d[i, :], "-", label=f"visc (i={i})")
@@ -459,7 +455,6 @@ plt.ylabel("$x_2$ [m]")
 plt.title("Diff. components vs $x_2$")
 fig("35 Diff components vs $x_2$")
 
-# Plotting vs x2+ (bottom wall)
 plt.figure()
 for i in indices:
     x2p = x2plus_bottom[i, :].copy()
@@ -550,17 +545,18 @@ j_bot = 1
 j_top = -3  # -1 is the wall, -2 is the first cell inside
 
 # turbulent kinetic energy k and dissipation eps from STAR-CCM+
-k_bot = te_2d[:, j_bot].astype(float)  # turbulent kinetic energy k for bottom wall
-eps_ccm_bot = diss_2d[:, j_bot].astype(float)  # dissipation eps for bottom wall
+k_bot = te_2d[:, j_bot].astype(float) # turbulent kinetic energy k for bottom wall
+eps_ccm_bot = diss_2d[:, j_bot].astype(float) # dissipation eps for bottom wall
 
-k_top = te_2d[:, j_top].astype(float)  # turbulent kinetic energy k for top wall
-eps_ccm_top = diss_2d[:, j_top].astype(float)  # dissipation eps for top wall
+k_top = te_2d[:, j_top].astype(float) # turbulent kinetic energy k for top wall
+eps_ccm_top = diss_2d[:, j_top].astype(float) # dissipation eps for top wall
+
 
 # Calculating the distance from the cell center to the wall boundary
 x2_bot = np.abs(x2_2d[:, j_bot] - x2_2d[:, 0]).astype(float)
-x2_top = np.abs(x2_2d[:, 0] - x2_2d[:, j_top]).astype(float)
+#x2_top = np.abs(x2_2d[:, 0] - x2_2d[:, j_top]).astype(float)
 
-# x2_top = np.abs(x2_2d[:, -1] - x2_2d[:, j_top]).astype(float)
+x2_top = np.abs(x2_2d[:, -1] - x2_2d[:, j_top]).astype(float)
 
 # Calculating eps using equation 11.166
 eps_model_bot = 2.0 * nu * k_bot / (x2_bot**2)
