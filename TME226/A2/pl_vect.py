@@ -44,7 +44,7 @@ diss = np.zeros(nmax)
 vist = np.zeros(nmax)
 x = np.zeros(nmax)
 y = np.zeros(nmax)
-with open('./output_standard-keps-low-re.csv') as csv_file:
+with open('XYZinternaltable.csv') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     n = 0
     for row in csv_reader:

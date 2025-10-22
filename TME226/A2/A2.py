@@ -286,13 +286,13 @@ new_prob("3.3")
 
 vorticity = dv2dx1_2d - dv1dx2_2d  # omega3 component of vorticity
 
-print("omega3 shape:", vorticity.shape)
-print("x1_2d shape:", x1_2d.shape)
-print("x2_2d shape:", x2_2d.shape)
+# print("omega3 shape:", vorticity.shape)
+# print("x1_2d shape:", x1_2d.shape)
+# print("x2_2d shape:", x2_2d.shape)
 
 plt.figure()
 plt.clf()
-contour = plt.contourf(x1_2d, x2_2d, np.log(vorticity), 100, cmap="RdBu_r")
+contour = plt.contourf(x1_2d, x2_2d, np.log(vorticity), 100, cmap="viridis")
 plt.colorbar(contour, label=r"$\omega_3$ [1/s], log scale")
 plt.xlabel(r"$x_1$")
 plt.ylabel(r"$x_2$")
