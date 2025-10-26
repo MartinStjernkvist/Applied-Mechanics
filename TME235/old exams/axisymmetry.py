@@ -21,7 +21,7 @@ print(w)
 M_r = D * (- w.diff(r, 2) - nu * w.diff(r) / r)
 M_phi = D * (- nu * w.diff(r, 2) - w.diff(r) / r)
 
-V = r * sp.diff(r * M_r, r) - M_phi
+V = 1/r * (sp.diff(r * M_r, r) - M_phi)
 
 boundary_conditions = [
     w.subs(r, b),
