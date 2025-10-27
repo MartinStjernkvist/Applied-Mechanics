@@ -124,3 +124,32 @@ index = np.argmax(difference)
 print(index)
 
 print(q0_vals[index])
+
+
+#%%
+#5
+
+v0 = 100e-3
+h0 = 100e-3
+t = 0.1
+Kb = 100e6
+G = 10e6
+
+
+F = np.array([
+    [1, v0 * t / h0],
+    [0, 1]
+])
+
+J = np.linalg.det(F)
+print(J)
+
+C = np.einsum('ik,kj->ij', F.T, F)
+print(C)
+
+S = G * (np.eye(2) - np.linalg.inv(C)) + (Kb - 2 * G / 3) * np.log(J) * np.linalg.inv(C)
+
+sigma = J * np.einsum('ik,kj->ij', np.einsum('ik,kj->ij',F, S), F.T)
+
+print('sigma:')
+print(sigma)
