@@ -96,3 +96,118 @@ G_num = E_num / (2 * (1 + nu_num))
 A_num = b_num * h_num
 num = w_f(x=1, E=E_num, I=I_num, G=G_num, Ks=5/6, A=A_num, M_hat=500, P_hat=2e3, L=1)
 print(num)
+
+
+
+
+
+###############################
+
+#%%
+# 1
+
+alpha, beta = sp.symbols('alpha beta', real=True)
+
+l1 = sp.Matrix([
+    [sp.cos(beta), 0, -sp.sin(beta)],
+    [0, 1, 0],
+    [sp.sin(beta), 0, sp.cos(beta)]
+])
+
+l2 = sp.Matrix([
+    [sp.cos(alpha), sp.sin(alpha), 0],
+    [-sp.sin(alpha), sp.cos(alpha), 0],
+    [0,0,1]
+])
+
+l_tot = l2 * l1
+
+l_f = sp.lambdify((alpha, beta), l_tot, 'numpy')
+
+acc = sp.Matrix([1, 2, -2])
+
+l_num =  l_f(alpha= 60*np.pi/180, beta= 20*np.pi/180)
+acc_new = l_num * acc
+
+print('acceleration:')
+print(acc_new)
+
+sigma_new = np.array([
+    [150, 70, 0],
+    [70, 50, 15],
+    [0, 15, 100]
+])
+
+sigma = np.linalg.inv(l_num) * sigma_new * np.linalg.inv(l_num.T)
+
+print('\nsigma:')
+print(sigma)
+
+eigvals, _ = np.linalg.eig(sigma)
+print('\neigenvalues:')
+print(eigvals)
+
+
+#%%
+# 4
+
+x, L, Ks, b, h, P_hat, M_hat, nu, E, q = sp.symbols('x L Ks b h P_hat M_hat nu E q', real=True)
+# C1, C2, C3, C4 = sp.symbols('C1 C2 C3 C4', real=True)
+
+I = b * h**3 / 12
+A = b * h
+G = E / (2 *(1 + nu))
+
+phi = sp.Function('phi')(x)
+w = sp.Function('w')(x)
+
+diffeq_phi = sp.Eq(E * I * phi.diff(x, 3), q)
+phi = sp.dsolve(diffeq_phi, phi).rhs
+print('\nphi:')
+print(phi)
+
+diffeq_w = sp.Eq(w.diff(x), - E * I / ( G * Ks * A) * phi.diff(x,2) + phi)
+w = sp.dsolve(diffeq_w, w).rhs
+print('\nw:')
+print(w)
+
+M = -E * I * phi.diff(x)
+V = G * Ks * A * (-phi + w.diff(x))
+
+bc = [
+    w.subs(x, 0),
+    w.diff(x).subs(x, 0),
+    M.subs(x, L) - M_hat,
+    V.subs(x, L) - P_hat
+]
+
+unknowns = ('C1, C2, C3, C4')
+ic = sp.solve(bc, unknowns)
+print('\nintegration constants:')
+print(ic)
+
+w_sol = w.subs(ic)
+print('\nw solution:')
+print(w_sol)
+
+w_f = sp.lambdify((x, L, Ks, b, h, P_hat, M_hat, nu, E, q), w_sol, 'numpy')
+
+E_num = 80e9
+nu_num = 0.2
+P_num = 2e3
+M_num = 500
+L_num = 1
+h_num = 30e-3
+b_num = 50
+Ks_num = 5/6
+q_num = 0
+
+x_vals = np.linspace(0, L_num, 500)
+w_vals = w_f(x_vals, L_num, Ks_num, b_num, h_num, P_num, M_num, nu_num, E_num, q_num)
+
+plt.figure()
+plt.plot(x_vals, w_vals)
+plt.show()
+
+print('\ndeflection at the end:')
+print(w_vals[-1])

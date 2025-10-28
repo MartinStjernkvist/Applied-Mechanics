@@ -151,3 +151,20 @@ plt.show()
 
 print(f'\nDeflection at x=L/2 [mm]: {w1_f(0.5)*1e3:.4f}')
 print(f'Max deflection [mm]: {np.max(np.abs(w1_vals))*1e3:.4f}')
+
+#%%
+# 5
+
+theta, phi, R, f_b, r= sp.symbols('theta phi R f_b r', real=True)
+C1 = sp.symbols('C1', real=True)
+
+f_theta = f_b * sp.cos(theta) * sp.sin(theta)
+f_r = - f_b * sp.cos(theta) * sp.cos(theta)
+f_v = f_r*sp.cos(theta)-f_theta*sp.sin(theta)
+
+
+N_theta = 1 / sp.sin(theta)**2 * (sp.integrate(f_v * r * sp.sin(theta), theta) + C1) 
+
+N_phi = 1 / sp.cos(theta) * (1 / r * sp.diff(N_theta * R, theta) + f_theta * R)
+
+N_theta.simplify()
