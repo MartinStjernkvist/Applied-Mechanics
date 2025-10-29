@@ -185,3 +185,57 @@ print(P.shape)
 print(t0.shape)
 
 #%%
+
+######################################
+
+# 2
+
+
+"""
+träning v2
+"""
+r, a, b, q0, E, h, nu, M = sp.symbols('r a b q0 E h nu M', real=True)
+C1, C2, C3, C4 = sp.symbols('C1 C2 C3 C4', real=True)
+
+D = E * h **3 / ((1 - nu**2) * 12)
+q = q0 * (r - a)/(b - a)
+
+w = sp.integrate( 1/r * sp.integrate(r * sp.integrate(1 / r * sp.integrate(r * q / D, r), r), r), r) + C1 * r**3/6 + C2 * r**2 / 2 + C3 * r + C4
+print('\nw:')
+print(w)
+
+Mr = D * (- w.diff(r, 2) - nu * w.diff(r) / r)
+Mphi = D * (- nu * w.diff(r, 2) - w.diff(r) / r)
+
+V = 1/r * (sp.diff(r * Mr, r) - Mphi)
+
+bc =[
+   w.subs(r, b),
+   w.diff(r).subs(r, b),
+   Mr.subs(r, a) + M,
+   V.subs(r, a)
+]
+
+unknowns = (C1, C2, C3, C4)
+ic = sp.solve(bc, unknowns)
+print('\nintegration constants:')
+print(ic)
+
+w_sol = w.subs(ic)
+
+w_f = sp.lambdify((r, a, b, q0, E, h, nu, M), w_sol, 'numpy')
+
+a_num = 0.1
+b_num = 3 * a_num
+q0_num = 1e6
+M_num = 100
+E_num = 80e9
+nu_num = 0.3
+h_num = a_num/10
+
+r_vals = np.linspace(a_num, b_num, 500)
+w_vals = w_f(r_vals, a_num, b_num, q0_num, E_num, h_num, nu_num, M_num)
+
+plt.figure()
+plt.plot(r_vals, w_vals)
+plt.show()

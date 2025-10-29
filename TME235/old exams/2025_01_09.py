@@ -211,3 +211,24 @@ plt.show()
 
 print('\ndeflection at the end:')
 print(w_vals[-1])
+
+
+#%%
+# 5 
+
+s, theta, alpha, phi, rho, g, h, H, r, l, C1 = sp.symbols('s theta alpha phi rho g h H r l C1', real=True)
+
+f = rho * g * h
+f_theta = f * sp.cos(alpha)
+f_r = - f * sp.sin(alpha)
+
+N_phi = f_r * s * sp.tan(alpha)
+
+N_theta = 1/s * sp.integrate(N_phi - f_theta * s, s) + C1
+
+eq = sp.Eq(N_theta.subs(s, H/sp.cos(alpha)), - rho * l * g * h * sp.cos(alpha) / 2)
+C1 = sp.solve(eq, C1)
+print(C1)
+
+
+N_theta.simplify()
