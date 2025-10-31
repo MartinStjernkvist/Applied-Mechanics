@@ -51,7 +51,7 @@ plt.rc('figure', figsize=(8,4))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures_final" / fig_name
+    fig_output_file = script_dir / "fig_resub" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     
@@ -287,17 +287,17 @@ diffeq_phi = Eq(E * I * f_phi(x).diff(x, 3), q0)
 phi = dsolve(diffeq_phi, f_phi(x)).rhs
 
 ## Solve the differential equation for w(x) (eq. 3.36 LN)
-w = Function('w') # w is a function of x
+w = Function('w')
 diffeq_w = Eq(w(x).diff(x), -E*I/(G*Ks*A)*phi.diff(x,2) + phi)
 w        = dsolve(diffeq_w, w(x)).rhs
 
 ## Define boundary conditions
 M = -E * I * phi.diff(x)
 # Boundary conditions for distributed load
-boundary_conditions = [ w.subs(x, 0),                           #w(0) = 0
-                        w.diff(x).subs(x, 0),                   #w'(0) = 0
-                        M.subs(x, L),                           #w''(L) = 0
-                        w.diff(x,3).subs(x, L) - P/(-E*I)]      #w'''(L) = -P
+boundary_conditions = [ w.subs(x, 0),                           
+                        phi.subs(x, 0),
+                        M.subs(x, L),                           
+                        w.diff(x,3).subs(x, L) - P/(-E*I)]      
 
 ## Solve for the integration constants
 integration_constants = solve(boundary_conditions, 'C1, C2, C3, C4', real=True)
@@ -336,51 +336,24 @@ def timoshenko_analysis(L):
     plt.title(f'Beam Deflection at L={L}m (Timoshenko)')
     plt.xlabel('Position along beam (m)')
     plt.ylabel('Deflection (mm)')
-    plt.grid(True, alpha=0.3)
-    # plt.axhline(0, color='black', linestyle='--')
     plt.xlim(0, L)
-    plt.tight_layout()
-    sfig('deflection_timo_' + str(L) + '.png')
-    plt.show()
+    fig('deflection_timo_' + str(L) + '.png')
 
     plt.figure()
     plt.plot(x_vals, sigma_xx/1e6, 'r-')
     plt.title('Normal Stress σ_xx at z=-h/2 (bottom surface)')
     plt.xlabel('Position along beam (m)')
     plt.ylabel('Normal Stress (MPa)')
-    plt.grid(True, alpha=0.3)
-    # plt.axhline(0, color='black', linestyle='--')
-    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
-    # plt.axhline(-sigma_yield/1e6, color='orange', linestyle='--')
     plt.xlim(0, L)
-    plt.legend()
-    plt.tight_layout()
-    sfig('sigmaxx_timo_' + str(L) + '.png')
-    plt.show()
+    fig('sigmaxx_timo_' + str(L) + '.png')
 
     plt.figure()
     plt.plot(x_vals, sigma_vM/1e6, 'g-')
     plt.title('von Mises Effective Stress σ_vM at z=-h/2')
     plt.xlabel('Position along beam (m)')
     plt.ylabel('von Mises Stress (MPa)')
-    plt.grid(True, alpha=0.3)
-    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
     plt.xlim(0, L)
-    plt.legend()
-    plt.tight_layout()
-    sfig('vonmises_timo_' + str(L) + '.png')
-    plt.show()
-
-
-    sigma_MPa = sigma_xx / 1e6
-    # Create a DataFrame
-    df = pd.DataFrame({
-        'Position (m)': x_vals,
-        'Normal Stress (MPa)': sigma_MPa
-    })
-
-    # Save to CSV
-    df.to_csv('normal_stress_timo_3m.csv', index=False)
+    fig('vonmises_timo_' + str(L) + '.png')
 
     print(f"\n{'='*70}")
     print(f"STRESS ANALYSIS RESULTS FOR L={L}m (Timoshenko Beam Theory)")
@@ -402,12 +375,8 @@ def timoshenko_analysis(L):
     print(f"  Safety factor: {safety_factor:.2f}")
     print(f"{'='*70}\n")
     
-    # return x_vals, w_vals, M_vals, sigma_xx, sigma_vM, max_sigma_xx, sigma_vM, max_sigma_xx, max_sigma_vM, max_stress_location,safety_factor, will_yield
+    print('maximum deflection: ', w_vals[-1])
     return x_vals, w_vals, sigma_xx
-
-# run the analysis function
-# x_vals_L1, w_vals_L1, M_vals_L1, sigma_xx_L1, sigma_vM_L1, max_sigma_xx_L1, sigma_vM_L1, max_sigma_xx_L1, max_sigma_vM_L1, max_stress_location_L1,safety_factor_L1, will_yield_L1 = timoshenko_analysis(L1)
-# x_vals_L2, w_vals_L2, M_vals_L2, sigma_xx_L2, sigma_vM_L2, max_sigma_xx_L2, sigma_vM_L2, max_sigma_xx_L2, max_sigma_vM_L2, max_stress_location_L2,safety_factor_L2, will_yield_L2 = timoshenko_analysis(L2)
 
 x_vals_timoshenko_L1, w_vals_timoshenko_L1, sigma_xx_timoshenko_L1 = timoshenko_analysis(L1)
 x_vals_timoshenko_L2, w_vals_timoshenko_L2, sigma_xx_timoshenko_L2 = timoshenko_analysis(L2)
@@ -957,73 +926,105 @@ fig('comparison stress 03m')
 ####################################################################################################
 new_prob('2 - numerical')
 
-# Define symbols
-p, q0, a, b, E, nu, h, r, f_r, A1, A2 = symbols('p q0 a b E nu h r f_r A1 A2', real = True)
+b_outer = 0.25
+nu=0.3
+E=200e9
+h0 = 0.02
+Width = b_outer
+num_el = 500
+nnodes = num_el + 1
+a_inner = 0.15
 
-D = E / (1 - nu**2)  # same as in problem 4 in the literature
+coords = np.linspace(a_inner, b_outer, nnodes)
 
-# radial force = 0
-f_r = 0
-w = A1 * r/2 + A2 / r
+# display(coords)
+#coords = coords.reshape(-1,1)
 
-w_prime = diff(w,r) # rotation field
+Edof = np.zeros((num_el, 2), dtype=int)
+for i in range(num_el):
+    Edof[i, 0] = i + 1       # First column
+    Edof[i, 1] = i + 2       # Second column
 
-eps_r = diff(w, r)
-sigma_r = D * diff(w, r)
+#display(coords)
+# display(Edof)
 
-# Apply the boundary conditions
-boundary_conditions = [
-                        w.subs(r, a),               # inner boundary displacement 0
-                        sigma_r.subs(r, b) - p,     # outer boundary stress
-                       ]
+num_dofs = np.max(Edof)
 
-# Solve for unknown constants
-unknowns = (A1, A2)
-sol= solve(boundary_conditions, unknowns)
+#Dmat = E / (1-nu**2) * np.array([[1, nu],
+                                 #[nu,1]])
 
-# Formulate the deflection field
-w_ = simplify(w.subs(sol)) # constants substituted
+num_dofs = np.max(Edof)
+K = np.zeros((num_dofs, num_dofs))
+f = np.zeros((num_dofs, 1))
 
-print("w(r) = ")
-display(w_)
+# print("K shape:", K.shape)
 
-# Plot the deflection field for a given set of parameters
-wp_f = simplify(w_.subs({f_r:0, p:p_num, q0:0, E:E2_num, nu:poisson_num, a:a_radius_num, b:b_radius_num, h:h0_num})) # parameters substituted
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    Le = r2 - r1
+    r_mean = 0.5 * (r1 + r2)
+    
+    # variable thickness
+    h_e = h0 * (r_mean - a_inner) / (b_outer - a_inner) + h0
 
-r_num  = np.linspace(a_radius_num, b_radius_num, 401)
-wr_num = [wp_f.subs({r:val}) for val in r_num]
+    print('h_e',np.shape(h_e))
+    print('r_mean',np.shape(r_mean))
 
-print(r_num)
-print(wr_num)
+    # local stiffness (axisymmetric linear element)
+    Ke = (2 * np.pi * E * h_e * r_mean / Le) * np.array([[1, -1],
+                                                        [-1,  1]])
+    cfc.assem(Edof[el, :], K, Ke)
+
+# BCs
+bc = np.array([1])  # fix inner radius
+bcVal = np.array([0.0])
+
+# Applying distributed load
+sigma_r = -120e6 
+r_inner = coords[-1]
+h_inner = h0
+f[-1, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
+
+
+a, r = cfc.solveq(K, f, bc, bcVal)
 
 plt.figure()
-plt.plot(r_num, wr_num, "b-")
-plt.axvline(a_radius_num, color='black', linestyle='--', label='a')
-plt.axvline(b_radius_num, color='grey', linestyle='--', label='b')
-plt.title('Radial deflection')
-plt.xlabel(r"$r$ [mm]")
-plt.ylabel(r"$w$ [mm]")
+plt.plot(coords, a * 1e3, '-', label='$u_r(r)$ [mm]')
+plt.xlabel('r [m]')
+plt.ylabel('Radial displacement [mm]')
+plt.title('Axisymmetric radial displacement of disc')
 fig('Radial deflection')
 
 
-# Substitute the solution constants
-sigma_rr_ = simplify(sigma_r.subs(sol))
 
-print("sigma_rr(r) = ")
-display(sigma_rr_)
+# for i in range(nnodes):
+#     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
 
-# Plot the radial stress field for the same parameters
-sigma_rr_f = simplify(sigma_rr_.subs({f_r: 0, p:p_num, q0:0, E:E2_num, nu:poisson_num, a:a_radius_num, b:b_radius_num, h:h0_num}))
+# Computinging normal stress
+sigma_rr_vals = np.zeros(num_el)
+r_centers = np.zeros(num_el)
 
-sigma_rr_num = [sigma_rr_f.subs({r:val}) for val in r_num]
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    Le = r2 - r1
+    r_mean = 0.5 * (r1 + r2)
+    r_centers[el] = r_mean
+
+    u1 = a[el, 0]
+    u2 = a[el + 1, 0]
+    du_dr = (u2 - u1) / Le
+
+    # Plane stress approximation
+    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
+    sigma_rr_vals[el] = sigma_rr
 
 plt.figure()
-plt.plot(r_num, sigma_rr_num, "r-")
-plt.axvline(a_radius_num, color='black', linestyle='--', label='a')
-plt.axvline(b_radius_num, color='grey', linestyle='--', label='b')
-plt.title('Normal stress')
-plt.xlabel(r"$r$ [mm]")
-plt.ylabel(r"$\sigma_{rr}$ [Pa]")
+plt.plot(r_centers, sigma_rr_vals/1e6, '-', label=r'$\sigma_{rr}$ [MPa]')
+plt.xlabel('r [m]')
+plt.ylabel(r'$\sigma_{rr}$ [MPa]')
+plt.title('Radial stress distribution σ_rr(r)')
 fig('Normal stress')
 
 # %%
