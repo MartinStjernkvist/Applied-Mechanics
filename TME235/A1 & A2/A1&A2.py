@@ -63,6 +63,8 @@ def fig(fig_name):
     plt.grid(True, alpha = 0.3)
     sfig(fig_name)
     plt.show()
+    print('figure name: ', fig_name)
+
 
 #%%
 ####################################################################################################
@@ -248,11 +250,7 @@ def euler_bernoulli_analysis(L):
         print(f"  ✓  Beam is safe - No yielding expected")
     print(f"{'='*70}\n")
     
-    # return x_vals, w_vals, M_vals, sigma_xx, sigma_vM, max_sigma_xx, sigma_vM, max_stress_location, safety_factor, will_yield
     return x_vals, w_vals, sigma_xx
-
-# x_vals_L1, w_vals_L1, M_vals_L1, sigma_xx_L1, sigma_vM_L1, max_sigma_xx_L1, sigma_vM_L1, max_stress_location_L1, safety_factor_L1, will_yield_L1 = euler_bernoulli_analysis(L1)
-# x_vals_L2, w_vals_L2, M_vals_L2, sigma_xx_L2, sigma_vM_L2, max_sigma_xx_L2, sigma_vM_L2, max_stress_location_L2, safety_factor_L2, will_yield_L2 = euler_bernoulli_analysis(L2)
 
 x_vals_bernoulli_L1, w_vals_bernoulli_L1, sigma_xx_bernoulli_L1 = euler_bernoulli_analysis(L1)
 x_vals_bernoulli_L2, w_vals_bernoulli_L2, sigma_xx_bernoulli_L2 = euler_bernoulli_analysis(L2)
@@ -608,25 +606,18 @@ def calfem_analysis_A1(L):
     # Normal stress
     plt.figure()
     plt.plot(x_unique, stress_xx_tot_avg/1e6, 'r-', linewidth=2.5, label='Total')
-    plt.grid(True, alpha=0.3)
     plt.xlabel('x [m]')
     plt.ylabel('σ_xx [MPa]')
     plt.title(f'Total Normal Stress at z = {z_eval*1000:.1f} mm')
-    sfig('calfem_normal_stress_' + str(L) + '.png')
-    plt.legend()
+    fig('calfem_normal_stress_' + str(L) + '.png')
 
     # Von mises
     plt.figure()
     plt.plot(x_unique, von_mises_avg/1e6, 'r-', linewidth=2.5, label='von Mises')
-    # plt.axhline(y=sigma_yield/1e6, color='k', linestyle='--', linewidth=1.5, label='Yield strength')
-    plt.grid(True, alpha=0.3)
     plt.xlabel('x [m]')
     plt.ylabel('σ_vm [MPa]')
     plt.title(f'Von Mises Stress at z = {z_eval*1000:.1f} mm')
-    plt.legend()
-    plt.tight_layout()
-    sfig('calfem_von_mises_' + str(L) + '.png')
-    plt.show()
+    fig('calfem_von_mises_' + str(L) + '.png')
     
     return x_unique, stress_xx_tot_avg
     
@@ -827,8 +818,7 @@ plt.plot(meshsize, u2_3m,'X-')
 plt.title(name)
 plt.xlabel('meshsize (m)')
 plt.ylabel('displacement $w$')
-sfig(str(name))
-plt.show()
+fig(str(name))
 
 name = 'Mesh convergence (03m)'
 plt.figure()
@@ -836,8 +826,7 @@ plt.title(name)
 plt.plot(meshsize, u2_03m,'X-')
 plt.xlabel('meshsize (m)')
 plt.ylabel('displacement $w$')
-sfig(str(name))
-plt.show()
+fig(str(name))
 
 #%%
 ####################################################################################################
@@ -871,38 +860,30 @@ fig('comparison deflection 3m')
 
 
 plt.figure()
-
 plt.plot(x_vals_bernoulli_L2, w_vals_bernoulli_L2, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L2, w_vals_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
 # plt.plot(x_vals_calfem_L2, deflection_calfem_L2, linestyle ='dashed', label='Calfem')
 plt.plot(x_vals_abaqus_L2, deflection_abaqus_L2, linestyle ='dotted', label='Abaqus')
-
 plt.title(f'Deflection comparison (L= 0.3m)')
 plt.xlabel('x (m)')
 plt.ylabel('w (mm)')
 fig('comparison deflection 03m')
 
-
 plt.figure()
-
 plt.plot(x_vals_bernoulli_L1, sigma_xx_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, sigma_xx_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
 plt.plot(x_vals_calfem_L1, -stress_calfem_L1, linestyle ='dashed', label='Calfem (switched sign)')
 plt.plot(x_vals_abaqus_L1, -stress_abaqus_L1, linestyle ='dotted', label='Abaqus (switched sign)')
-
 plt.title('Normal stress comparison (L=3m)')
 plt.xlabel('x (m)')
 plt.ylabel('sigma (mm)')
 fig('comparison stress 3m')
 
-
 plt.figure()
-
 plt.plot(x_vals_bernoulli_L2, sigma_xx_bernoulli_L2, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L2, sigma_xx_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
 plt.plot(x_vals_calfem_L2, -stress_calfem_L2, linestyle ='dashed', label='Calfem (switched sign)')
 plt.plot(x_vals_abaqus_L2, -stress_abaqus_L2, linestyle ='dotted', label='Abaqus (switched sign)')
-
 plt.title('Normal stress comparison (L=0.3m)')
 plt.xlabel('x (m)')
 plt.ylabel('sigma (mm)')
@@ -995,8 +976,6 @@ plt.xlabel('r [m]')
 plt.ylabel('Radial displacement [mm]')
 plt.title('Axisymmetric radial displacement of disc')
 fig('Radial deflection')
-
-
 
 # for i in range(nnodes):
 #     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")

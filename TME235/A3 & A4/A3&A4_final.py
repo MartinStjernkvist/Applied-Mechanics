@@ -50,7 +50,7 @@ plt.rc('figure', figsize=(8,4))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file = script_dir / "fig_resub" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     
@@ -186,12 +186,10 @@ def numerical_analysis(a, h):
     sigma_rr_vals = sigma_rr_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
     sigma_phiphi_vals = sigma_phiphi_func(r_vals, q_num, b_radius, a, E_num, nu_num, h, z_num)
     
-    sigma_vm_vals = np.sqrt((sigma_rr_vals - sigma_phiphi_vals)**2)
+    sigma_vm_vals = np.sqrt(sigma_rr_vals**2 - sigma_rr_vals * sigma_phiphi_vals + sigma_phiphi_vals**2)
 
     plt.figure()
     plt.plot(r_vals, w_vals, label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
-    # plt.axvline(a, color='black', linestyle='--', label='a')
-    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.title('Radial deflection')
     plt.xlabel('r [m]')
     plt.ylabel('w [m]')
@@ -199,8 +197,6 @@ def numerical_analysis(a, h):
 
     plt.figure()
     plt.plot(r_vals, sigma_rr_vals, color='red', label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
-    # plt.axvline(a, color='black', linestyle='--', label='a')
-    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('Radial stress')
     plt.xlabel('r [m]')
@@ -209,8 +205,6 @@ def numerical_analysis(a, h):
     
     plt.figure()
     plt.plot(r_vals, sigma_vm_vals, color='green', label=fr'normalized values, a: {a/a_radius}, h: {h/h_num}')
-    # plt.axvline(a, color='black', linestyle='--', label='a')
-    # plt.axvline(b_radius, color='grey', linestyle='--', label='b')
     plt.axhline(sigma_y_num, color='orange', linestyle='--', label='yield strength')
     plt.title('von Mises stress')
     plt.xlabel('r [m]')
