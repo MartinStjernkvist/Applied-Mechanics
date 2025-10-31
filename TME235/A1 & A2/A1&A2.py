@@ -193,11 +193,8 @@ def euler_bernoulli_analysis(L):
     plt.xlabel('Position along beam (m)')
     plt.ylabel('Deflection (mm)')
     plt.grid(True, alpha=0.3)
-    # plt.axhline(0, color='black', linestyle='--')
     plt.xlim(0, L)
-    plt.tight_layout()
-    sfig('deflection_' + str(L) + '.png')
-    plt.show()
+    fig('deflection_' + str(L) + '.png')
 
     # Plot 2: Normal stress σ_xx
     plt.figure()
@@ -205,15 +202,9 @@ def euler_bernoulli_analysis(L):
     plt.title('Normal Stress σ_xx at z=-h/2 (bottom surface)')
     plt.xlabel('Position along beam (m)')
     plt.ylabel('Normal Stress (MPa)')
-    plt.grid(True, alpha=0.3)
     plt.axhline(0, color='black', linestyle='--')
-    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
-    # plt.axhline(-sigma_yield/1e6, color='orange', linestyle='--')
     plt.xlim(0, L)
-    plt.legend()
-    plt.tight_layout()
-    sfig('sigmaxx_' + str(L) + '.png')
-    plt.show()
+    fig('sigmaxx_' + str(L) + '.png')
 
     # Plot 3: von Mises stress
     plt.figure()
@@ -221,13 +212,8 @@ def euler_bernoulli_analysis(L):
     plt.title('von Mises Effective Stress σ_vM at z=-h/2')
     plt.xlabel('Position along beam (m)')
     plt.ylabel('von Mises Stress (MPa)')
-    plt.grid(True, alpha=0.3)
-    # plt.axhline(sigma_yield/1e6, color='orange', linestyle='--', label=f'Yield strength = {sigma_yield/1e6:.0f} MPa')
     plt.xlim(0, L)
-    plt.legend()
-    plt.tight_layout()
-    sfig('vonmises_' + str(L) + '.png')
-    plt.show()
+    fig('vonmises_' + str(L) + '.png')
     
     print(f"\n{'='*70}")
     print(f"STRESS ANALYSIS RESULTS FOR L={L}m")
@@ -1082,7 +1068,7 @@ f[-1, 0] = 2 * np.pi * r_outer * h_inner * sigma_r  # negative radial direction
 a, r = cfc.solveq(K_num, f, bc, bcVal)
 
 plt.figure()
-plt.plot(coords, a, 'o-', label='$u_r(r)$ [mm]')
+plt.plot(coords, a, '-', label='$u_r(r)$ [mm]')
 plt.xlabel('r [m]')
 plt.ylabel('Radial displacement [m]')
 plt.title('Axisymmetric radial displacement of disc, constant height')
