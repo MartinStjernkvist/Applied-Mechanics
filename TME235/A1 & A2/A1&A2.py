@@ -30,7 +30,7 @@ import matplotlib.cm as cm
 from pathlib import Path
 
 def new_prob(string):
-    print_string = '\n--------------------------------------------\n' + 'Assignment ' + str(string) + '\n--------------------------------------------\n'
+    print_string = '\n' + '#' * 80 + '\n' + '#' * 80 + '\n' + 'Assignment ' + str(string) + '\n' + '#' * 80 + '\n'+ '#' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -788,9 +788,7 @@ for name, data in datasets.items():
     plt.xlabel(name.split()[0])
     plt.ylabel(name.split()[1] if len(name.split()) > 1 else '')
     plt.title(name)
-    plt.legend()
-    sfig(str(name))
-    plt.show()
+    fig(str(name))
 
 
 # Mesh convergence data
@@ -935,8 +933,8 @@ for el in range(num_el):
     # variable thickness
     h_e = h0 * (r_mean - a_inner) / (b_outer - a_inner) + h0
 
-    print('h_e',np.shape(h_e))
-    print('r_mean',np.shape(r_mean))
+    # print('h_e',np.shape(h_e))
+    # print('r_mean',np.shape(r_mean))
 
     # local stiffness (axisymmetric linear element)
     Ke = (2 * np.pi * E * h_e * r_mean / Le) * np.array([[1, -1],
@@ -1016,7 +1014,7 @@ nnodes = num_el + 1
 
 coords = np.linspace(a_radius_num, b_radius_num, nnodes)
 
-display(coords)
+# display(coords)
 #coords = coords.reshape(-1,1)
 
 Edof = np.zeros((num_el, 2), dtype=int)
@@ -1025,7 +1023,7 @@ for i in range(num_el):
     Edof[i, 1] = i + 2       
 
 #display(coords)
-display(Edof)
+# display(Edof)
 
 num_dofs = np.max(Edof)
 
@@ -1036,7 +1034,7 @@ num_dofs = np.max(Edof)
 K_num = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
-print("K shape:", K_num.shape)
+# print("K shape:", K_num.shape)
 
 for el in range(num_el):
     r1 = coords[el]
@@ -1047,8 +1045,8 @@ for el in range(num_el):
     # Constant thickness
     h_e = h0_num
 
-    print('h_e',np.shape(h_e))
-    print('r_mean',np.shape(r_mean))
+    # print('h_e',np.shape(h_e))
+    # print('r_mean',np.shape(r_mean))
 
     # local stiffness (axisymmetric linear element)
     Ke = (2 * np.pi * E2_num * h_e * r_mean / Le) * np.array([[1, -1],
@@ -1074,8 +1072,8 @@ plt.ylabel('Radial displacement [m]')
 plt.title('Axisymmetric radial displacement of disc, constant height')
 fig('Axisymmetric radial displacement of disc, constant height')
 
-for i in range(nnodes):
-    print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+# for i in range(nnodes):
+#     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
 
 # Computing normal stress
 sigma_rr_vals = np.zeros(num_el)
@@ -1133,7 +1131,7 @@ nnodes = num_el + 1
 
 coords = np.linspace(a_radius_num, b_radius_num, nnodes)
 
-display(coords)
+# display(coords)
 #coords = coords.reshape(-1,1)
 
 Edof = np.zeros((num_el, 2), dtype=int)
@@ -1142,7 +1140,7 @@ for i in range(num_el):
     Edof[i, 1] = i + 2       # Second column
 
 #display(coords)
-display(Edof)
+# display(Edof)
 
 num_dofs = np.max(Edof)
 
@@ -1153,7 +1151,7 @@ num_dofs = np.max(Edof)
 K_num = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
-print("K shape:", K_num.shape)
+# print("K shape:", K_num.shape)
 
 for el in range(num_el):
     r1 = coords[el]
@@ -1164,8 +1162,8 @@ for el in range(num_el):
     # variable thickness
     h_e = h0_num * (r_mean - a_radius_num) / (b_radius_num - a_radius_num) + h0_num
 
-    print('h_e',np.shape(h_e))
-    print('r_mean',np.shape(r_mean))
+    # print('h_e',np.shape(h_e))
+    # print('r_mean',np.shape(r_mean))
 
     # local stiffness (axisymmetric linear element)
     Ke = (2 * np.pi * E2_num * h_e * r_mean / Le) * np.array([[1, -1],
@@ -1192,8 +1190,8 @@ plt.ylabel('Radial displacement [m]')
 plt.title('Axisymmetric radial displacement of disc, varying height')
 fig('Axisymmetric radial displacement of disc, varying height')
 
-for i in range(nnodes):
-    print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+# for i in range(nnodes):
+#     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
 
 # Computinging normal stress
 sigma_rr_vals = np.zeros(num_el)
