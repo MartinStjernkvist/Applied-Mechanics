@@ -29,7 +29,7 @@ import matplotlib.cm as cm
 from pathlib import Path
 
 def new_prob(string):
-    print_string = '\n--------------------------------------------\n' + 'Assignment ' + str(string) + '\n--------------------------------------------\n'
+    print_string = '\n' + '#' * 80 + '\n' + '#' * 80 + '\n' + 'Assignment ' + str(string) + '\n' + '#' * 80 + '\n'+ '#' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -100,10 +100,11 @@ F_num = 0
 L = 2 # m
 h2 = 0.05 # m
 b2 = h2
-E_steel = 210 * 10**9 # Pa
+E_steel = 210 * 10**9
 nu2 = 0.3
-E_rubber = 20 * 10**6 # Pa
+E_rubber = 20 * 10**6
 nu_rubber = 0.45
+I2 = b2 * h2**3 / 12
 
 #%%
 ####################################################################################################
@@ -598,7 +599,6 @@ plt.ylabel('w [m]')
 fig('difference deflection')
 
 #%%
-
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
@@ -615,6 +615,9 @@ fig('difference deflection')
 ####################################################################################################
 ####################################################################################################
 new_prob('4 - numerical solution, roller support')
+
+L2_num = 2
+L1_num = 11/20 * L2_num
 
 # Define symbols
 x, Fr, P, L1, L2, E4, I4, C1, C2, C3, C4 = symbols('x Fr P L1 L2 V4 E4 C1 C2 C3 C4', real=True) 
@@ -655,23 +658,18 @@ display(simplify(w2_))
 w1_func = lambdify((x, P, L1, L2, E4, I4), w1_, 'numpy')
 w2_func = lambdify((x, P, L1, L2, E4, I4), w2_, 'numpy')
 
-E4_num = E_steel
-L2_num = 2
-L1_num = 11/20 * L2_num
-I4_num = b2 * h2 *3 / 12 #moment of inertia
-
-P_num = 4_000_000
+P_num = 10e3
 
 # validation:
-x_num = L1_num
-print(w1_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
-print(w2_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
+# x_num = L1_num
+# print(w1_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
+# print(w2_func(x_num, P_num, L1_num, L2_num, E4_num, I4_num))
 
 x1_vals = np.linspace(0, L1_num, 401)
 x2_vals = np.linspace(L1_num, L2_num, 401)
 
-w1_vals_pos = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
-w2_vals_pos = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w1_vals_pos = w1_func(x1_vals, P_num, L1_num, L2_num, E_steel, I2)
+w2_vals_pos = w1_func(x2_vals, P_num, L1_num, L2_num, E_steel, I2)
 
 plt.figure()
 plt.plot(x1_vals, w1_vals_pos, label='numerical solution, roller support, w1')
@@ -681,13 +679,13 @@ plt.xlabel('x [m]')
 plt.ylabel('w [m]')
 fig('deflection numerical 10')
 
-P_num = -4_000_000
+P_num = -10e3
 
 x1_vals = np.linspace(0, L1_num, 401)
 x2_vals = np.linspace(L1_num, L2_num, 401)
 
-w1_vals = w1_func(x1_vals, P_num, L1_num, L2_num, E4_num, I4_num)
-w2_vals = w1_func(x2_vals, P_num, L1_num, L2_num, E4_num, I4_num)
+w1_vals = w1_func(x1_vals, P_num, L1_num, L2_num, E_steel, I2)
+w2_vals = w1_func(x2_vals, P_num, L1_num, L2_num, E_steel, I2)
 
 plt.figure()
 plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
@@ -697,6 +695,78 @@ plt.xlabel('x [m]')
 plt.ylabel('w [m]')
 fig('deflection numerical minus 10')
 
+#%%
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Assignment 4 - numerical solution, no support
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_prob('4 - numerical solution, no support')
+
+L_num = 2
+P_num = 10e3
+
+x, L, P, E, I = symbols('x L P E I')
+
+w = Function('w')(x)
+
+diffeq = Eq(E * I * diff(w, x, 4), 0)
+
+w = dsolve(diffeq, w).rhs
+
+M = -E * I * w.diff(x, 2)
+V = M.diff(x, 1)
+
+boundary_conditions = [ 
+                        w.subs(x, 0),                         
+                        w.diff(x).subs(x, 0),               
+                        M.subs(x, L),      
+                        V.subs(x, L) - P
+                        ]
+print('\nboundary conditions:')
+display(boundary_conditions)
+
+integration_constants = solve(boundary_conditions, 'C1, C2, C3, C4', real=True)
+print('\nintegration constants:')
+display(integration_constants)
+
+solution = w.subs(integration_constants)
+display(simplify(solution))
+w_func = lambdify((x, L, P, E, I), solution, 'numpy')
+
+def euler_bernoulli_analysis(P):
+    
+    if P <= 0:
+        string = 'minus'
+    else: 
+        string = ''
+    
+    x_vals = np.linspace(0, L_num, 400)
+    w_vals = w_func(x_vals, L_num, P, E_steel, I2)
+    
+    plt.figure()
+    plt.plot(x_vals, w_vals, 'b-')
+    plt.title(f'Beam Deflection for P = {P / 1000} kN')
+    plt.xlabel('Position along beam (m)')
+    plt.ylabel('Deflection (m)')
+    plt.xlim(0, L_num)
+    fig('deflection_' + string + '10' + '.png')
+    
+    return x_vals, w_vals
+
+x_vals_bernoulli_10_vals, w_vals_bernoulli_10_vals = euler_bernoulli_analysis(P_num)
+x_vals_bernoulli_minus_10_vals, w_vals_bernoulli_minus_10_vals = euler_bernoulli_analysis(-P_num)
 
 #%%
 ####################################################################################################
@@ -716,31 +786,21 @@ fig('deflection numerical minus 10')
 ####################################################################################################
 new_prob('4 - comparison plots')
 
-x_vals = np.linspace(0, L2_num, 401)
-
-def euler_bernoulli(x, P):
-    return (P * x**3) / (3 * E4_num * I4_num)
-
-P_num = 4_000_000
-
-euler_bernoulli_10_vals = euler_bernoulli(x_vals, P_num)
-euler_bernoulli_minus_10_vals = euler_bernoulli(x_vals, -P_num)
-
 plt.figure()
-plt.plot(x1_vals, w1_vals_pos, label='numerical solution, roller support, w1')
-plt.plot(x2_vals, w2_vals_pos, label='numerical solution, roller support, w2')
+plt.plot(x1_vals, w1_vals_pos, label='roller support, w1')
+plt.plot(x2_vals, w2_vals_pos, label='roller support, w2')
 plt.plot(X_10, u2_10, color='red', label='abaqus results')
-plt.plot(x_vals, euler_bernoulli_10_vals, color='purple', label='numerical, no support')
+plt.plot(x_vals_bernoulli_10_vals, w_vals_bernoulli_10_vals, color='purple', label='no support')
 plt.title('Deflection')
 plt.xlabel('x [m]')
 plt.ylabel('w [m]')
 fig('deflection comparison 10')
 
 plt.figure()
-plt.plot(x1_vals, w1_vals, label='numerical solution, roller support, w1')
-plt.plot(x2_vals, w2_vals, label='numerical solution, roller support, w2')
+plt.plot(x1_vals, w1_vals, label='roller support, w1')
+plt.plot(x2_vals, w2_vals, label='roller support, w2')
 plt.plot(X_minus_10, u2_minus_10, color='red', label='abaqus results')
-plt.plot(x_vals, euler_bernoulli_minus_10_vals, color='purple', label='numerical, no support')
+plt.plot(x_vals_bernoulli_10_vals, w_vals_bernoulli_minus_10_vals, color='purple', label='no support')
 plt.title('Deflection')
 plt.xlabel('x [m]')
 plt.ylabel('w [m]')

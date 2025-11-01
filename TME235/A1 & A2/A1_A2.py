@@ -480,7 +480,7 @@ def calfem_analysis_A1(L):
     plotpar = [2, 1, 0] 
     cfv.eldraw2(Ex, Ey, plotpar)  # Drawing the original geometry
     plt.title('Original geometry')
-    sfig('calfem_original_geometry_' + str(L) + '.png')
+    fig('calfem_original_geometry_' + str(L) + '.png')
 
     # Compute nodal coordinates
     xv = np.linspace(p1[0], p2[0], nelx + 1)
@@ -510,8 +510,7 @@ def calfem_analysis_A1(L):
     plt.title(f"Deformed mesh, L = {L} (scale factor = {sfac:.1f})")
     plt.xlabel("x [m]")
     plt.ylabel("y [m]")
-    sfig('calfem_deformed_mesh_' + str(L) + '.png')
-    plt.show()
+    fig('calfem_deformed_mesh_' + str(L) + '.png')
 
     # Initialize arrays to store stresses
     num_elements = len(Ex)
