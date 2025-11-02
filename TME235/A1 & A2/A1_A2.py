@@ -811,6 +811,94 @@ plt.xlabel('meshsize (m)')
 plt.ylabel('displacement $w$')
 fig(str(name))
 
+
+# Read abaqus_results_mises.rpt
+datasets_mises = {}
+current_data = []
+current_name = None
+
+with open('smises_Bottom_X_3m.rpt', 'r') as f:
+    for line in f:
+        # Detect dataset header: line with at least two words, first is 'X'
+        tokens = line.strip().split()
+        if len(tokens) >= 2 and tokens[0] == 'X':
+            # Save previous dataset
+            if current_name and current_data:
+                datasets_mises[current_name] = np.array(current_data)
+            # Start new dataset
+            current_name = ' '.join(tokens)
+            current_data = []
+        elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+            # Try to parse data lines
+            try:
+                values = [float(x.replace('E', 'e')) for x in line.split()]
+                if len(values) == 2:
+                    current_data.append(values)
+            except Exception:
+                pass  # skip lines that can't be parsed
+    # Save last dataset
+    if current_name and current_data:
+        datasets_mises[current_name] = np.array(current_data)
+
+print("Available datasets from abaqus_results_mises.rpt:")
+for name in datasets_mises.keys():
+    print(f"  - '{name}'")
+print()
+
+x_vals_abaqus_L1 = datasets_mises['X m'][:, 0]
+smises_abaqus_L1 = datasets_mises['X m'][:, 1]
+    
+plt.figure()
+plt.plot(x_vals_abaqus_L1, smises_abaqus_L1, color='blue')
+plt.title('X smises_Bottom_X_03m')
+plt.xlabel('X')
+plt.ylabel('smises_Bottom_X_3m')
+fig('smises_Bottom_X_3m')
+
+# Read abaqus_results_mises.rpt
+datasets_mises = {}
+current_data = []
+current_name = None
+
+with open('smises_Bottom_X_03m.rpt', 'r') as f:
+    for line in f:
+        # Detect dataset header: line with at least two words, first is 'X'
+        tokens = line.strip().split()
+        if len(tokens) >= 2 and tokens[0] == 'X':
+            # Save previous dataset
+            if current_name and current_data:
+                datasets_mises[current_name] = np.array(current_data)
+            # Start new dataset
+            current_name = ' '.join(tokens)
+            current_data = []
+        elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+            # Try to parse data lines
+            try:
+                values = [float(x.replace('E', 'e')) for x in line.split()]
+                if len(values) == 2:
+                    current_data.append(values)
+            except Exception:
+                pass  # skip lines that can't be parsed
+    # Save last dataset
+    if current_name and current_data:
+        datasets_mises[current_name] = np.array(current_data)
+
+print("Available datasets from abaqus_results_mises.rpt:")
+for name in datasets_mises.keys():
+    print(f"  - '{name}'")
+print()
+
+x_vals_abaqus_L2 = datasets_mises['X 3m'][:, 0]
+smises_abaqus_L2 = datasets_mises['X 3m'][:, 1]
+
+plt.figure()
+plt.plot(x_vals_abaqus_L2, smises_abaqus_L2, color='blue')
+plt.title('X smises_Bottom_X_03m')
+plt.xlabel('X')
+plt.ylabel('smises_Bottom_X_03m')
+fig('smises_Bottom_X_03m')
+
+
 #%%
 ####################################################################################################
 ####################################################################################################
