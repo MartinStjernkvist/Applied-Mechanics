@@ -919,15 +919,22 @@ fig('smises_Bottom_X_03m')
 ####################################################################################################
 new_prob('1 - Comparison between models')
 
-print('size difference:')
-print(np.shape(x_vals_deflection_abaqus_L1))
-print(np.shape(deflection_abaqus_L1))
+df_L1 = pd.read_csv('deflection_calfem_L=3m 2.csv')
+df_L2 = pd.read_csv('deflection_calfem_L=0.3m 1.csv')
+
+x_vals_calfem_L1_csv = df_L1.iloc[:, 0].tolist()
+deflection_calfem_L1 = df_L1.iloc[:, 1].tolist()
+deflection_calfem_L1 = [i * 10**(-3) for i in deflection_calfem_L1]
+
+x_vals_calfem_L2_csv = df_L2.iloc[:, 0].tolist()
+deflection_calfem_L2 = df_L2.iloc[:, 1].tolist()
+deflection_calfem_L2 = [i * 10**(-3) for i in deflection_calfem_L2]
 
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, w_vals_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
-# plt.plot(x_vals_calfem_L1, deflection_calfem_L1, linestyle ='dashed', label='Calfem')
+plt.plot(x_vals_calfem_L1_csv, deflection_calfem_L1, linestyle ='dashed', label='Calfem')
 plt.plot(x_vals_deflection_abaqus_L1, deflection_abaqus_L1, linestyle ='dotted', label='Abaqus')
 
 plt.title('Deflection comparison (L=3m)')
@@ -939,7 +946,7 @@ fig('comparison deflection 3m')
 plt.figure()
 plt.plot(x_vals_bernoulli_L2, w_vals_bernoulli_L2, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L2, w_vals_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
-# plt.plot(x_vals_calfem_L2, deflection_calfem_L2, linestyle ='dashed', label='Calfem')
+plt.plot(x_vals_calfem_L2_csv, deflection_calfem_L2, linestyle ='dashed', label='Calfem')
 plt.plot(x_vals_deflection_abaqus_L2, deflection_abaqus_L2, linestyle ='dotted', label='Abaqus')
 plt.title(f'Deflection comparison (L= 0.3m)')
 plt.xlabel('x (m)')
