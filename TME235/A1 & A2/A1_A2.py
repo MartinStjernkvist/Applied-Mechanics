@@ -1102,71 +1102,110 @@ fig('Normal stress')
 ####################################################################################################
 new_prob('2 - calfem, constant area')
 
-num_el = 500
+# Plot parameters
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["font.size"] = 18
+plt.rcParams['mathtext.fontset'] = 'cm'
+plt.rcParams["axes.axisbelow"] = "True"
+size_in_inch = (22.0/2.54, 14/2.54)  # Convert cm to inches
+
+b_outer = 0.25
+nu=0.3
+E=200e9
+h0 = 0.02
+Width = b_outer
+num_el = 10
 nnodes = num_el + 1
+a_inner = 0.15
 
-coords = np.linspace(a_radius_num, b_radius_num, nnodes)
+coords = np.linspace(a_inner, b_outer, nnodes) # Creating coordinate system
 
-# display(coords)
-#coords = coords.reshape(-1,1)
+# Symbols
+r_sym, r1_sym, r2_sym = symbols('r r1 r2', real=True)
+
+# Defining shape functions
+Ne1 = (r2_sym - r_sym) / (r2_sym - r1_sym)
+Ne2 = (r_sym - r1_sym) / (r2_sym - r1_sym)
+
+# Defining Be using sympy
+Be_sym = Matrix([
+    [diff(Ne1, r_sym), diff(Ne2, r_sym)],
+    [Ne1 / r_sym, Ne2 / r_sym]
+])
+
+# Creating a numeric function for Be
+Be_numeric_func = lambdify([r_sym, r1_sym, r2_sym], Be_sym, 'numpy')
 
 Edof = np.zeros((num_el, 2), dtype=int)
 for i in range(num_el):
     Edof[i, 0] = i + 1       
     Edof[i, 1] = i + 2       
 
-#display(coords)
-# display(Edof)
+display(Edof)
 
 num_dofs = np.max(Edof)
 
-#Dmat = E / (1-nu**2) * np.array([[1, nu],
-                                 #[nu,1]])
+D = E / (1-nu**2) * np.array([[1, nu],
+                                 [nu,1]])
 
 num_dofs = np.max(Edof)
-K_num = np.zeros((num_dofs, num_dofs))
+K = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
-# print("K shape:", K_num.shape)
+print("K shape:", K.shape)
 
 for el in range(num_el):
     r1 = coords[el]
     r2 = coords[el + 1]
     Le = r2 - r1
-    r_mean = 0.5 * (r1 + r2)
+    r_avg = (r1+r2)/2
+    Be_center = Be_numeric_func(r_avg, r1, r2)
     
     # Constant thickness
-    h_e = h0_num
+    h_e = h0
+    
+    # Creating local stiffness matrix
+    Ke = Le * 2 * np.pi * h_e * r_avg * Be_center.T @ D @ Be_center
 
-    # print('h_e',np.shape(h_e))
-    # print('r_mean',np.shape(r_mean))
+    cfc.assem(Edof[el, :], K, Ke)
 
-    # local stiffness (axisymmetric linear element)
-    Ke = (2 * np.pi * E2_num * h_e * r_mean / Le) * np.array([[1, -1],
-                                                        [-1,  1]])
-    cfc.assem(Edof[el, :], K_num, Ke)
-
-# BCs
-bc = np.array([1])  # fix inner radius
+# BC
+bc = np.array([1])  # Inner edge fixed
 bcVal = np.array([0.0])
 
-# Applying distributed load
-sigma_r = -120e6 
+# Applying force
+sigma_r = 120e6 
 r_outer = coords[-1]
-h_inner = h0_num
-f[-1, 0] = 2 * np.pi * r_outer * h_inner * sigma_r  # negative radial direction
+h_inner = h0
+f[-1, 0] = -2 * np.pi * r_outer * h_inner * sigma_r  # Applying force on outer edge
 
-a, r = cfc.solveq(K_num, f, bc, bcVal)
 
-plt.figure()
-plt.plot(coords, a, '-', label='$u_r(r)$ [mm]')
-plt.xlabel('r [m]')
-plt.ylabel('Radial displacement [m]')
-plt.title('Axisymmetric radial displacement of disc, constant height')
-fig('Axisymmetric radial displacement of disc, constant height')
+a, r = cfc.solveq(K, f, bc, bcVal)
 
-# for i in range(nnodes):
-#     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+
+# Displacement plot
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=size_in_inch)
+
+# Using smaller markers due to high num_el
+ax.plot(coords, a * 1e3, color="b", marker="o", markersize=2, linestyle="-", linewidth=1, label='$u_r(r)$ [mm]') # Converting m to mm
+ax.set_xlabel(r'$r$ [m]')
+ax.set_ylabel('Radial displacement [mm]')
+ax.set_title(r'Axisymmetric radial displacement of disc (constant $h$)') 
+
+# Formatting
+ax.set_xticks(np.linspace(a_inner, b_outer, 6))
+ax.tick_params(which="both", direction="in")
+ax.grid(True)
+formatter = ticker.ScalarFormatter(useMathText=True)
+formatter.set_powerlimits((0, 0))
+ax.yaxis.set_major_formatter(formatter)
+ax.legend()
+fig.tight_layout()
+plt.show()
+
+
+for i in range(nnodes):
+    print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
 
 # Computing normal stress
 sigma_rr_vals = np.zeros(num_el)
@@ -1179,26 +1218,44 @@ for el in range(num_el):
     r_mean = 0.5 * (r1 + r2)
     r_centers[el] = r_mean
 
-    u1 = a[el, 0]
-    u2 = a[el + 1, 0]
+    # Displcement for each element
+    dof1 = Edof[el, 0] - 1
+    dof2 = Edof[el, 1] - 1
+    u1 = a[dof1, 0]
+    u2 = a[dof2, 0]
+    
     du_dr = (u2 - u1) / Le
 
-    # Plane stress approximation
-    sigma_rr = E2_num / (1 - poisson_num**2) * (du_dr + poisson_num * (u1 + u2) / (2 * r_mean))
+    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
     sigma_rr_vals[el] = sigma_rr
 
-# Plotting radial stress
-plt.figure()
-plt.plot(r_centers, sigma_rr_vals)
-plt.xlabel('r [m]')
-plt.ylabel(r'$\sigma_{rr}$ [Pa]')
-plt.title('Radial stress distribution, constant height')
-fig('Radial stress distribution, constant height')
 
-print("Total reaction force:", np.sum(r))
-print("Expected load:", 2 * np.pi * coords[-1] * h0_num * (-sigma_r))
-print(f"Applying σ_rr = {sigma_r/1e6:.1f} MPa at r = {r_outer:.3f} m")
-print(f"Equivalent nodal force = {f[-1,0]:.2f} N")
+# Stress distribution plot
+fig2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=size_in_inch)
+
+# Looping over each element
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    
+    # Plotting a line for each element
+    ax2.plot([r1, r2], [sigma_rr_vals[el]/1e6, sigma_rr_vals[el]/1e6], 'r-',
+             linewidth=1, markersize=0)
+
+# Setting labels
+ax2.set_xlabel(r'$r$ [m]')
+ax2.set_ylabel(r'$\sigma_{rr}$ [MPa]')
+ax2.set_title(r'Radial stress distribution $\sigma_{rr}(r)$ (constant $h$)')
+
+# Formatting
+ax2.set_xticks(np.linspace(a_inner, b_outer, 6))
+ax2.tick_params(which="both", direction="in")
+ax2.grid(True)
+formatter2 = ticker.ScalarFormatter(useMathText=True)
+formatter2.set_powerlimits((0, 0))
+ax2.yaxis.set_major_formatter(formatter2)
+fig2.tight_layout()
+plt.show()
 
 # %%
 ####################################################################################################
@@ -1219,74 +1276,126 @@ print(f"Equivalent nodal force = {f[-1,0]:.2f} N")
 ####################################################################################################
 new_prob('2 - calfem, varying area')
 
-num_el = 500
+b_outer = 0.25
+nu=0.3
+E=200e9
+h0 = 0.02
+Width = b_outer
+num_el = 10
 nnodes = num_el + 1
+a_inner = 0.15
 
-coords = np.linspace(a_radius_num, b_radius_num, nnodes)
+# Plot parameters
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["font.size"] = 18
+plt.rcParams['mathtext.fontset'] = 'cm'
+plt.rcParams["axes.axisbelow"] = "True"
+size_in_inch = (22.0/2.54, 14/2.54)  # Convert cm to inches
 
-# display(coords)
+coords = np.linspace(a_inner, b_outer, nnodes) # Creating coordinate system
+
+# Symbols
+r_sym, r1_sym, r2_sym = symbols('r r1 r2', real=True)
+
+# Defining shape functions
+Ne1 = (r2_sym - r_sym) / (r2_sym - r1_sym)
+Ne2 = (r_sym - r1_sym) / (r2_sym - r1_sym)
+
+# Defining Be using sympy
+Be_sym = Matrix([
+    [diff(Ne1, r_sym), diff(Ne2, r_sym)],
+    [Ne1 / r_sym, Ne2 / r_sym]
+])
+
+
+# Creating a numeric function for Be
+Be_numeric_func = lambdify([r_sym, r1_sym, r2_sym], Be_sym, 'numpy')
+
+#display(coords)
 #coords = coords.reshape(-1,1)
 
 Edof = np.zeros((num_el, 2), dtype=int)
 for i in range(num_el):
-    Edof[i, 0] = i + 1       # First column
-    Edof[i, 1] = i + 2       # Second column
+    Edof[i, 0] = i + 1       
+    Edof[i, 1] = i + 2       
 
-#display(coords)
-# display(Edof)
 
 num_dofs = np.max(Edof)
 
-#Dmat = E / (1-nu**2) * np.array([[1, nu],
-                                 #[nu,1]])
+D = E / (1-nu**2) * np.array([[1, nu],
+                                 [nu,1]])
 
 num_dofs = np.max(Edof)
-K_num = np.zeros((num_dofs, num_dofs))
+K = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
-# print("K shape:", K_num.shape)
+print("K shape:", K.shape)
 
 for el in range(num_el):
     r1 = coords[el]
     r2 = coords[el + 1]
     Le = r2 - r1
-    r_mean = 0.5 * (r1 + r2)
+    r_avg = (r1+r2)/2
+
+    Be_center = Be_numeric_func(r_avg, r1, r2)
     
     # variable thickness
-    h_e = h0_num * (r_mean - a_radius_num) / (b_radius_num - a_radius_num) + h0_num
+    h_e = h0 * (r_avg - a_inner) / (b_outer - a_inner) + h0
 
-    # print('h_e',np.shape(h_e))
-    # print('r_mean',np.shape(r_mean))
+    print('h_e',np.shape(h_e))
+    print('r_mean',np.shape(r_mean))
 
-    # local stiffness (axisymmetric linear element)
-    Ke = (2 * np.pi * E2_num * h_e * r_mean / Le) * np.array([[1, -1],
-                                                        [-1,  1]])
-    cfc.assem(Edof[el, :], K_num, Ke)
+    # Creating local stiffness matrix
+    Ke = Le * 2 * np.pi * h_e * r_avg * Be_center.T @ D @ Be_center
 
-# BCs
-bc = np.array([1])  # fix inner radius
+    cfc.assem(Edof[el, :], K, Ke)
+
+# BC
+bc = np.array([1])  # Inner edge fixed
 bcVal = np.array([0.0])
 
-# Applying distributed load
+# Applying force
 sigma_r = -120e6 
-r_inner = coords[-1]
-h_inner = h0_num
-f[-1, 0] = 2 * np.pi * r_inner * h_inner * sigma_r  # negative radial direction
+r_outer = coords[-1]
+
+# Defining the varying thickness function
+h_varying_func = lambda r: h0 * (r - a_inner) / (b_outer - a_inner) + h0
+
+# Calculating the thcikness of the outer edge
+h_at_outer_edge = h_varying_func(r_outer)
+
+# Applying negative force on outer edge
+f[-1, 0] = 2 * np.pi * r_outer * h_at_outer_edge * sigma_r
 
 
-a, r = cfc.solveq(K_num, f, bc, bcVal)
+a, r = cfc.solveq(K, f, bc, bcVal) # Solving equation to find displcement
 
-plt.figure()
-plt.plot(coords, a)
-plt.xlabel('r [m]')
-plt.ylabel('Radial displacement [m]')
-plt.title('Axisymmetric radial displacement of disc, varying height')
-fig('Axisymmetric radial displacement of disc, varying height')
 
-# for i in range(nnodes):
-#     print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+# Displacement plot
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=size_in_inch)
 
-# Computinging normal stress
+ax.plot(coords, a * 1e3, color="b", marker="o", markersize=3, linestyle="-", label='$u_r(r)$ [mm]') # Converting m to mm
+ax.set_xlabel(r'$r$ [m]')
+ax.set_ylabel('Radial displacement [mm]')
+ax.set_title(r'Axisymmetric radial displacement of disc (varying $h$)')
+
+# Formatting
+ax.set_xticks(np.linspace(a_inner, b_outer, 6))
+ax.tick_params(which="both", direction="in")
+ax.grid(True)
+formatter = ticker.ScalarFormatter(useMathText=True)
+formatter.set_powerlimits((0, 0))
+ax.yaxis.set_major_formatter(formatter)
+ax.legend()
+fig.tight_layout()
+plt.show()
+
+
+
+for i in range(nnodes):
+    print(f"Node {i+1}: r = {coords[i]:.4f} m, ur = {a[i,0]*1e6:.3f} μm")
+
+# Computing normal stress
 sigma_rr_vals = np.zeros(num_el)
 r_centers = np.zeros(num_el)
 
@@ -1297,20 +1406,43 @@ for el in range(num_el):
     r_mean = 0.5 * (r1 + r2)
     r_centers[el] = r_mean
 
-    u1 = a[el, 0]
-    u2 = a[el + 1, 0]
+    # Displcement for each element
+    dof1 = Edof[el, 0] - 1
+    dof2 = Edof[el, 1] - 1
+    u1 = a[dof1, 0]
+    u2 = a[dof2, 0]
+    
     du_dr = (u2 - u1) / Le
 
-    # Plane stress approximation
-    sigma_rr = E2_num / (1 - poisson_num*2) * (du_dr + poisson_num * (u1 + u2) / (2 * r_mean))
+    
+    sigma_rr = E / (1 - nu**2) * (du_dr + nu * (u1 + u2) / (2 * r_mean))
     sigma_rr_vals[el] = sigma_rr
 
-# Plotting radial stress
-plt.figure()
-plt.plot(r_centers, sigma_rr_vals)
-plt.xlabel('r [m]')
-plt.ylabel(r'$\sigma_{rr}$ [Pa]')
-plt.title('Radial stress distribution, varying height')
-fig('Radial stress distribution, varying height')
+
+# Stress distribution plot
+fig2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=size_in_inch)
+
+# Looping over each element
+for el in range(num_el):
+    r1 = coords[el]
+    r2 = coords[el + 1]
+    # Plotting a line for each element
+    ax2.plot([r1, r2], [sigma_rr_vals[el]/1e6, sigma_rr_vals[el]/1e6], 'ro-',
+             linewidth=2, markersize=2)
+
+# Setting labels
+ax2.set_xlabel(r'$r$ [m]')
+ax2.set_ylabel(r'$\sigma_{rr}$ [MPa]')
+ax2.set_title(r'Radial stress distribution $\sigma_{rr}(r)$ (varying $h$)')
+
+# Formatting
+ax2.set_xticks(np.linspace(a_inner, b_outer, 6))
+ax2.tick_params(which="both", direction="in")
+ax2.grid(True)
+formatter2 = ticker.ScalarFormatter(useMathText=True)
+formatter2.set_powerlimits((0, 0))
+ax2.yaxis.set_major_formatter(formatter2)
+fig2.tight_layout()
+plt.show()
 
 #%%
