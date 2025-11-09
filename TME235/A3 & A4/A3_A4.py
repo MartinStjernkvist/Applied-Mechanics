@@ -742,6 +742,7 @@ print('\nintegration constants:')
 display(integration_constants)
 
 solution = w.subs(integration_constants)
+print('deflection equation:')
 display(simplify(solution))
 w_func = lambdify((x, L, P, E, I), solution, 'numpy')
 

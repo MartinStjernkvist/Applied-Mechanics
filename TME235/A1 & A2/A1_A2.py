@@ -741,43 +741,46 @@ for name in datasets.keys():
 print()
 
 # Read abaqus_results_mises.rpt
-datasets_mises = {}
-current_data = []
-current_name = None
+# datasets_mises = {}
+# current_data = []
+# current_name = None
 
-with open('abaqus_results_mises.rpt', 'r') as f:
-    for line in f:
-        # Detect dataset header: line with at least two words, first is 'X'
-        tokens = line.strip().split()
-        if len(tokens) >= 2 and tokens[0] == 'X':
-            # Save previous dataset
-            if current_name and current_data:
-                datasets_mises[current_name] = np.array(current_data)
-            # Start new dataset
-            current_name = ' '.join(tokens)
-            current_data = []
-        elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
-            # Try to parse data lines
-            try:
-                values = [float(x.replace('E', 'e')) for x in line.split()]
-                if len(values) == 2:
-                    current_data.append(values)
-            except Exception:
-                pass  # skip lines that can't be parsed
-    # Save last dataset
-    if current_name and current_data:
-        datasets_mises[current_name] = np.array(current_data)
+# with open('abaqus_results_mises.rpt', 'r') as f:
+#     for line in f:
+#         # Detect dataset header: line with at least two words, first is 'X'
+#         tokens = line.strip().split()
+#         if len(tokens) >= 2 and tokens[0] == 'X':
+#             # Save previous dataset
+#             if current_name and current_data:
+#                 datasets_mises[current_name] = np.array(current_data)
+#             # Start new dataset
+#             current_name = ' '.join(tokens)
+#             current_data = []
+#         elif line.strip() and not (line.strip().startswith('X') or line.strip() == ''):
+#             # Try to parse data lines
+#             try:
+#                 values = [float(x.replace('E', 'e')) for x in line.split()]
+#                 if len(values) == 2:
+#                     current_data.append(values)
+#             except Exception:
+#                 pass  # skip lines that can't be parsed
+#     # Save last dataset
+#     if current_name and current_data:
+#         datasets_mises[current_name] = np.array(current_data)
 
-print("Available datasets from abaqus_results_mises.rpt:")
-for name in datasets_mises.keys():
-    print(f"  - '{name}'")
-print()
+# print("Available datasets from abaqus_results_mises.rpt:")
+# for name in datasets_mises.keys():
+#     print(f"  - '{name}'")
+# print()
 
-x_vals_abaqus_L1 = datasets['X s11_bottom_X_3m'][:, 0]
+x_vals_deflection_abaqus_L1 = datasets['X u2_middle_X_3m'][:, 0]
 deflection_abaqus_L1 = datasets['X u2_middle_X_3m'][:, 1]
+x_vals_abaqus_L1 = datasets['X s11_bottom_X_3m'][:, 0]
 stress_abaqus_L1 = datasets['X s11_bottom_X_3m'][:, 1]
-x_vals_abaqus_L2 = datasets['X s11_bottom_X_03m'][:, 0]
+
+x_vals_deflection_abaqus_L2 = datasets['X u2_middle_X_03m'][:, 0]
 deflection_abaqus_L2 = datasets['X u2_middle_X_03m'][:, 1]
+x_vals_abaqus_L2 = datasets['X s11_bottom_X_03m'][:, 0]
 stress_abaqus_L2 = datasets['X s11_bottom_X_03m'][:, 1]
 
 # Plot all datasets
@@ -812,7 +815,6 @@ plt.ylabel('displacement $w$')
 fig(str(name))
 
 
-# Read abaqus_results_mises.rpt
 datasets_mises = {}
 current_data = []
 current_name = None
@@ -917,16 +919,20 @@ fig('smises_Bottom_X_03m')
 ####################################################################################################
 new_prob('1 - Comparison between models')
 
+print('size difference:')
+print(np.shape(x_vals_deflection_abaqus_L1))
+print(np.shape(deflection_abaqus_L1))
+
 plt.figure()
 
 plt.plot(x_vals_bernoulli_L1, w_vals_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, w_vals_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
 # plt.plot(x_vals_calfem_L1, deflection_calfem_L1, linestyle ='dashed', label='Calfem')
-plt.plot(x_vals_abaqus_L1, deflection_abaqus_L1, linestyle ='dotted', label='Abaqus')
+plt.plot(x_vals_deflection_abaqus_L1, deflection_abaqus_L1, linestyle ='dotted', label='Abaqus')
 
 plt.title('Deflection comparison (L=3m)')
 plt.xlabel('x (m)')
-plt.ylabel('w (mm)')
+plt.ylabel('w (m)')
 fig('comparison deflection 3m')
 
 
@@ -934,30 +940,30 @@ plt.figure()
 plt.plot(x_vals_bernoulli_L2, w_vals_bernoulli_L2, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L2, w_vals_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
 # plt.plot(x_vals_calfem_L2, deflection_calfem_L2, linestyle ='dashed', label='Calfem')
-plt.plot(x_vals_abaqus_L2, deflection_abaqus_L2, linestyle ='dotted', label='Abaqus')
+plt.plot(x_vals_deflection_abaqus_L2, deflection_abaqus_L2, linestyle ='dotted', label='Abaqus')
 plt.title(f'Deflection comparison (L= 0.3m)')
 plt.xlabel('x (m)')
-plt.ylabel('w (mm)')
+plt.ylabel('w (m)')
 fig('comparison deflection 03m')
 
 plt.figure()
 plt.plot(x_vals_bernoulli_L1, sigma_xx_bernoulli_L1, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L1, sigma_xx_timoshenko_L1, linestyle ='dashdot', label='Timoshenko')
 plt.plot(x_vals_calfem_L1, -stress_calfem_L1, linestyle ='dashed', label='Calfem (switched sign)')
-plt.plot(x_vals_abaqus_L1, -stress_abaqus_L1, linestyle ='dotted', label='Abaqus (switched sign)')
+plt.plot(x_vals_deflection_abaqus_L1, -stress_abaqus_L1, linestyle ='dotted', label='Abaqus (switched sign)')
 plt.title('Normal stress comparison (L=3m)')
 plt.xlabel('x (m)')
-plt.ylabel('sigma (mm)')
+plt.ylabel('sigma (Pa)')
 fig('comparison stress 3m')
 
 plt.figure()
 plt.plot(x_vals_bernoulli_L2, sigma_xx_bernoulli_L2, label='Euler-Bernoulli')
 plt.plot(x_vals_timoshenko_L2, sigma_xx_timoshenko_L2, linestyle ='dashdot', label='Timoshenko')
 plt.plot(x_vals_calfem_L2, -stress_calfem_L2, linestyle ='dashed', label='Calfem (switched sign)')
-plt.plot(x_vals_abaqus_L2, -stress_abaqus_L2, linestyle ='dotted', label='Abaqus (switched sign)')
+plt.plot(x_vals_deflection_abaqus_L2, -stress_abaqus_L2, linestyle ='dotted', label='Abaqus (switched sign)')
 plt.title('Normal stress comparison (L=0.3m)')
 plt.xlabel('x (m)')
-plt.ylabel('sigma (mm)')
+plt.ylabel('sigma (Pa)')
 fig('comparison stress 03m')
 
 #%%
