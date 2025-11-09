@@ -373,7 +373,7 @@ x_vals_timoshenko_L2, w_vals_timoshenko_L2, sigma_xx_timoshenko_L2 = timoshenko_
 
 
 
-# Assignment 1 - calfem analysis
+# Assignment 1 - calfem analysis - SEE SEPARATE FILE
 
 
 
@@ -1099,7 +1099,7 @@ fig('Normal stress')
 
 
 
-# Assigment 2 - Calfem, constant area
+# Assigment 2 - Calfem, constant area - SEE SEPARATE FILE
 
 
 
@@ -1273,7 +1273,7 @@ plt.show()
 
 
 
-# Assigment 2 - Calfem, varying area
+# Assigment 2 - Calfem, varying area - SEE SEPARATE FILE
 
 
 
