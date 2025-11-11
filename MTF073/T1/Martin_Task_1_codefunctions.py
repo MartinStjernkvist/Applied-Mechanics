@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 plt.close('all')
 import sys # For sys.exit()
 # All functions of the code (some to be implemented by you):
-import codeFunctions_template as cF
+import Martin_codeFunctions as cF
 # Info: Use cF to call functions that are defined in codeFunctions_template.py.
 # Hint: Click on the function name and press Ctrl-g to go to the function.
 # Rule: Only change values of arrays in the first line of the argument list in the functions!
