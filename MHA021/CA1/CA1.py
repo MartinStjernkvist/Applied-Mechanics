@@ -29,7 +29,7 @@ import matplotlib.cm as cm
 from pathlib import Path
 
 def new_prob(string):
-    print_string = '\n' + '=' * 80 + '\n' + 'Assignment ' + str(string) + '\n' + '=' * 80 + '\n'
+    print_string = '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -72,7 +72,7 @@ def printt(**kwargs):
 
 
 
-# ...
+# Task 1
 
 
 
@@ -80,4 +80,13 @@ def printt(**kwargs):
 ####################################################################################################
 ####################################################################################################
 
-print('test')
+new_prob('1')
+
+# Define input data
+E = 210e9        # Young's modulus [Pa]
+r = 0.02         # radius [m]
+A = np.pi * r**2 # Cross-sectional area
+Le = 1           # Element length [m]
+P = 10e3         # Force [N]
+
+
