@@ -1,4 +1,6 @@
 #%%
+# Code written by Martin Stjernkvist
+
 import sys
 import os
 # Add parent directory to sys.path
@@ -61,8 +63,15 @@ plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
+def sfig(fig_name):
+    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
+    print('figure name: ', fig_name)
+
+
 def fig(fig_name):
-    fig_output_file = script_dir / "fig" / fig_name
+    fig_output_file = script_dir / "figures" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.legend()
     plt.grid(True, alpha = 0.3)
@@ -201,6 +210,7 @@ fig = draw_discrete_elements(
 plot_deformed_bars(fig, Ex, Ey, Ed)
 fig.show()
 
+
 #---------------------------------------------------------------------------------------------------
 # 1d)
 #---------------------------------------------------------------------------------------------------
@@ -248,6 +258,8 @@ sigma_y = 250e6     # Yielding [Pa]
 #---------------------------------------------------------------------------------------------------
 new_subtask('2a)')
 
+q = 0
+
 # See labeling of elements in the report
 
 Ly = 3 * L / 4
@@ -284,8 +296,6 @@ fig.show()
 r = np.sqrt(A / np.pi)
 I = np.pi / 4 * r**4
 displayvar("I", I)
-
-q = 0
 
 # Topology matrix (connectivity)
 Edof = np.array([
@@ -363,6 +373,43 @@ for el in range(num_el):
 
 displayvar("M", M) 
 displayvar("N", N) 
+
+
+#---------------------------------------------------------------------------------------------------
+# 2d)
+#---------------------------------------------------------------------------------------------------
+new_subtask('2d)')
+
+q = P / L
+P = 0
+
+# New distributed loads
+num_el = Edof.shape[0]
+qxy = np.zeros((num_el, 2)) # Distributed loads 
+qxy[:, 1] = -q # All elements in vertical direction
+
+# Same number of dofs
+
+# Reset 
+K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
+f = np.zeros((num_dofs))            # Load vector
+
+for el in range(num_el):
+    dofs = Edof[el, :]   # DOFs for the element
+    Ke, fe = beam2e(Ex[el, :], Ey[el, :], E, A, I, qxy[el, :])  # Element stiffness matrix
+    assem(K, Ke, dofs)
+    assem(f, fe, dofs)
+
+# Boundary conditions the same
+
+# # Solve the system
+a, r = solve_eq(K, f, bc_dofs, bc_vals)
+
+displayvar("a", a, 2)
+displayvar("r", np.round(r), 2)
+
+# Vertical deflection p
+displayvar("p", a[14-1]) 
 
 
 #%%
