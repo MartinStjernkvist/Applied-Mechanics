@@ -178,7 +178,7 @@ bc_vals = np.array([0.0, 0.0, 0.0])
 # Solve the system of equations
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
 displayvar("a", a)
-displayvar("r", r)
+displayvar("r", np.round(r))
 
 #---------------------------------------------------------------------------------------------------
 # c)
@@ -204,14 +204,14 @@ fig.show()
 N = np.zeros((num_el))
 for el in range(num_el):
     N[el] = bar2s(Ex[el, :], Ey[el, :], E, A, Ed[el, :]) 
-displayvar("N", N)
+displayvar("N", np.round(N))
 
 # Normal stresses
 sigma = N / A
-displayvar("\sigma", sigma*1e-6) # stresses in MPa
+displayvar("\sigma", np.round(sigma*1e-6)) # stresses in MPa
 
 # Factor of safety
-displayvar("Factor of safety", sigma / sigma_y) # stresses in Pa
+displayvar("FOS", sigma_y / np.max(np.abs(sigma))) # stresses in Pa
 
 #%%
 ####################################################################################################
