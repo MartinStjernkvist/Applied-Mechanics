@@ -92,14 +92,114 @@ def printt(**kwargs):
 new_prob('1 - Planar truss')
 
 # Define input data
-L = 1.6         # Element length [m]
-P = 60e3        # Force [N]
-E = 200e9       # Young's modulus [Pa]
-A = 1e-3        # Cross-sectional area
+L = 1.6             # Element length [m]
+P = 60e3            # Force [N]
+E = 200e9           # Young's modulus [Pa]
+A = 1e-3            # Cross-sectional area
+sigma_y = 250e9     # Yielding [Pa]
+
+#---------------------------------------------------------------------------------------------------
+# a)
+#---------------------------------------------------------------------------------------------------
+
+# See labeling of elements in the report
+
+Ex = np.array([
+    [0, Lx],
+    [1, Lx],
+    [0, Le]
+])
+Ey = np.array([ 
+    [0, Ly],
+    [0, Ly],
+    [0, 0]
+])
+
+# Plot the truss geometry
+fig = draw_discrete_elements(
+    Ex, Ey,
+    title="Geometry with nodes and elements",
+    xlabel="x [m]",
+    ylabel="y [m]",
+    annotate="both"
+)
+fig.show()
+
+# Topology matrix (connectivity)
+Edof = np.array([
+    [1, 2, 5, 6],   # Element 1
+    [3, 4, 5, 6],   # Element 2
+    [1, 2, 3, 4]    # Element 3
+])
+# Number of elements
+num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
+num_dofs = np.max(np.max(Edof))
+
+print(f"number of dofs = {num_dofs}")
+print(f"number of elements = {num_el}")
+
+#---------------------------------------------------------------------------------------------------
+# b)
+#---------------------------------------------------------------------------------------------------
+
+# Assemble stiffness matrix and load vector, first allocate space
+K = np.zeros((num_dofs, num_dofs)) # Stiffness matrix
+f = np.zeros((num_dofs))        # Load vector
+
+# Loop over all elements to assemble global stiffness matrix
+for el in range(num_el):
+    Ke = bar2e(Ex[el, :], Ey[el, :], E = E, A=A)  # Element stiffness matrix
+    dofs = Edof[el, :]   # DOFs for the element
+    assem(K, Ke, dofs)
+
+displayvar("K", K)
 
 
+# External forces
+f[5-1] = P  # Add a horizontal force at node 3 (= dof 5)
+
+# Boundary conditions
+bc_dofs = np.array([1, 2, 4, 6]) # DOFs fixed: 1, 2, 4, 6
+bc_vals = np.array([0.0, 0.0, 0.0, 0.0])
 
 
+# Solve the system of equations
+a, r = solve_eq(K, f, bc_dofs, bc_vals)
+displayvar("a", a)
+displayvar("r", r)
+
+#---------------------------------------------------------------------------------------------------
+# c)
+#---------------------------------------------------------------------------------------------------
+
+# Displacement for each element (Edof to extract dofs for each element)
+Ed = extract_dofs(a, Edof)
+fig = draw_discrete_elements(
+    Ex, Ey,
+    title="Deformed truss",
+    xlabel="x [m]",
+    ylabel="y [m]",
+    line_style="dashed"
+)
+plot_deformed_bars(fig, Ex, Ey, Ed)
+fig.show()
+
+#---------------------------------------------------------------------------------------------------
+# d)
+#---------------------------------------------------------------------------------------------------
+
+# Compute normal forces
+N = np.zeros((num_el))
+for el in range(num_el):
+    N[el] = bar2s(Ex[el, :], Ey[el, :], E, A, Ed[el, :]) 
+displayvar("N", N)
+
+# Normal stresses
+sigma = N / A
+displayvar("\sigma", sigma*1e-6) # stresses in MPa
+
+# Factor of safety
+displayvar("Factor of safety", sigma / sigma_y) # stresses in Pa
 
 #%%
 ####################################################################################################
