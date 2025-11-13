@@ -154,8 +154,8 @@ print(f"number of elements = {num_el}")
 #---------------------------------------------------------------------------------------------------
 
 # Assemble stiffness matrix and load vector, first allocate space
-K = np.zeros((num_dofs, num_dofs)) # Stiffness matrix
-f = np.zeros((num_dofs))        # Load vector
+K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
+f = np.zeros((num_dofs))            # Load vector
 
 # Loop over all elements to assemble global stiffness matrix
 for el in range(num_el):
@@ -168,9 +168,10 @@ displayvar("K", K)
 
 # External forces
 f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
+displayvar("f", f)
 
 # Boundary conditions
-bc_dofs = np.array([2, 3, 4]) # DOFs fixed: 2, 3, 4
+bc_dofs = np.array([1, 3, 4]) # DOFs fixed: 1, 3, 4
 bc_vals = np.array([0.0, 0.0, 0.0])
 
 
