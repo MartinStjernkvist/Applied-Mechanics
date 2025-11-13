@@ -1,6 +1,4 @@
 #%%
-# %matplotlib widget
-
 import sys
 import os
 # Add parent directory to sys.path
@@ -104,15 +102,24 @@ sigma_y = 250e9     # Yielding [Pa]
 
 # See labeling of elements in the report
 
+Ly = 3 * L / 4
 Ex = np.array([
-    [0, Lx],
-    [1, Lx],
-    [0, Le]
+    [0, 0],
+    [0, L],
+    [0, L],
+    [0, L],
+    [L, L],
+    [L, 2 * L],
+    [L, 2 * L]
 ])
 Ey = np.array([ 
     [0, Ly],
+    [0, 0],
     [0, Ly],
-    [0, 0]
+    [Ly, Ly],
+    [0, Ly],
+    [0, Ly],
+    [Ly, Ly]
 ])
 
 # Plot the truss geometry
@@ -127,9 +134,13 @@ fig.show()
 
 # Topology matrix (connectivity)
 Edof = np.array([
-    [1, 2, 5, 6],   # Element 1
-    [3, 4, 5, 6],   # Element 2
-    [1, 2, 3, 4]    # Element 3
+    [1, 2, 3, 4],   # Element 1
+    [1, 2, 5, 6],   # Element 2
+    [1, 2, 7, 8],   # Element 3
+    [3, 4, 7, 8],   # Element 4
+    [5, 6, 7, 8],   # Element 5
+    [5, 6, 9, 10],  # Element 6
+    [7, 8, 9, 10]   # Element 7
 ])
 # Number of elements
 num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
@@ -156,11 +167,11 @@ displayvar("K", K)
 
 
 # External forces
-f[5-1] = P  # Add a horizontal force at node 3 (= dof 5)
+f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
 
 # Boundary conditions
-bc_dofs = np.array([1, 2, 4, 6]) # DOFs fixed: 1, 2, 4, 6
-bc_vals = np.array([0.0, 0.0, 0.0, 0.0])
+bc_dofs = np.array([2, 3, 4]) # DOFs fixed: 2, 3, 4
+bc_vals = np.array([0.0, 0.0, 0.0])
 
 
 # Solve the system of equations
