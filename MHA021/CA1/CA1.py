@@ -162,9 +162,7 @@ for el in range(num_el):
     Ke = bar2e(Ex[el, :], Ey[el, :], E = E, A=A)  # Element stiffness matrix
     dofs = Edof[el, :]   # DOFs for the element
     assem(K, Ke, dofs)
-
 displayvar("K", K)
-
 
 # External forces
 f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
@@ -173,7 +171,6 @@ displayvar("f", f)
 # Boundary conditions
 bc_dofs = np.array([1, 3, 4]) # DOFs fixed: 1, 3, 4
 bc_vals = np.array([0.0, 0.0, 0.0])
-
 
 # Solve the system of equations
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
@@ -273,49 +270,77 @@ fig.show()
 # a)
 #---------------------------------------------------------------------------------------------------
 
+# Radius and area moment of inertia for cross-sectional area
+r = np.sqrt(A / np.pi)
+I = np.pi / 4 * r**4
+q = 0
+
 # Topology matrix (connectivity)
 Edof = np.array([
-    [1, 2, 3, 4, 5, 6],   # Element 1
-    [1, 2, 3, 7, 8, 9],   # Element 2
-    [1, 2, 3, 10, 11, 12],   # Element 3
-    [4, 5, 6, 10, 11, 12],   # Element 4
-    [7, 8, 9, 10, 11, 12],   # Element 5
-    [7, 8, 9, 13, 14, 15],  # Element 6
-    [10, 11, 12, 13, 14, 15]   # Element 7
+    [1, 2, 3, 4, 5, 6],         # Element 1
+    [1, 2, 3, 7, 8, 9],         # Element 2
+    [1, 2, 3, 10, 11, 12],      # Element 3
+    [4, 5, 6, 10, 11, 12],      # Element 4
+    [7, 8, 9, 10, 11, 12],      # Element 5
+    [7, 8, 9, 13, 14, 15],      # Element 6
+    [10, 11, 12, 13, 14, 15]    # Element 7
 ])
 # Number of elements
 num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
 num_dofs = np.max(np.max(Edof))
 
-print(f"number of dofs = {num_dofs}")
-print(f"number of elements = {num_el}")
+num_el = Edof.shape[0]
+qxy = np.zeros((num_el, 2)) # Distributed loads 
+qxy[:, 1] = -q # All elements in vertical direction
 
-# Assemble stiffness matrix and load vector, first allocate space
+ep = [E, A, I]
+num_dofs = np.max(np.max(Edof))
+
 K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
 f = np.zeros((num_dofs))            # Load vector
 
-# Loop over all elements to assemble global stiffness matrix
 for el in range(num_el):
-    Ke = beam2e(Ex[el, :], Ey[el, :], E = E, A=A)  # Element stiffness matrix
     dofs = Edof[el, :]   # DOFs for the element
+    Ke, fe = beam2e(Ex[el, :], Ey[el, :], E, A, I, qxy[el, :])  # Element stiffness matrix
     assem(K, Ke, dofs)
-
-displayvar("K", K)
-
+    assem(f, fe, dofs)
 
 # External forces
-f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
+f[14-1] = -P  # Add a vertical force at node 5 (= dof 14)
 displayvar("f", f)
 
 # Boundary conditions
-bc_dofs = np.array([1, 3, 4]) # DOFs fixed: 1, 3, 4
-bc_vals = np.array([0.0, 0.0, 0.0])
+# From Task 1: DOFs fixed: 1, 3, 4 
+# --> 1, 4, 5 are fixed (new numbering)'
+bc_dofs = [1, 4, 5]
+bc_vals = [0.0, 0.0, 0.0]
 
-
-# Solve the system of equations
+# # Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
-displayvar("a", a)
-displayvar("r", np.round(r))
+
+displayvar("a", a, 2)
+displayvar("r", np.round(r), 2)
+
+## Postprocessing
+Ed = extract_dofs(a, Edof)
+
+# Draw the deformed structure
+fig = draw_discrete_elements(Ex, Ey, title="Deformed frame", line_style="dashed")
+plot_deformed_beams(fig, Ex, Ey, Ed)
+fig.show()
+
+M = np.zeros((num_el, 2))
+N = np.zeros((num_el, 2))
+for el in range(num_el):
+    data = beam2s(Ex[el, :], Ey[el, :], Ed[el, :], E, A, I)
+    M[el, :] = data["M"]
+    N[el, :] = data["N"]
+
+# Vertical deflection p
+displayvar("p", a[14-1]) 
+
+displayvar("M", M) 
+displayvar("N", N) 
 
 
 #%%
