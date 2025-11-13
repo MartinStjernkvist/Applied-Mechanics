@@ -193,6 +193,10 @@ a, r = solve_eq(K, f, bc_dofs, bc_vals)
 displayvar("a", a)
 displayvar("r", np.round(r))
 
+# Vertical deflection p
+displayvar("p_{truss}", a[10-1]) 
+
+
 #---------------------------------------------------------------------------------------------------
 # 1c)
 #---------------------------------------------------------------------------------------------------
@@ -293,8 +297,8 @@ fig = draw_discrete_elements(
 fig.show()
 
 # Radius and area moment of inertia for cross-sectional area
-r = np.sqrt(A / np.pi)
-I = np.pi / 4 * r**4
+radius = np.sqrt(A / np.pi)
+I = np.pi / 4 * radius**4
 displayvar("I", I)
 
 # Topology matrix (connectivity)
@@ -349,7 +353,7 @@ displayvar("a", a, 2)
 displayvar("r", np.round(r), 2)
 
 # Vertical deflection p
-displayvar("p", a[14-1]) 
+displayvar("p_P", a[14-1]) 
 
 #---------------------------------------------------------------------------------------------------
 # 2c)
@@ -374,6 +378,18 @@ for el in range(num_el):
 displayvar("M", M) 
 displayvar("N", N) 
 
+sigma_top = np.zeros((num_el, 2))
+sigma_bottom = np.zeros((num_el, 2))
+
+# Navier's formula
+for i in range(7):
+    for j in range(2):
+        sigma_top[i, j] = M[i, j] * radius / I
+        sigma_bottom[i, j] = M[i, j] * (-radius) / I
+        
+displayvar("stress top", sigma_top) 
+displayvar("stress bottom", sigma_bottom) 
+
 
 #---------------------------------------------------------------------------------------------------
 # 2d)
@@ -381,12 +397,11 @@ displayvar("N", N)
 new_subtask('2d)')
 
 q = P / L
-P = 0
 
 # New distributed loads
 num_el = Edof.shape[0]
 qxy = np.zeros((num_el, 2)) # Distributed loads 
-qxy[:, 1] = -q # All elements in vertical direction
+qxy[7-1, 1] = -q # Element 7, in vertical direction
 
 # Same number of dofs
 
@@ -400,7 +415,7 @@ for el in range(num_el):
     assem(K, Ke, dofs)
     assem(f, fe, dofs)
 
-# Boundary conditions the same
+# Same boundary conditions
 
 # # Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
@@ -409,7 +424,7 @@ displayvar("a", a, 2)
 displayvar("r", np.round(r), 2)
 
 # Vertical deflection p
-displayvar("p", a[14-1]) 
+displayvar("p_q", a[14-1]) 
 
 
 #%%
