@@ -8,6 +8,7 @@ if parent_dir not in sys.path:
     
 from mha021 import *
 
+from colorama import Fore
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
@@ -35,8 +36,12 @@ import matplotlib.cm as cm
 
 from pathlib import Path
 
-def new_prob(string):
-    print_string = '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n'
+def new_task(string):
+    print_string = Fore.YELLOW + '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n'
+    return print(print_string)
+
+def new_subtask(string):
+    print_string = Fore.CYAN + '\n' + '-' * 80 + '\n' + 'Subtask ' + str(string) + '\n' + '-' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -87,7 +92,7 @@ def printt(**kwargs):
 ####################################################################################################
 ####################################################################################################
 
-new_prob('1 - Planar truss')
+new_task('1 - Planar truss')
 
 # Define input data
 L = 1.6             # Element length [m]
@@ -97,8 +102,9 @@ A = 1e-3            # Cross-sectional area
 sigma_y = 250e6     # Yielding [Pa]
 
 #---------------------------------------------------------------------------------------------------
-# a)
+# 1a)
 #---------------------------------------------------------------------------------------------------
+new_subtask('1a)')
 
 # See labeling of elements in the report
 
@@ -150,8 +156,9 @@ print(f"number of dofs = {num_dofs}")
 print(f"number of elements = {num_el}")
 
 #---------------------------------------------------------------------------------------------------
-# b)
+# 1b)
 #---------------------------------------------------------------------------------------------------
+new_subtask('1b)')
 
 # Assemble stiffness matrix and load vector, first allocate space
 K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
@@ -178,8 +185,9 @@ displayvar("a", a)
 displayvar("r", np.round(r))
 
 #---------------------------------------------------------------------------------------------------
-# c)
+# 1c)
 #---------------------------------------------------------------------------------------------------
+new_subtask('1c)')
 
 # Displacement for each element (Edof to extract dofs for each element)
 Ed = extract_dofs(a, Edof)
@@ -194,8 +202,9 @@ plot_deformed_bars(fig, Ex, Ey, Ed)
 fig.show()
 
 #---------------------------------------------------------------------------------------------------
-# d)
+# 1d)
 #---------------------------------------------------------------------------------------------------
+new_subtask('1d)')
 
 # Compute normal forces
 N = np.zeros((num_el))
@@ -225,7 +234,7 @@ displayvar("FOS", sigma_y / np.max(np.abs(sigma))) # stresses in Pa
 ####################################################################################################
 ####################################################################################################
 
-new_prob('2 - Planar frame')
+new_task('2 - Planar frame')
 
 # Define input data
 L = 1.6             # Element length [m]
@@ -233,6 +242,11 @@ P = 60e3            # Force [N]
 E = 200e9           # Young's modulus [Pa]
 A = 1e-3            # Cross-sectional area
 sigma_y = 250e6     # Yielding [Pa]
+
+#---------------------------------------------------------------------------------------------------
+# 2a)
+#---------------------------------------------------------------------------------------------------
+new_subtask('2a)')
 
 # See labeling of elements in the report
 
@@ -266,13 +280,11 @@ fig = draw_discrete_elements(
 )
 fig.show()
 
-#---------------------------------------------------------------------------------------------------
-# a)
-#---------------------------------------------------------------------------------------------------
-
 # Radius and area moment of inertia for cross-sectional area
 r = np.sqrt(A / np.pi)
 I = np.pi / 4 * r**4
+displayvar("I", I)
+
 q = 0
 
 # Topology matrix (connectivity)
@@ -295,6 +307,11 @@ qxy[:, 1] = -q # All elements in vertical direction
 
 ep = [E, A, I]
 num_dofs = np.max(np.max(Edof))
+
+#---------------------------------------------------------------------------------------------------
+# 2b)
+#---------------------------------------------------------------------------------------------------
+new_subtask('2b)')
 
 K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
 f = np.zeros((num_dofs))            # Load vector
@@ -321,6 +338,14 @@ a, r = solve_eq(K, f, bc_dofs, bc_vals)
 displayvar("a", a, 2)
 displayvar("r", np.round(r), 2)
 
+# Vertical deflection p
+displayvar("p", a[14-1]) 
+
+#---------------------------------------------------------------------------------------------------
+# 2c)
+#---------------------------------------------------------------------------------------------------
+new_subtask('2c)')
+
 ## Postprocessing
 Ed = extract_dofs(a, Edof)
 
@@ -335,9 +360,6 @@ for el in range(num_el):
     data = beam2s(Ex[el, :], Ey[el, :], Ed[el, :], E, A, I)
     M[el, :] = data["M"]
     N[el, :] = data["N"]
-
-# Vertical deflection p
-displayvar("p", a[14-1]) 
 
 displayvar("M", M) 
 displayvar("N", N) 
@@ -357,7 +379,7 @@ displayvar("N", N)
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('3 - 1D bar with distributed load')
+new_task('3 - 1D bar with distributed load')
 
 # Define input data
 EA = 210e5      # Axial stiffness [N]
@@ -368,14 +390,16 @@ def q(x):
     return q0 * x / L
 
 #---------------------------------------------------------------------------------------------------
-# e)
+# 3e)
 #---------------------------------------------------------------------------------------------------
+new_subtask('e)')
 
 
+#---------------------------------------------------------------------------------------------------
+# 3g)
+#---------------------------------------------------------------------------------------------------
+new_subtask('g)')
 
-#---------------------------------------------------------------------------------------------------
-# g)
-#---------------------------------------------------------------------------------------------------
 def u(x):
     return q0 * L**2 / (6 * EA) * (3 * x / L - x**3 / L**3)
 
@@ -401,7 +425,7 @@ def e_u(u_exact, u_FEM):
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_prob('4 - Beam on elastic foundation')
+new_task('4 - Beam on elastic foundation')
 
 # Define input data
 I_y = 30.3 * 10**(-6)   # [m^4]
