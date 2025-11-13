@@ -94,7 +94,7 @@ L = 1.6             # Element length [m]
 P = 60e3            # Force [N]
 E = 200e9           # Young's modulus [Pa]
 A = 1e-3            # Cross-sectional area
-sigma_y = 250e9     # Yielding [Pa]
+sigma_y = 250e6     # Yielding [Pa]
 
 #---------------------------------------------------------------------------------------------------
 # a)
@@ -231,8 +231,91 @@ displayvar("FOS", sigma_y / np.max(np.abs(sigma))) # stresses in Pa
 new_prob('2 - Planar frame')
 
 # Define input data
+L = 1.6             # Element length [m]
+P = 60e3            # Force [N]
+E = 200e9           # Young's modulus [Pa]
+A = 1e-3            # Cross-sectional area
+sigma_y = 250e6     # Yielding [Pa]
+
+# See labeling of elements in the report
+
+Ly = 3 * L / 4
+Ex = np.array([
+    [0, 0],
+    [0, L],
+    [0, L],
+    [0, L],
+    [L, L],
+    [L, 2 * L],
+    [L, 2 * L]
+])
+Ey = np.array([ 
+    [0, Ly],
+    [0, 0],
+    [0, Ly],
+    [Ly, Ly],
+    [0, Ly],
+    [0, Ly],
+    [Ly, Ly]
+])
+
+# Plot the truss geometry
+fig = draw_discrete_elements(
+    Ex, Ey,
+    title="Geometry with nodes and elements",
+    xlabel="x [m]",
+    ylabel="y [m]",
+    annotate="both"
+)
+fig.show()
+
+#---------------------------------------------------------------------------------------------------
+# a)
+#---------------------------------------------------------------------------------------------------
+
+# Topology matrix (connectivity)
+Edof = np.array([
+    [1, 2, 3, 4, 5, 6],   # Element 1
+    [1, 2, 3, 7, 8, 9],   # Element 2
+    [1, 2, 3, 10, 11, 12],   # Element 3
+    [4, 5, 6, 10, 11, 12],   # Element 4
+    [7, 8, 9, 10, 11, 12],   # Element 5
+    [7, 8, 9, 13, 14, 15],  # Element 6
+    [10, 11, 12, 13, 14, 15]   # Element 7
+])
+# Number of elements
+num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
+num_dofs = np.max(np.max(Edof))
+
+print(f"number of dofs = {num_dofs}")
+print(f"number of elements = {num_el}")
+
+# Assemble stiffness matrix and load vector, first allocate space
+K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
+f = np.zeros((num_dofs))            # Load vector
+
+# Loop over all elements to assemble global stiffness matrix
+for el in range(num_el):
+    Ke = beam2e(Ex[el, :], Ey[el, :], E = E, A=A)  # Element stiffness matrix
+    dofs = Edof[el, :]   # DOFs for the element
+    assem(K, Ke, dofs)
+
+displayvar("K", K)
 
 
+# External forces
+f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
+displayvar("f", f)
+
+# Boundary conditions
+bc_dofs = np.array([1, 3, 4]) # DOFs fixed: 1, 3, 4
+bc_vals = np.array([0.0, 0.0, 0.0])
+
+
+# Solve the system of equations
+a, r = solve_eq(K, f, bc_dofs, bc_vals)
+displayvar("a", a)
+displayvar("r", np.round(r))
 
 
 #%%
