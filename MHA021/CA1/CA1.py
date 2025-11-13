@@ -1,6 +1,13 @@
 #%%
 # %matplotlib widget
 
+import sys
+import os
+# Add parent directory to sys.path
+parent_dir = os.path.abspath(os.path.join(os.getcwd(),'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+    
 from mha021 import *
 
 import numpy as np
