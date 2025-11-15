@@ -8,7 +8,7 @@
 
 # Clear all variables when running entire code:
 from IPython import get_ipython
-get_ipython().run_line_magic('reset', '-sf')
+#get_ipython().run_line_magic('reset', '-sf')
 # Packages needed
 import numpy as np
 import matplotlib.pyplot as plt
