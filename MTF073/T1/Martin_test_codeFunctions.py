@@ -31,6 +31,8 @@
 # you find and correct errors.
 #
 
+example_change
+
 # Clear all variables when running entire code:
 from IPython import get_ipython
 get_ipython().run_line_magic('reset', '-sf')
