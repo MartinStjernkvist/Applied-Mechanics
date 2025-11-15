@@ -1,3 +1,4 @@
+#%%
 # This code can be used to test your functions.
 #
 # The code requires that:
@@ -359,4 +360,4 @@ if not useModData:
             aP_cC = aP_cC,
             T_sGS = T_sGS,
             T_cB = T_cB)
-
+#%%
