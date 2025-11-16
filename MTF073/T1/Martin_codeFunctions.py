@@ -400,12 +400,12 @@ def solveGaussSeidel(phi,
                 # ADDED CODE
                 --------------------------------
                 """
-                phiE = phi[i + 1, j]
-                phiW = phi[i - 1, j]
-                phiN = phi[i, j + 1]
-                phiS = phi[i, j - 1]
                 
-                phi[i,j] = (aE[i,j] * phiE[i,j] + aW[i,j] * phiW[i,j] + aN[i,j] * phiN[i,j] + aS[i,j] * phiS[i,j] + Su[i,j]) / aP[i,j] # See page 13, Ch.4
+                phi[i,j] = (aE[i,j] * phi[i + 1, j] + 
+                            aW[i,j] * phi[i - 1, j] + 
+                            aN[i,j] * phi[i, j - 1] + 
+                            aS[i,j] * phi[i, j + 1] + 
+                            Su[i,j]) / aP[i,j] # See page 13, Ch.4
                 
 
 def correctBoundaries(T,
