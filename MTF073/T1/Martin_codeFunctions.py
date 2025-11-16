@@ -295,31 +295,95 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
             
+            # if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
+            #     k[i, j] = 0.01
+                
+            #     if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
+            #         k_e[i, j] = 0.01
+            #     else: 
+            #         k_e[i, j] = 20
+                
+            #     if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
+            #         k_w[i, j] = 0.01
+            #     else: 
+            #         k_w[i, j] = 20
+                
+            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
+            #         k_n[i, j] = 0.01
+            #     else: 
+            #         k_n[i, j] = 20
+                
+            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
+            #         k_s[i, j] = 0.01
+            #     else: 
+            #         k_s[i, j] = 20
+                
+            #     if j == nJ - 1:
+            #         k_n[i, j] = 0
+            #         k_s[i, j] = 0
+                
+            # else:
+            #     k[i, j] = 20a
             if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
                 k[i, j] = 0.01
                 
                 if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
-                    k_e[i, j] = 0.01
+                    k[i + 1, j] = 0.01
                 else: 
-                    k_e[i, j] = 20
+                    k[i + 1, j] = 20
                 
                 if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
-                    k_w[i, j] = 0.01
+                    k[i - 1, j] = 0.01
                 else: 
-                    k_w[i, j] = 20
+                    k[i - 1, j] = 20
                 
                 if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
-                    k_n[i, j] = 0.01
+                    k[i, j + 1] = 0.01
                 else: 
-                    k_n[i, j] = 20
+                    k[i, j + 1] = 20
                 
                 if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
-                    k_s[i, j] = 0.01
+                    k[i, j - 1] = 0.01
                 else: 
-                    k_s[i, j] = 20
-                
+                    k[i, j - 1] = 20
+                    
             else:
                 k[i, j] = 20
+                
+            k_e[i, j] = fxe[i, j] * k[i + 1, j] + (1 - fxe[i, j]) * k[i, j]
+            k_w[i, j] = fxw[i, j] * k[i - 1, j] + (1 - fxw[i, j]) * k[i, j]
+            k_n[i, j] = fyn[i, j] * k[i, j + 1] + (1 - fyn[i, j]) * k[i, j]
+            k_s[i, j] = fys[i, j] * k[i, j - 1] + (1 - fys[i, j]) * k[i, j]
+            
+            # if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
+            #     k[i, j] = 0.01
+                
+            #     if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
+            #         k_e[i, j] = 0.01
+            #     else: 
+            #         k_e[i, j] = 20
+                
+            #     if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
+            #         k_w[i, j] = 0.01
+            #     else: 
+            #         k_w[i, j] = 20
+                
+            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
+            #         k_n[i, j] = 0.01
+            #     else: 
+            #         k_n[i, j] = 20
+                
+            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
+            #         k_s[i, j] = 0.01
+            #     else: 
+            #         k_s[i, j] = 20
+                
+            #     if j == nJ - 1:
+            #         k_n[i, j] = 0
+            #         k_s[i, j] = 0
+                
+            # else:
+            #     k[i, j] = 20
 
 def updateSourceTerms(Su, Sp,
                       nI, nJ, dx_we, dy_sn, dx_WP, dx_PE, dy_SP, dy_PN, \
@@ -378,7 +442,7 @@ def calcCoeffs(aE, aW, aN, aS, aP,
     # ADD CODE HERE IF NECESSARY
     # Modifications of aN and aS inside north and south boundaries:
     # ADD CODE HERE IF NECESSARY
-
+                
     # Inner node central coefficients:
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
