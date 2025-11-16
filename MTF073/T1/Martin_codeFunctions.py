@@ -1,3 +1,4 @@
+#%%
 # This file should not be executed by itself. It only contains the
 # functions needed for the main code. Some of the functions are
 # pre-coded (marked "DO NOT CHANGE ANYTHING HERE!"), and some of
@@ -294,25 +295,25 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
             
-            if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
+            if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
                 k[i, j] = 0.01
                 
-                if x_min <= nodeX[i + 1, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
+                if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
                     k_e[i, j] = 0.01
                 else: 
                     k_e[i, j] = 20
                 
-                if x_min <= nodeX[i - 1, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
+                if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
                     k_w[i, j] = 0.01
                 else: 
                     k_w[i, j] = 20
                 
-                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j + 1] <= y_max:
+                if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
                     k_n[i, j] = 0.01
                 else: 
                     k_n[i, j] = 20
                 
-                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j - 1] <= y_max:
+                if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
                     k_s[i, j] = 0.01
                 else: 
                     k_s[i, j] = 20
@@ -446,27 +447,26 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     r0 = 0
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-    #         r0 += 0 # ADD CODE HERE
-    # # Calculate normalization factor as
-    # # F =  Din + Sin
-    # # Calculate normalized residual:
-    # r = 1 # ADD CODE HERE
-    
-    # # Append residual at present iteration to list of all residuals, for plotting:
-    # res.append(r)
-    # print('iteration: %5d, res = %.5e' % (explCorrIter, r))
+            r0 += 0 # ADD CODE HERE
+    # Calculate normalization factor as
+    # F =  Din + Sin
+    # Calculate normalized residual:
+    r = 1 # ADD CODE HERE
+    # Append residual at present iteration to list of all residuals, for plotting:
+    res.append(r)
+    print('iteration: %5d, res = %.5e' % (explCorrIter, r))
 
-    # # Calculate the global imbalance as
-    # # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
-    # # glob_imbal_plot.append(glob_imbal)
-    # # glob_imbal_plot.append(1) # Comment when you have added your code above!
+    # Calculate the global imbalance as
+    # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    # glob_imbal_plot.append(glob_imbal)
+    glob_imbal_plot.append(1) # Comment when you have added your code above!
     
-            """
-            --------------------------------
-            # ADDED CODE
-            --------------------------------
-            """
-    
+            # """
+            # --------------------------------
+            # # ADDED CODE
+            # --------------------------------
+            # """
+    """
             r0 += ...
     Din = ...
     Dout = ...
@@ -485,6 +485,7 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     # Calculate the global imbalance
     glob_imbal = np.abs((Din - Dout + Sin - Sout)/(Din + Sin))
     glob_imbal_plot.append(glob_imbal)
+    """
     
 def createDefaultPlots(
                        nI, nJ, pointX, pointY, nodeX, nodeY,
@@ -645,3 +646,4 @@ def createAdditionalPlots():
     # arguments for the same function in the main code.
     # Don't change the values of any arrays supplied as arguments!
     pass # Comment this line when you have added your code!
+#%%

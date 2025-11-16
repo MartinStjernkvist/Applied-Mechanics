@@ -43,7 +43,7 @@ caseID  = 8
 L = 1.5
 H = 0.5
 h = 1000
-T_inf = 15
+T_inf = 10
 
 # Functions to check (True / False):
 check_calcDistances = True

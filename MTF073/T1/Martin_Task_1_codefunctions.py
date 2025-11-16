@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 # Close all plots when running entire code:
 plt.close('all')
 import sys # For sys.exit()
+import os
 # All functions of the code (some to be implemented by you):
 import Martin_codeFunctions as cF
 # Info: Use cF to call functions that are defined in codeFunctions_template.py.
@@ -37,7 +38,7 @@ mesh_type = 'non-equidistant' # Set 'non-equidistant' or 'equidistant'
 
 caseID = 8 # Your case number (only used for testing the code with reference data)
 h = 1000 # Keep as it is if you do not have a convective boundary condition
-T_inf = 15 # Keep as it is if you do not have a convective boundary condition
+T_inf = 10 # Keep as it is if you do not have a convective boundary condition
 
 # Solver inputs
 
