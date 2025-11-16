@@ -414,13 +414,12 @@ def solveGaussSeidel(phi,
                 # ADDED CODE
                 --------------------------------
                 """
-                
+                # See page 13, Ch.4
                 phi[i,j] = (aE[i,j] * phi[i + 1, j] + 
                             aW[i,j] * phi[i - 1, j] + 
                             aN[i,j] * phi[i, j + 1] + 
                             aS[i,j] * phi[i, j - 1] + 
-                            Su[i,j]) / aP[i,j] # See page 13, Ch.4
-                
+                            Su[i,j]) / aP[i,j] 
 
 def correctBoundaries(T,
                       nI, nJ, k_w, k_e, k_s, k_n,
@@ -436,6 +435,16 @@ def correctBoundaries(T,
     --------------------------------
     """
     
+    A = dx_we
+    
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+                
+                if j == 1:
+                    # TW = (h * A[i, j] * T_inf + k_s[i, j] * A[i, j] / dy_SP[i, j] * T[i, j]) / (k_s[i, j] * A[i, j] / dy_SP[i, j] + h * A[i, j])
+                    
+                    # T[i, j] = h * A[i, j] * (TW - T_inf)  / (k_s[i, j] * A[i, j]) * dy_SP[i, j] + TW
+                    pass
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \

@@ -344,7 +344,7 @@ if not check_correctBoundaries and useModData:
 # Save modified arrays:
 T_cB = copy.deepcopy(T)
 # Reset modified arrays:
-T = copy.deepcopy(T_ref)
+# T = copy.deepcopy(T_ref)
 ###############################################################################
 
 #================ Save modified data ================
