@@ -354,36 +354,6 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
             k_w[i, j] = fxw[i, j] * k[i - 1, j] + (1 - fxw[i, j]) * k[i, j]
             k_n[i, j] = fyn[i, j] * k[i, j + 1] + (1 - fyn[i, j]) * k[i, j]
             k_s[i, j] = fys[i, j] * k[i, j - 1] + (1 - fys[i, j]) * k[i, j]
-            
-            # if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
-            #     k[i, j] = 0.01
-                
-            #     if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
-            #         k_e[i, j] = 0.01
-            #     else: 
-            #         k_e[i, j] = 20
-                
-            #     if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
-            #         k_w[i, j] = 0.01
-            #     else: 
-            #         k_w[i, j] = 20
-                
-            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
-            #         k_n[i, j] = 0.01
-            #     else: 
-            #         k_n[i, j] = 20
-                
-            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
-            #         k_s[i, j] = 0.01
-            #     else: 
-            #         k_s[i, j] = 20
-                
-            #     if j == nJ - 1:
-            #         k_n[i, j] = 0
-            #         k_s[i, j] = 0
-                
-            # else:
-            #     k[i, j] = 20
 
 def updateSourceTerms(Su, Sp,
                       nI, nJ, dx_we, dy_sn, dx_WP, dx_PE, dy_SP, dy_PN, \
@@ -400,11 +370,22 @@ def updateSourceTerms(Su, Sp,
     # ADDED CODE
     --------------------------------
     """
-    for i in range(0, nI):
-        for j in range(0, nJ):
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+            # if j == 0:
+            #     Sp[i, j] == 0
+            #     Su[i, j] = 0
+            # else: 
+            #     Sp[i, j] = 0
+            #     Su[i, j] = 0
+            
+            A = dx_we
+
+            # See page 28, Ch.4
             if j == 0:
-                Sp[i, j] == 0
-                Su[i, j] = 0
+                Sp[i, j] = (h * k_s[i, j] * A[i, j] **2 / dy_SP[i, j]) / (h * A[i, j] + k_s[i, j] / dy_SP[i, j])
+                Su[i, j] = - T_inf * ((h * A[i, j])**2 / (h * A[i, j] + k_s[i, j] / dy_SP[i, j]) - h * A[i, j])
+                
             else: 
                 Sp[i, j] = 0
                 Su[i, j] = 0
