@@ -382,8 +382,8 @@ def updateSourceTerms(Su, Sp,
             A = dx_we
 
             # See page 28, Ch.4
-            if j == 0:
-                Sp[i, j] = (h * k_s[i, j] * A[i, j] **2 / dy_SP[i, j]) / (h * A[i, j] + k_s[i, j] / dy_SP[i, j])
+            if j == 1:
+                Sp[i, j] = - (h * k_s[i, j] * A[i, j] **2 / dy_SP[i, j]) / (h * A[i, j] + k_s[i, j] / dy_SP[i, j])
                 Su[i, j] = - T_inf * ((h * A[i, j])**2 / (h * A[i, j] + k_s[i, j] / dy_SP[i, j]) - h * A[i, j])
                 
             else: 
