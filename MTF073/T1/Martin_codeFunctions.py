@@ -371,6 +371,10 @@ def calcCoeffs(aE, aW, aN, aS, aP,
             aN[i,j] = k_n[i,j] * A_NS[i,j] / dy_PN[i,j]
             aS[i,j] = k_s[i,j] * A_NS[i,j] / dy_SP[i,j]
             
+            if j == nJ - 1:
+                aN[i,j] = 0
+                aS[i,j] = 0
+                
     # Modifications of aE and aW inside east and west boundaries:
     # ADD CODE HERE IF NECESSARY
     # Modifications of aN and aS inside north and south boundaries:
