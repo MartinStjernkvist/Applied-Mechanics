@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 # Close all plots when running entire code:
 plt.close('all')
 import sys # For sys.exit()
+import os
 # All functions of the code (some to be implemented by you):
 import Martin_codeFunctions as cF
 # Info: Use cF to call functions that are defined in codeFunctions_template.py.
@@ -27,17 +28,17 @@ import Martin_codeFunctions as cF
 
 # Geometric and mesh inputs
 
-L = 2 # Length of the domain in X direction
-H = 1 # Length of the domain in Y direction
-mI = 7 # Number of mesh points X direction.
+L = 1.5 # Length of the domain in X direction
+H = 0.5 # Length of the domain in Y direction
+mI = 4 # Number of mesh points X direction.
 mJ = 4 # Number of mesh points Y direction.
-mesh_type = 'equidistant' # Set 'non-equidistant' or 'equidistant'
+mesh_type = 'non-equidistant' # Set 'non-equidistant' or 'equidistant'
 
 # Case-specific input
 
-caseID = 1 # Your case number (only used for testing the code with reference data)
-h = 0 # Keep as it is if you do not have a convective boundary condition
-T_inf = 0 # Keep as it is if you do not have a convective boundary condition
+caseID = 8 # Your case number (only used for testing the code with reference data)
+h = 1000 # Keep as it is if you do not have a convective boundary condition
+T_inf = 10 # Keep as it is if you do not have a convective boundary condition
 
 # Solver inputs
 
