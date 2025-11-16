@@ -330,15 +330,8 @@ def updateSourceTerms(Su, Sp,
     """
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            # if j == 0:
-            #     Sp[i, j] == 0
-            #     Su[i, j] = 0
-            # else: 
-            #     Sp[i, j] = 0
-            #     Su[i, j] = 0
             
             A = dx_we
-
             # See page 28, Ch.4
             if j == 1:
                 Sp[i, j] = - (h * k_s[i, j] * A[i, j] **2 / dy_SP[i, j]) / (h * A[i, j] + k_s[i, j] * A[i, j] / dy_SP[i, j])
