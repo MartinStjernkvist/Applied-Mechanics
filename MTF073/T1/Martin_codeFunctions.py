@@ -327,22 +327,22 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
             if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
                 k[i, j] = 0.01
                 
-                if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
+                if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i + 1, j] < y_max:
                     k[i + 1, j] = 0.01
                 else: 
                     k[i + 1, j] = 20
                 
-                if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
+                if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i - 1, j] < y_max:
                     k[i - 1, j] = 0.01
                 else: 
                     k[i - 1, j] = 20
                 
-                if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
+                if x_min < nodeX[i, j + 1] < x_max or y_min < nodeY[i, j + 1] < y_max:
                     k[i, j + 1] = 0.01
                 else: 
                     k[i, j + 1] = 20
                 
-                if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
+                if x_min < nodeX[i, j - 1] < x_max or y_min < nodeY[i, j - 1] < y_max:
                     k[i, j - 1] = 0.01
                 else: 
                     k[i, j - 1] = 20
