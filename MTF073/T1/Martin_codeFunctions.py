@@ -388,7 +388,10 @@ def calcCoeffs(aE, aW, aN, aS, aP,
             # ADDED CODE
             --------------------------------
             """
-            aP[i,j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp[i,j] # Sp should be 0
+            if j == nJ-1:
+                aP[i,j] = 0
+            else:
+                aP[i,j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp[i,j] # Sp should be 0
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter_phi):
