@@ -268,7 +268,7 @@ k_w_uCA = copy.deepcopy(k_w)
 k_n_uCA = copy.deepcopy(k_n)
 k_s_uCA = copy.deepcopy(k_s)
 # Reset modified arrays:
-# k = copy.deepcopy(k_ref)
+k = copy.deepcopy(k_ref)
 k_e = copy.deepcopy(k_e_ref)
 k_w = copy.deepcopy(k_w_ref)
 k_n = copy.deepcopy(k_n_ref)
