@@ -32,9 +32,9 @@ import Raphael_codeFunctions as cF
 
 L = 1.5  # Length of the domain in X direction
 H = 0.5  # Length of the domain in Y direction
-mI = 4  # Number of mesh points X direction.
-mJ = 4  # Number of mesh points Y direction.
-mesh_type = 'equidistant'  # Set 'non-equidistant' or 'equidistant'
+mI = 21  # Number of mesh points X direction.
+mJ = 21  # Number of mesh points Y direction.
+mesh_type = 'non-equidistant'  # Set 'non-equidistant' or 'equidistant'
 
 # Case-specific input
 

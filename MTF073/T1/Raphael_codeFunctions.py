@@ -250,27 +250,43 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s, \
 
         for i in range(1, nI - 1):
             for j in range(1, nJ - 1):
-                k_e[i,j]=(1.0-fxe[i,j])*k[i,j]+fxe[i,j]*k[i+1,j] # Between P=(i,j) and E=(i+1,j)
-                k_w[i,j]=(1.0-fxw[i,j])*k[i-1,j]+fxw[i,j]*k[i,j] # Between W=(i-1,j) and P=(i,j)
-                k_n[i,j]=(1.0-fyn[i,j])*k[i,j]+fyn[i,j]*k[i,j+1] # Between P=(i,j) and N=(i,j+1)
-                k_s[i,j]=(1.0-fys[i,j])*k[i,j-1]+fys[i,j]*k[i,j] # Between S=(i,j-1) and P=(i,j)
+                k_e[i,j]=(1-fxe[i,j])*k[i,j]+fxe[i,j]*k[i+1,j] # Between P=(i,j) and E=(i+1,j)
+                k_w[i,j]=(1-fxw[i,j])*k[i,j]+fxw[i,j]*k[i-1,j] # Between W=(i-1,j) and P=(i,j)
+                k_n[i,j]=(1-fyn[i,j])*k[i,j]+fyn[i,j]*k[i,j+1] # Between P=(i,j) and N=(i,j+1)
+                k_s[i,j]=(1-fys[i,j])*k[i,j]+fys[i,j]*k[i,j-1] # Between S=(i,j-1) and P=(i,j)
     # CODE DONE
 
 
-def updateSourceTerms(Su, Sp, \
+def updateSourceTerms(Su, Sp,
                       nI, nJ, dx_we, dy_sn, dx_WP, dx_PE, dy_SP, dy_PN, \
                       T, k_w, k_e, k_s, k_n, h, T_inf, caseID):
     # Update source terms according to your case
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # Note: caseID is used only for testing.
+    # ADD CODE HERE.
+    # pass # Comment this line when you have added your code!
+
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            V = dx_we[i,j]*dy_sn[i,j]
-            b = 0.0
-            Su[i,j]=-b*V
-            Sp[i,j]=0.0
-    # Comment this line when you have added your code!
+
+            A = dx_we
+            # See page 28, Ch.4
+            if j == 1:
+                Sp[i, j] = - (h * k_s[i, j] * A[i, j] ** 2 / dy_SP[i, j]) / (
+                            h * A[i, j] + k_s[i, j] * A[i, j] / dy_SP[i, j])
+
+                Su[i, j] = - T_inf * (
+                            (h * A[i, j]) ** 2 / (h * A[i, j] + k_s[i, j] * A[i, j] / dy_SP[i, j]) - h * A[i, j])
+
+            else:
+                Sp[i, j] = 0
+                Su[i, j] = 0
 
 
 def calcCoeffs(aE, aW, aN, aS, aP, \
@@ -284,10 +300,20 @@ def calcCoeffs(aE, aW, aN, aS, aP, \
     # (not caring about special treatment at boundaries):
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            aE[i, j] = k_e[i,j] * dy_sn[i,j] / dx_PE[i,j]
-            aW[i, j] = k_w[i,j] * dy_sn[i,j] / dx_WP[i,j]
-            aN[i, j] = k_n[i,j] * dx_we[i,j] / dy_PN[i,j]
-            aS[i, j] = k_s[i,j] * dx_we[i,j] / dy_SP[i,j]
+
+            aE[i, j] = k_e[i, j] * dy_sn[i, j] / dx_PE[i, j]
+            aW[i, j] = k_w[i, j] * dy_sn[i, j] / dx_WP[i, j]
+            aN[i, j] = k_n[i, j] * dx_we[i, j] / dy_PN[i, j]
+            aS[i, j] = k_s[i, j] * dx_we[i, j] / dy_SP[i, j]
+
+        if caseID == 8:
+            j_south = 1
+            for i in range(1, nI - 1):
+                aS[i, j_south] = 0.0
+            j_north = nJ - 2
+            for i in range(1, nI - 1):
+                aN[i, j_north] = 0.0
+
     # Modifications of aE and aW inside east and west boundaries:
     # ADD CODE HERE IF NECESSARY
     # Modifications of aN and aS inside north and south boundaries:
@@ -317,12 +343,28 @@ def correctBoundaries(T, \
                       h, T_inf, caseID):
     # Copy T to boundaries (and corners) where homegeneous Neumann is applied
     # Only change arrays in first row of argument list!
+
     if caseID == 8:
         j_top = nJ - 1
         j_int = nJ - 2
 
         for i in range(1, nI - 1):
-            T[i,j_top] = T[i,j_int]
+            T[i, j_top] = T[i, j_int]
+
+        jP = 1
+        j_wall = 0
+
+        for i in range(1, nI - 1):
+            k_face = k_s[i, jP]
+            dy = dy_SP[i, jP]
+
+            if np.isnan(k_face) or np.isnan(dy):
+                continue
+
+            T_P = T[i, jP]
+
+            T_wall = (k_face * T_P / dy + h * T_inf) / (h + k_face / dy)
+            T[i, j_wall] = T_wall
     # CODE DONE
 
 
