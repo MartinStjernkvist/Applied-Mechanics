@@ -39,11 +39,11 @@ import copy
 import Martin_codeFunctions as cF
 
 # Case inputs:
-caseID  = 1
-L = 1
+caseID  = 8
+L = 1.5
 H = 0.5
 h = 1000
-T_inf = 35
+T_inf = 10
 
 # Functions to check (True / False):
 check_calcDistances = True

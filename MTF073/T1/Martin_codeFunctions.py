@@ -46,9 +46,11 @@ import os # For saving plots
 
 def createEquidistantMesh(pointX, pointY,
                           mI, mJ, L, H):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Only changes arrays in first row of argument list!
     # Calculate mesh point coordinates:
     # Equation for line: yy = kk*xx + mm
@@ -85,14 +87,14 @@ def createNonEquidistantMesh(pointX, pointY,
     ###############
     # Example 2
     ###############
-    growing_rate = 1.2 # growing rate for non-equidistant mesh
-    tangens_growing_rate=np.tanh(growing_rate)
-    for i in range(0,mI):
-        s=(i)/(mI-1)
-        pointX[i,:]=(np.tanh(growing_rate*s)/tangens_growing_rate)*L
-    for j in range(0,mJ):
-        s=(2*(j+1)-mJ-1)/(mJ-1)
-        pointY[:,j]=(1+np.tanh(growing_rate*s)/tangens_growing_rate)*0.5*H
+    # growing_rate = 1.2 # growing rate for non-equidistant mesh
+    # tangens_growing_rate=np.tanh(growing_rate)
+    # for i in range(0,mI):
+    #     s=(i)/(mI-1)
+    #     pointX[i,:]=(np.tanh(growing_rate*s)/tangens_growing_rate)*L
+    # for j in range(0,mJ):
+    #     s=(2*(j+1)-mJ-1)/(mJ-1)
+    #     pointY[:,j]=(1+np.tanh(growing_rate*s)/tangens_growing_rate)*0.5*H
     ###############
     # Example 3
     ###############
@@ -135,13 +137,33 @@ def createNonEquidistantMesh(pointX, pointY,
     #     for j in range(mJ):
     #         # For the mesh points
     #         if i > 0: pointX[i, j] = pointX[i - 1, j] + dx[i]
-    #         if j > 0: pointY[i, j] = pointY[i, j - 1] + dy[j]    
+    #         if j > 0: pointY[i, j] = pointY[i, j - 1] + dy[j]
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """    
+    ###############
+    # Example 2
+    ###############
+    growing_rate = 1.2 # growing rate for non-equidistant mesh
+    tangens_growing_rate=np.tanh(growing_rate)
+    for i in range(0,mI):
+        s=(i)/(mI-1)
+        pointX[i,:]=(np.tanh(growing_rate*s)/tangens_growing_rate)*L
+    for j in range(0,mJ):
+        s=(2*(j+1)-mJ-1)/(mJ-1)
+        pointY[:,j]=(1+np.tanh(growing_rate*s)/tangens_growing_rate)*0.5*H
+    
 
 def calcNodePositions(nodeX, nodeY,
                       nI, nJ, pointX, pointY):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Only changes arrays in first row of argument list!
     # Calculates node coordinates.
     # Same for equidistant and non-equidistant meshes.
@@ -165,12 +187,26 @@ def calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
     # Keep 'nan' where values are not needed!
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            dx_PE[i,j] = 0 # ADD CODE HERE
-            dx_WP[i,j] = 0 # ADD CODE HERE
-            dy_PN[i,j] = 0 # ADD CODE HERE
-            dy_SP[i,j] = 0 # ADD CODE HERE
-            dx_we[i,j] = 0 # ADD CODE HERE
-            dy_sn[i,j] = 0 # ADD CODE HERE
+            # dx_PE[i,j] = 0 # ADD CODE HERE
+            # dx_WP[i,j] = 0 # ADD CODE HERE
+            # dy_PN[i,j] = 0 # ADD CODE HERE
+            # dy_SP[i,j] = 0 # ADD CODE HERE
+            # dx_we[i,j] = 0 # ADD CODE HERE
+            # dy_sn[i,j] = 0 # ADD CODE HERE
+            
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+            dx_PE[i, j] = nodeX[i + 1, j] - nodeX[i, j] # P->E
+            dx_WP[i, j] = nodeX[i, j] - nodeX[i - 1, j] # W->P
+            
+            dy_PN[i, j] = nodeY[i, j + 1] - nodeY[i, j] # P->N
+            dy_SP[i, j] = nodeY[i, j] - nodeY[i, j - 1] # S->P
+            
+            dx_we[i, j] = pointX[i, 0] - pointX[i - 1, 0] # Length W-E
+            dy_sn[i, j] = pointY[0, j] - pointY[0, j - 1] # Length S-N
 
 def calcInterpolationFactors(fxe, fxw, fyn, fys,
                              nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn):
@@ -179,15 +215,27 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
     # Keep 'nan' where values are not needed!
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            fxe[i,j] = 0 # ADD CODE HERE
-            fxw[i,j] = 0 # ADD CODE HERE
-            fyn[i,j] = 0 # ADD CODE HERE
-            fys[i,j] = 0 # ADD CODE HERE 
+            # fxe[i,j] = 0 # ADD CODE HERE
+            # fxw[i,j] = 0 # ADD CODE HERE
+            # fyn[i,j] = 0 # ADD CODE HERE
+            # fys[i,j] = 0 # ADD CODE HERE 
+            
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+            fxe[i, j] = 0.5 * dx_we[i, j] / dx_PE[i, j] # P->face e / P->E
+            fxw[i, j] = 0.5 * dx_we[i, j] / dx_WP[i, j] # face w->P  / W->P
+            fyn[i, j] = 0.5 * dy_sn[i, j] / dy_PN[i, j] # P->face n / P->N
+            fys[i, j] = 0.5 * dy_sn[i, j] / dy_SP[i, j] # face s->P  / S->P
 
 def initArray(T):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Initialize dependent variable array
     # Only change arrays in first row of argument list!
     # Note that a value is needed in all nodes for contour plot
@@ -200,7 +248,32 @@ def setDirichletBCs(T,
     # Note that a value is needed in all nodes for contour plot
     # Note: caseID is used only for testing.
     # ADD CODE HERE
-    pass # Comment this line when you have added your code! 
+    # pass # Comment this line when you have added your code! 
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    if caseID == 8:
+        
+        # boundary 2: x = L
+        i_right = nI - 1
+        for j in range(nJ):
+            y = nodeY[i_right, j]
+            if np.isnan(y):
+                continue
+            T2 = 5 * (y / H - 1) + 15 * np.cos(np.pi * y / H)
+            T[nI - 1, j] = T2
+            
+        # boundary 4: x = 0
+        i_left = 0
+        for j in range(nJ):
+            y = nodeY[i_left, j]
+            if np.isnan(y):
+                continue
+            T4 = 15
+            T[i_left, j] = T4
 
 def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
                              nI, nJ, nodeX, nodeY, fxe, fxw, fyn, fys, L, H, T, caseID):
@@ -209,7 +282,43 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
     # Keep 'nan' where values are not needed!
     # Note: caseID is used only for testing.
     # ADD CODE HERE.
-    pass # Comment this line when you have added your code!
+    # pass # Comment this line when you have added your code!
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    x_min, x_max = 0.7, 1.1
+    y_min, y_max = 0.3, 0.4
+    
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            
+            if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
+                k = 0.01
+                
+                if x_min <= nodeX[i + 1, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
+                    k_e = 0.01
+                else: 
+                    k_e = 20
+                
+                if x_min <= nodeX[i - 1, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
+                    k_w = 0.01
+                else: 
+                    k_w = 20
+                
+                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j - 1] <= y_max:
+                    k_n = 0.01
+                else: 
+                    k_n = 20
+                
+                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j + 1] <= y_max:
+                    k_s = 0.01
+                else: 
+                    k_s = 20
+                
+            else:
+                k = 20
 
 def updateSourceTerms(Su, Sp,
                       nI, nJ, dx_we, dy_sn, dx_WP, dx_PE, dy_SP, dy_PN, \
@@ -220,6 +329,14 @@ def updateSourceTerms(Su, Sp,
     # Note: caseID is used only for testing.
     # ADD CODE HERE.
     pass # Comment this line when you have added your code!
+
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    Sp = 0
+    Su = ...
 
 def calcCoeffs(aE, aW, aN, aS, aP,
                nI, nJ, k_w, k_e, k_s, k_n,
@@ -232,10 +349,24 @@ def calcCoeffs(aE, aW, aN, aS, aP,
     # (not caring about special treatment at boundaries):
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            aE[i,j] = 0 # ADD CODE HERE
-            aW[i,j] = 0 # ADD CODE HERE
-            aN[i,j] = 0 # ADD CODE HERE
-            aS[i,j] = 0 # ADD CODE HERE
+            # aE[i,j] = 0 # ADD CODE HERE
+            # aW[i,j] = 0 # ADD CODE HERE
+            # aN[i,j] = 0 # ADD CODE HERE
+            # aS[i,j] = 0 # ADD CODE HERE
+            
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+            A_EW = dy_sn
+            A_NS = dx_we
+            
+            aE[i,j] = k_e * A_EW/ dx_PE
+            aW[i,j] = k_w * A_EW/ dx_WP
+            aN[i,j] = k_n * A_NS/ dy_PN
+            aS[i,j] = k_s * A_NS/ dy_SP
+            
     # Modifications of aE and aW inside east and west boundaries:
     # ADD CODE HERE IF NECESSARY
     # Modifications of aN and aS inside north and south boundaries:
@@ -244,7 +375,14 @@ def calcCoeffs(aE, aW, aN, aS, aP,
     # Inner node central coefficients:
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            aP[i,j] = 0 # ADD CODE HERE
+            # aP[i,j] = 0 # ADD CODE HERE
+            
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+            aP[i,j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp # Sp should be 0
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter_phi):
@@ -255,7 +393,20 @@ def solveGaussSeidel(phi,
     for linSolIter in range(nLinSolIter_phi):   
         for i in range(1,nI-1):
             for j in range(1,nJ-1):
-                phi[i,j] = 0 # ADD CODE HERE
+                # phi[i,j] = 0 # ADD CODE HERE
+                
+                """
+                --------------------------------
+                # ADDED CODE
+                --------------------------------
+                """
+                phiE = phi[i + 1, j]
+                phiW = phi[i - 1, j]
+                phiN = phi[i, j + 1]
+                phiS = phi[i, j - 1]
+                
+                phiP = (aE * phiE + aW * phiW + aN * phiN + aS * phiS + Su) / aP # See page 13, Ch.4
+                phi[i,j] = phiP
 
 def correctBoundaries(T,
                       nI, nJ, k_w, k_e, k_s, k_n,
@@ -280,27 +431,55 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     r0 = 0
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            r0 += 0 # ADD CODE HERE
-    # Calculate normalization factor as
-    # F =  Din + Sin
+    #         r0 += 0 # ADD CODE HERE
+    # # Calculate normalization factor as
+    # # F =  Din + Sin
+    # # Calculate normalized residual:
+    # r = 1 # ADD CODE HERE
+    
+    # # Append residual at present iteration to list of all residuals, for plotting:
+    # res.append(r)
+    # print('iteration: %5d, res = %.5e' % (explCorrIter, r))
+
+    # # Calculate the global imbalance as
+    # # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    # # glob_imbal_plot.append(glob_imbal)
+    # # glob_imbal_plot.append(1) # Comment when you have added your code above!
+    
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+    
+            r0 += ...
+    Din = ...
+    Dout = ...
+    Sin = ...
+    Sout = ...
+    
+    # Calculate normalization factor
+    F =  Din + Sin
     # Calculate normalized residual:
-    r = 1 # ADD CODE HERE
+    r = ...
+    
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r)
     print('iteration: %5d, res = %.5e' % (explCorrIter, r))
 
-    # Calculate the global imbalance as
-    # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
-    # glob_imbal_plot.append(glob_imbal)
-    glob_imbal_plot.append(1) # Comment when you have added your code above!
+    # Calculate the global imbalance
+    glob_imbal = np.abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    glob_imbal_plot.append(glob_imbal)
     
 def createDefaultPlots(
                        nI, nJ, pointX, pointY, nodeX, nodeY,
                        L, H, T, k,
                        explCorrIter, res, glob_imbal_plot, caseID):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Does not change the values of any input arrays!
     if not os.path.isdir('Figures'):
         os.makedirs('Figures')
@@ -350,8 +529,17 @@ def createDefaultPlots(
     qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
+                # qX[i,j] = 1 # ADD CODE HERE
+                # qY[i,j] = 1 # ADD CODE HERE
+                
+                """
+                --------------------------------
+                # ADDED CODE
+                --------------------------------
+                """
                 qX[i,j] = 1 # ADD CODE HERE
                 qY[i,j] = 1 # ADD CODE HERE
+                
     plt.figure()
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
@@ -373,18 +561,42 @@ def createDefaultPlots(
     qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
     for j in range(1,nJ-1):
         i = 0
+        # qX[i,j] = 1 # ADD CODE HERE
+        # qY[i,j] = 0 # ADD CODE HERE
+        # i = nI-1
+        # qX[i,j] = 1 # ADD CODE HERE
+        # qY[i,j] = 0 # ADD CODE HERE
+        
+        """
+        --------------------------------
+        # ADDED CODE
+        --------------------------------
+        """
         qX[i,j] = 1 # ADD CODE HERE
         qY[i,j] = 0 # ADD CODE HERE
         i = nI-1
         qX[i,j] = 1 # ADD CODE HERE
         qY[i,j] = 0 # ADD CODE HERE
+        
     for i in range(1,nI-1):
         j = 0
+        # qX[i,j] = 0 # ADD CODE HERE
+        # qY[i,j] = 1 # ADD CODE HERE
+        # j = nJ-1
+        # qX[i,j] = 0 # ADD CODE HERE
+        # qY[i,j] = 1 # ADD CODE HERE
+        
+        """
+        --------------------------------
+        # ADDED CODE
+        --------------------------------
+        """
         qX[i,j] = 0 # ADD CODE HERE
         qY[i,j] = 1 # ADD CODE HERE
         j = nJ-1
         qX[i,j] = 0 # ADD CODE HERE
         qY[i,j] = 1 # ADD CODE HERE
+        
     plt.figure()
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
