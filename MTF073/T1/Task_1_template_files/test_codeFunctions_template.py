@@ -1,4 +1,3 @@
-#%%
 # This code can be used to test your functions.
 #
 # The code requires that:
@@ -33,7 +32,7 @@
 
 # Clear all variables when running entire code:
 from IPython import get_ipython
-#get_ipython().run_line_magic('reset', '-sf')
+get_ipython().run_line_magic('reset', '-sf')
 import numpy as np
 import copy
 import codeFunctions_template as cF
@@ -162,13 +161,14 @@ if useModData:
 nI, nJ = np.shape(nodeX_ref)
 mI, mJ = np.shape(pointX_ref)
 
-def compare(phi, phi_ref, rTol, aTol, fName, aName):
+def compare(phi, phi_ref, rTol, aTol, fName, aName, func):
     fName_aName = fName + ', ' + aName
     try:
         np.testing.assert_allclose(phi, phi_ref, rtol=rTol, atol=aTol, verbose=False, err_msg=fName+': Array '+aName)
         print(fName_aName.ljust(30)+'OK')
     except AssertionError as e:
         print(fName_aName.ljust(30)+'NOT OK')
+        print(''.ljust(30)+'Compare '+aName+'_ref (ref)'+' and '+aName+'_'+func+' (your output)')
         print('    -----------------------------------------------------')
         print('    '+str(e).splitlines()[-3])
         print('    '+str(e).splitlines()[-2])
@@ -186,14 +186,21 @@ dy_sn*=0
 cF.calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
                  nI, nJ, nodeX, nodeY, pointX, pointY)
 if check_calcDistances and useModData:
-    compare(dx_PE, dx_PE_ref, rTol, aTol, 'calcDistances', 'dx_PE')
-    compare(dx_WP, dx_WP_ref, rTol, aTol, 'calcDistances', 'dx_WP')
-    compare(dy_PN, dy_PN_ref, rTol, aTol, 'calcDistances', 'dy_PN')
-    compare(dy_SP, dy_SP_ref, rTol, aTol, 'calcDistances', 'dy_SP')
-    compare(dx_we, dx_we_ref, rTol, aTol, 'calcDistances', 'dx_we')
-    compare(dy_sn, dy_sn_ref, rTol, aTol, 'calcDistances', 'dy_sn')
+    compare(dx_PE, dx_PE_ref, rTol, aTol, 'calcDistances', 'dx_PE', 'cD')
+    compare(dx_WP, dx_WP_ref, rTol, aTol, 'calcDistances', 'dx_WP', 'cD')
+    compare(dy_PN, dy_PN_ref, rTol, aTol, 'calcDistances', 'dy_PN', 'cD')
+    compare(dy_SP, dy_SP_ref, rTol, aTol, 'calcDistances', 'dy_SP', 'cD')
+    compare(dx_we, dx_we_ref, rTol, aTol, 'calcDistances', 'dx_we', 'cD')
+    compare(dy_sn, dy_sn_ref, rTol, aTol, 'calcDistances', 'dy_sn', 'cD')
 if not check_calcDistances and useModData:
     print('calcDistances:               NOT CHECKED')
+# Save modified arrays:
+dx_PE_cD = copy.deepcopy(dx_PE)
+dx_WP_cD = copy.deepcopy(dx_WP)
+dy_PN_cD = copy.deepcopy(dy_PN)
+dy_SP_cD = copy.deepcopy(dy_SP)
+dx_we_cD = copy.deepcopy(dx_we)
+dy_sn_cD = copy.deepcopy(dy_sn)
 # Reset modifed arrays:
 dx_PE = copy.deepcopy(dx_PE_ref)
 dx_WP = copy.deepcopy(dx_WP_ref)
@@ -209,12 +216,17 @@ fys*=0
 cF.calcInterpolationFactors(fxe, fxw, fyn, fys,
                             nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn)
 if check_calcInterpolationFactors and useModData:
-    compare(fxe, fxe_ref, rTol, aTol, 'calcInterpolationFactors', 'fxe')
-    compare(fxw, fxw_ref, rTol, aTol, 'calcInterpolationFactors', 'fxw')
-    compare(fyn, fyn_ref, rTol, aTol, 'calcInterpolationFactors', 'fyn')
-    compare(fys, fys_ref, rTol, aTol, 'calcInterpolationFactors', 'fys')
+    compare(fxe, fxe_ref, rTol, aTol, 'calcInterpolationFactors', 'fxe', 'cIF')
+    compare(fxw, fxw_ref, rTol, aTol, 'calcInterpolationFactors', 'fxw', 'cIF')
+    compare(fyn, fyn_ref, rTol, aTol, 'calcInterpolationFactors', 'fyn', 'cIF')
+    compare(fys, fys_ref, rTol, aTol, 'calcInterpolationFactors', 'fys', 'cIF')
 if not check_calcInterpolationFactors and useModData:
     print('calcInterpolationFactors:    NOT CHECKED')
+# Save modified arrays:
+fxe_cIF = copy.deepcopy(fxe)
+fxw_cIF = copy.deepcopy(fxw)
+fyn_cIF = copy.deepcopy(fyn)
+fys_cIF = copy.deepcopy(fys)
 # Reset modified arrays:
 fxe = copy.deepcopy(fxe_ref)
 fxw = copy.deepcopy(fxw_ref)
@@ -225,12 +237,11 @@ T*=0
 cF.setDirichletBCs(T,
                    nI, nJ, L, H, nodeX, nodeY, caseID)
 if check_setDirichletBCs and useModData:
-    compare(T, T_sDBCs, rTol, aTol, 'setDirichletBCs', 'T')
+    compare(T, T_sDBCs, rTol, aTol, 'setDirichletBCs', 'T', 'cDBCs')
 if not check_setDirichletBCs and useModData:
     print('setDirichletBCs:             NOT CHECKED')
-if not useModData:
-    # Save modified arrays:
-    T_sDBCs = copy.deepcopy(T)
+# Save modified arrays:
+T_sDBCs = copy.deepcopy(T)
 # Reset modified arrays:
 T = copy.deepcopy(T_ref)
 ###############################################################################
@@ -242,20 +253,19 @@ k_s*=0
 cF.updateConductivityArrays(k, k_e, k_w, k_n, k_s,
                             nI, nJ, nodeX, nodeY, fxe, fxw, fyn, fys, L, H, T, caseID)
 if check_updateConductivityArrays and useModData:
-    compare(k  , k_uCA  , rTol, aTol, 'updateConductivityArrays', 'k')
-    compare(k_e, k_e_uCA, rTol, aTol, 'updateConductivityArrays', 'k_e')
-    compare(k_w, k_w_uCA, rTol, aTol, 'updateConductivityArrays', 'k_w')
-    compare(k_n, k_n_uCA, rTol, aTol, 'updateConductivityArrays', 'k_n')
-    compare(k_s, k_s_uCA, rTol, aTol, 'updateConductivityArrays', 'k_s')
+    compare(k  , k_uCA  , rTol, aTol, 'updateConductivityArrays', 'k', 'uCA')
+    compare(k_e, k_e_uCA, rTol, aTol, 'updateConductivityArrays', 'k_e', 'uCA')
+    compare(k_w, k_w_uCA, rTol, aTol, 'updateConductivityArrays', 'k_w', 'uCA')
+    compare(k_n, k_n_uCA, rTol, aTol, 'updateConductivityArrays', 'k_n', 'uCA')
+    compare(k_s, k_s_uCA, rTol, aTol, 'updateConductivityArrays', 'k_s', 'uCA')
 if not check_updateConductivityArrays and useModData:
     print('updateConductivityArrays:    NOT CHECKED')
-if not useModData:
-    # Save modified arrays:
-    k_uCA = copy.deepcopy(k)
-    k_e_uCA = copy.deepcopy(k_e)
-    k_w_uCA = copy.deepcopy(k_w)
-    k_n_uCA = copy.deepcopy(k_n)
-    k_s_uCA = copy.deepcopy(k_s)
+# Save modified arrays:
+k_uCA = copy.deepcopy(k)
+k_e_uCA = copy.deepcopy(k_e)
+k_w_uCA = copy.deepcopy(k_w)
+k_n_uCA = copy.deepcopy(k_n)
+k_s_uCA = copy.deepcopy(k_s)
 # Reset modified arrays:
 k = copy.deepcopy(k_ref)
 k_e = copy.deepcopy(k_e_ref)
@@ -269,14 +279,13 @@ cF.updateSourceTerms(Su, Sp,
                      nI, nJ, dx_we, dy_sn, dx_WP, dx_PE, dy_SP, dy_PN,
                      T, k_w, k_e, k_s, k_n, h, T_inf, caseID)
 if check_updateSourceTerms and useModData:
-    compare(Su, Su_uST, rTol, aTol, 'updateSourceTerms', 'Su')
-    compare(Sp, Sp_uST, rTol, aTol, 'updateSourceTerms', 'Sp')
+    compare(Su, Su_uST, rTol, aTol, 'updateSourceTerms', 'Su', 'uST')
+    compare(Sp, Sp_uST, rTol, aTol, 'updateSourceTerms', 'Sp', 'uST')
 if not check_updateSourceTerms and useModData:
     print('updateSourceTerms:           NOT CHECKED')
-if not useModData:
-    # Save modified arrays:
-    Su_uST = copy.deepcopy(Su)
-    Sp_uST = copy.deepcopy(Sp)
+# Save modified arrays:
+Su_uST = copy.deepcopy(Su)
+Sp_uST = copy.deepcopy(Sp)
 # Reset modified arrays:
 Su = copy.deepcopy(Su_ref)
 Sp = copy.deepcopy(Sp_ref)
@@ -290,20 +299,19 @@ cF.calcCoeffs(aE, aW, aN, aS, aP,
               nI, nJ, k_w, k_e, k_s, k_n,
               dy_sn, dx_we, dx_WP, dx_PE, dy_SP, dy_PN, Sp, caseID)
 if check_calcCoeffs and useModData:
-    compare(aE, aE_cC, rTol, aTol, 'calcCoeffs', 'aE')
-    compare(aW, aW_cC, rTol, aTol, 'calcCoeffs', 'aW')
-    compare(aN, aN_cC, rTol, aTol, 'calcCoeffs', 'aN')
-    compare(aS, aS_cC, rTol, aTol, 'calcCoeffs', 'aS')
-    compare(aP, aP_cC, rTol, aTol, 'calcCoeffs', 'aP')
+    compare(aE, aE_cC, rTol, aTol, 'calcCoeffs', 'aE', 'cC')
+    compare(aW, aW_cC, rTol, aTol, 'calcCoeffs', 'aW', 'cC')
+    compare(aN, aN_cC, rTol, aTol, 'calcCoeffs', 'aN', 'cC')
+    compare(aS, aS_cC, rTol, aTol, 'calcCoeffs', 'aS', 'cC')
+    compare(aP, aP_cC, rTol, aTol, 'calcCoeffs', 'aP', 'cC')
 if not check_calcCoeffs and useModData:
     print('calcCoeffs:                  NOT CHECKED')
-if not useModData:
-    # Save modified arrays:
-    aE_cC = copy.deepcopy(aE)
-    aW_cC = copy.deepcopy(aW)
-    aN_cC = copy.deepcopy(aN)
-    aS_cC = copy.deepcopy(aS)
-    aP_cC = copy.deepcopy(aP)
+# Save modified arrays:
+aE_cC = copy.deepcopy(aE)
+aW_cC = copy.deepcopy(aW)
+aN_cC = copy.deepcopy(aN)
+aS_cC = copy.deepcopy(aS)
+aP_cC = copy.deepcopy(aP)
 # Reset modified arrays:
 aE = copy.deepcopy(aE_ref)
 aW = copy.deepcopy(aW_ref)
@@ -315,12 +323,11 @@ T*=0
 cF.solveGaussSeidel(T,
                     nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter)
 if check_solveGaussSeidel and useModData:
-    compare(T, T_sGS, rTol, aTol, 'solveGaussSeidel', 'T')
+    compare(T, T_sGS, rTol, aTol, 'solveGaussSeidel', 'T', 'sGS')
 if not check_solveGaussSeidel and useModData:
     print('solveGaussSeidel:            NOT CHECKED')
-if not useModData:
-    # Save modified arrays:
-    T_sGS = copy.deepcopy(T)
+# Save modified arrays:
+T_sGS = copy.deepcopy(T)
 # Reset modified arrays:
 T = copy.deepcopy(T_ref)
 ###############################################################################
@@ -330,12 +337,11 @@ cF.correctBoundaries(T,
                      dy_sn, dx_we, dx_WP, dx_PE, dy_SP, dy_PN, 
                      h, T_inf, caseID)
 if check_correctBoundaries and useModData:
-    compare(T, T_cB, rTol, aTol, 'correctBoundaries', 'T')
+    compare(T, T_cB, rTol, aTol, 'correctBoundaries', 'T', 'cB')
 if not check_correctBoundaries and useModData:
     print('correctBoundaries:           NOT CHECKED')
-if not useModData:
-    # Save modified arrays:
-    T_cB = copy.deepcopy(T)
+# Save modified arrays:
+T_cB = copy.deepcopy(T)
 # Reset modified arrays:
 T = copy.deepcopy(T_ref)
 ###############################################################################
@@ -360,4 +366,4 @@ if not useModData:
             aP_cC = aP_cC,
             T_sGS = T_sGS,
             T_cB = T_cB)
-#%%
+

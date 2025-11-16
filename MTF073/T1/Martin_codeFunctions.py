@@ -295,30 +295,30 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
         for j in range(1, nJ - 1):
             
             if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
-                k = 0.01
+                k[i, j] = 0.01
                 
                 if x_min <= nodeX[i + 1, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
-                    k_e = 0.01
+                    k_e[i, j] = 0.01
                 else: 
-                    k_e = 20
+                    k_e[i, j] = 20
                 
                 if x_min <= nodeX[i - 1, j] <= x_max or y_min <= nodeY[i, j] <= y_max:
-                    k_w = 0.01
+                    k_w[i, j] = 0.01
                 else: 
-                    k_w = 20
+                    k_w[i, j] = 20
                 
                 if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j - 1] <= y_max:
-                    k_n = 0.01
+                    k_n[i, j] = 0.01
                 else: 
-                    k_n = 20
+                    k_n[i, j] = 20
                 
                 if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j + 1] <= y_max:
-                    k_s = 0.01
+                    k_s[i, j] = 0.01
                 else: 
-                    k_s = 20
+                    k_s[i, j] = 20
                 
             else:
-                k = 20
+                k[i, j] = 20
 
 def updateSourceTerms(Su, Sp,
                       nI, nJ, dx_we, dy_sn, dx_WP, dx_PE, dy_SP, dy_PN, \
@@ -336,8 +336,8 @@ def updateSourceTerms(Su, Sp,
     --------------------------------
     """
     Sp = 0
-    Su = ...
-
+    Su = 0
+    
 def calcCoeffs(aE, aW, aN, aS, aP,
                nI, nJ, k_w, k_e, k_s, k_n,
                dy_sn, dx_we, dx_WP, dx_PE, dy_SP, dy_PN, Sp, caseID):
@@ -362,10 +362,10 @@ def calcCoeffs(aE, aW, aN, aS, aP,
             A_EW = dy_sn
             A_NS = dx_we
             
-            aE[i,j] = k_e * A_EW/ dx_PE
-            aW[i,j] = k_w * A_EW/ dx_WP
-            aN[i,j] = k_n * A_NS/ dy_PN
-            aS[i,j] = k_s * A_NS/ dy_SP
+            aE[i,j] = k_e[i,j] * A_EW[i,j] / dx_PE[i,j]
+            aW[i,j] = k_w[i,j] * A_EW[i,j] / dx_WP[i,j]
+            aN[i,j] = k_n[i,j] * A_NS[i,j] / dy_PN[i,j]
+            aS[i,j] = k_s[i,j] * A_NS[i,j] / dy_SP[i,j]
             
     # Modifications of aE and aW inside east and west boundaries:
     # ADD CODE HERE IF NECESSARY
@@ -382,7 +382,7 @@ def calcCoeffs(aE, aW, aN, aS, aP,
             # ADDED CODE
             --------------------------------
             """
-            aP[i,j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp # Sp should be 0
+            aP[i,j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp[i,j] # Sp should be 0
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter_phi):
@@ -405,8 +405,8 @@ def solveGaussSeidel(phi,
                 phiN = phi[i, j + 1]
                 phiS = phi[i, j - 1]
                 
-                phiP = (aE * phiE + aW * phiW + aN * phiN + aS * phiS + Su) / aP # See page 13, Ch.4
-                phi[i,j] = phiP
+                phi[i,j] = (aE[i,j] * phiE[i,j] + aW[i,j] * phiW[i,j] + aN[i,j] * phiN[i,j] + aS[i,j] * phiS[i,j] + Su[i,j]) / aP[i,j] # See page 13, Ch.4
+                
 
 def correctBoundaries(T,
                       nI, nJ, k_w, k_e, k_s, k_n,
