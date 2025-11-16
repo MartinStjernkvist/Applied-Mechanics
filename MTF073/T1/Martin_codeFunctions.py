@@ -307,12 +307,12 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
                 else: 
                     k_w[i, j] = 20
                 
-                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j - 1] <= y_max:
+                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j + 1] <= y_max:
                     k_n[i, j] = 0.01
                 else: 
                     k_n[i, j] = 20
                 
-                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j + 1] <= y_max:
+                if x_min <= nodeX[i, j] <= x_max or y_min <= nodeY[i, j - 1] <= y_max:
                     k_s[i, j] = 0.01
                 else: 
                     k_s[i, j] = 20
@@ -328,15 +328,21 @@ def updateSourceTerms(Su, Sp,
     # Keep 'nan' where values are not needed!
     # Note: caseID is used only for testing.
     # ADD CODE HERE.
-    pass # Comment this line when you have added your code!
+    # pass # Comment this line when you have added your code!
 
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
-    Sp = 0
-    Su = 0
+    for i in range(0, nI):
+        for j in range(0, nJ):
+            if j == 0:
+                Sp[i, j] == 0
+                Su[i, j] = 0
+            else: 
+                Sp[i, j] = 0
+                Su[i, j] = 0
     
 def calcCoeffs(aE, aW, aN, aS, aP,
                nI, nJ, k_w, k_e, k_s, k_n,
@@ -403,8 +409,8 @@ def solveGaussSeidel(phi,
                 
                 phi[i,j] = (aE[i,j] * phi[i + 1, j] + 
                             aW[i,j] * phi[i - 1, j] + 
-                            aN[i,j] * phi[i, j - 1] + 
-                            aS[i,j] * phi[i, j + 1] + 
+                            aN[i,j] * phi[i, j + 1] + 
+                            aS[i,j] * phi[i, j - 1] + 
                             Su[i,j]) / aP[i,j] # See page 13, Ch.4
                 
 
@@ -415,7 +421,13 @@ def correctBoundaries(T,
     # Copy T to boundaries (and corners) where homegeneous Neumann is applied
     # Only change arrays in first row of argument list!
     # ADD CODE HERE IF NECESSARY
-    pass # Comment this line when you have added your code!
+    # pass # Comment this line when you have added your code!
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \
