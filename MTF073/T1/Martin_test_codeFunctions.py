@@ -316,9 +316,9 @@ aP_cC = copy.deepcopy(aP)
 # Reset modified arrays:
 aE = copy.deepcopy(aE_ref)
 aW = copy.deepcopy(aW_ref)
-# aN = copy.deepcopy(aN_ref)
-# aS = copy.deepcopy(aS_ref)
-# aP = copy.deepcopy(aP_ref)
+aN = copy.deepcopy(aN_ref)
+aS = copy.deepcopy(aS_ref)
+aP = copy.deepcopy(aP_ref)
 ###############################################################################
 T*=0
 cF.solveGaussSeidel(T,
@@ -344,7 +344,7 @@ if not check_correctBoundaries and useModData:
 # Save modified arrays:
 T_cB = copy.deepcopy(T)
 # Reset modified arrays:
-T = copy.deepcopy(T_ref)
+# T = copy.deepcopy(T_ref)
 ###############################################################################
 
 #================ Save modified data ================
