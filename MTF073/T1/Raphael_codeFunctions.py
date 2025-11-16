@@ -216,15 +216,15 @@ def setDirichletBCs(T, \
             y=nodeY[i_right,j]
             if np.isnan(y):
                 continue
-            T2=5.0*(y/(H-1))+15*math.cos(math.pi*y/H)
+            T2=5.0*(y/H-1)+15*math.cos(math.pi*y/H)
             T[i_right,j]=T2
         # boundary 4: x = 0
         i_left=0
         for j in range(nJ):
             if np.isnan(nodeY[i_left,j]):
                 continue
-            T[i_left]=15 #T4
-    pass  # CODE DONE
+            T[i_left,j]=15 #T4
+    # CODE DONE
 
 
 def updateConductivityArrays(k, k_e, k_w, k_n, k_s, \
@@ -254,7 +254,7 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s, \
                 k_w[i,j]=(1.0-fxw[i,j])*k[i-1,j]+fxw[i,j]*k[i,j] # Between W=(i-1,j) and P=(i,j)
                 k_n[i,j]=(1.0-fyn[i,j])*k[i,j]+fyn[i,j]*k[i,j+1] # Between P=(i,j) and N=(i,j+1)
                 k_s[i,j]=(1.0-fys[i,j])*k[i,j-1]+fys[i,j]*k[i,j] # Between S=(i,j-1) and P=(i,j)
-    pass  # CODE DONE
+    # CODE DONE
 
 
 def updateSourceTerms(Su, Sp, \
@@ -264,8 +264,13 @@ def updateSourceTerms(Su, Sp, \
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # Note: caseID is used only for testing.
-    # ADD CODE HERE.
-    pass  # Comment this line when you have added your code!
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            V = dx_we[i,j]*dy_sn[i,j]
+            b = 0.0
+            Su[i,j]=-b*V
+            Sp[i,j]=0.0
+    # Comment this line when you have added your code!
 
 
 def calcCoeffs(aE, aW, aN, aS, aP, \
@@ -279,10 +284,10 @@ def calcCoeffs(aE, aW, aN, aS, aP, \
     # (not caring about special treatment at boundaries):
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            aE[i, j] = 0  # ADD CODE HERE
-            aW[i, j] = 0  # ADD CODE HERE
-            aN[i, j] = 0  # ADD CODE HERE
-            aS[i, j] = 0  # ADD CODE HERE
+            aE[i, j] = k_e[i,j] * dy_sn[i,j] / dx_PE[i,j]
+            aW[i, j] = k_w[i,j] * dy_sn[i,j] / dx_WP[i,j]
+            aN[i, j] = k_n[i,j] * dx_we[i,j] / dy_PN[i,j]
+            aS[i, j] = k_s[i,j] * dx_we[i,j] / dy_SP[i,j]
     # Modifications of aE and aW inside east and west boundaries:
     # ADD CODE HERE IF NECESSARY
     # Modifications of aN and aS inside north and south boundaries:
@@ -291,7 +296,7 @@ def calcCoeffs(aE, aW, aN, aS, aP, \
     # Inner node central coefficients:
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            aP[i, j] = 0  # ADD CODE HERE
+            aP[i, j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp[i,j]
 
 
 def solveGaussSeidel(phi, \
@@ -303,7 +308,7 @@ def solveGaussSeidel(phi, \
     for linSolIter in range(nLinSolIter_phi):
         for i in range(1, nI - 1):
             for j in range(1, nJ - 1):
-                phi[i, j] = 0  # ADD CODE HERE
+                phi[i, j] = (aE[i,j]*phi[i+1,j]+aW[i,j]*phi[i-1,j]+aN[i,j]*phi[i,j+1]+aS[i,j]*phi[i,j-1]+Su[i,j]) / aP[i,j]
 
 
 def correctBoundaries(T, \
@@ -312,8 +317,13 @@ def correctBoundaries(T, \
                       h, T_inf, caseID):
     # Copy T to boundaries (and corners) where homegeneous Neumann is applied
     # Only change arrays in first row of argument list!
-    # ADD CODE HERE IF NECESSARY
-    pass  # Comment this line when you have added your code!
+    if caseID == 8:
+        j_top = nJ - 1
+        j_int = nJ - 2
+
+        for i in range(1, nI - 1):
+            T[i,j_top] = T[i,j_int]
+    # CODE DONE
 
 
 def calcNormalizedResiduals(res, glob_imbal_plot, \
@@ -330,11 +340,23 @@ def calcNormalizedResiduals(res, glob_imbal_plot, \
     r0 = 0
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            r0 += 0  # ADD CODE HERE
+            balance = (aP[i, j] * T[i, j]
+                       - (aE[i, j] * T[i + 1, j]
+                          + aW[i, j] * T[i - 1, j]
+                          + aN[i, j] * T[i, j + 1]
+                          + aS[i, j] * T[i, j - 1]
+                          + Su[i, j]))
+            r0 += abs(balance)
     # Calculate normalization factor as
-    # F =  Din + Sin
+    F = 0.0
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            F += abs(aP[i, j] * T[i, j])
+
+    if F <= 1e-30:
+        F = 1.0
     # Calculate normalized residual:
-    r = 1  # ADD CODE HERE
+    r = r0 / F
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r)
     print('iteration: %5d, res = %.5e' % (explCorrIter, r))
@@ -342,7 +364,7 @@ def calcNormalizedResiduals(res, glob_imbal_plot, \
     # Calculate the global imbalance as
     # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
     # glob_imbal_plot.append(glob_imbal)
-    glob_imbal_plot.append(1)  # Comment when you have added your code above!
+    glob_imbal_plot.append(r)  # CODE DONE
 
 
 def createDefaultPlots( \
@@ -401,8 +423,13 @@ def createDefaultPlots( \
     qY = np.zeros((nI, nJ)) * nan  # Array for heat flux in y-direction, in nodes
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            qX[i, j] = 1  # ADD CODE HERE
-            qY[i, j] = 1  # ADD CODE HERE
+
+            dTdx = (T[i+1,j] - T[i-1,j]) / (nodeX[i+1,j] - nodeX[i-1,j])
+            dTdy = (T[i,j+1] - T[i,j-1]) / (nodeY[i,j+1] - nodeY[i,j-1])
+
+            qX[i, j] = -k[i,j] * dTdx
+            qY[i, j] = -k[i,j] * dTdy
+
     plt.figure()
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
@@ -424,18 +451,23 @@ def createDefaultPlots( \
     qY = np.zeros((nI, nJ)) * nan  # Array for heat flux in y-direction, in nodes
     for j in range(1, nJ - 1):
         i = 0
-        qX[i, j] = 1  # ADD CODE HERE
-        qY[i, j] = 0  # ADD CODE HERE
+        dTdx_left = (T[i+1,j] - T[i,j]) / (nodeX[i+1,j] - nodeX[i,j])
+        qX[i, j] = -k[i,j] * dTdx_left
+        qY[i, j] = 0.0
         i = nI - 1
-        qX[i, j] = 1  # ADD CODE HERE
-        qY[i, j] = 0  # ADD CODE HERE
+        dTdx_right = (T[i,j] - T[i-1,j]) / (nodeX[i,j] - nodeX[i-1,j])
+        qX[i, j] = -k[i,j] * dTdx_right
+        qY[i, j] = 0.0
     for i in range(1, nI - 1):
         j = 0
-        qX[i, j] = 0  # ADD CODE HERE
-        qY[i, j] = 1  # ADD CODE HERE
+        dTdy_bottom = (T[i,j+1] - T[i,j]) / (nodeY[i,j+1] - nodeY[i,j])
+        qX[i, j] = 0.0
+        qY[i, j] = -k[i,j] * dTdy_bottom
         j = nJ - 1
-        qX[i, j] = 0  # ADD CODE HERE
-        qY[i, j] = 1  # ADD CODE HERE
+        dTdy_top = (T[i,j] - T[i,j-1]) / (nodeY[i,j] - nodeY[i,j-1])
+        qX[i, j] = 0.0
+        qY[i, j] = -k[i,j] * dTdy_top
+
     plt.figure()
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
