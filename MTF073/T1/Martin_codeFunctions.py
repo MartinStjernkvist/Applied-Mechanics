@@ -290,69 +290,27 @@ def updateConductivityArrays(k, k_e, k_w, k_n, k_s,
     --------------------------------
     """
     x_min, x_max = 0.7, 1.1
-    y_min, y_max = 0.3, 0.4
-    
-    for i in range(1, nI - 1):
-        for j in range(1, nJ - 1):
+    y_min, y_max = 0.3, 0.4     
             
-            # if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
-            #     k[i, j] = 0.01
-                
-            #     if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i, j] < y_max:
-            #         k_e[i, j] = 0.01
-            #     else: 
-            #         k_e[i, j] = 20
-                
-            #     if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i, j] < y_max:
-            #         k_w[i, j] = 0.01
-            #     else: 
-            #         k_w[i, j] = 20
-                
-            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j + 1] < y_max:
-            #         k_n[i, j] = 0.01
-            #     else: 
-            #         k_n[i, j] = 20
-                
-            #     if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j - 1] < y_max:
-            #         k_s[i, j] = 0.01
-            #     else: 
-            #         k_s[i, j] = 20
-                
-            #     if j == nJ - 1:
-            #         k_n[i, j] = 0
-            #         k_s[i, j] = 0
-                
-            # else:
-            #     k[i, j] = 20a
-            if x_min < nodeX[i, j] < x_max or y_min < nodeY[i, j] < y_max:
+    for i in range(0, nI):
+        for j in range(0, nJ):
+            if x_min < nodeX[i, j] < x_max and y_min < nodeY[i, j] < y_max:
                 k[i, j] = 0.01
-                
-                if x_min < nodeX[i + 1, j] < x_max or y_min < nodeY[i + 1, j] < y_max:
-                    k[i + 1, j] = 0.01
-                else: 
-                    k[i + 1, j] = 20
-                
-                if x_min < nodeX[i - 1, j] < x_max or y_min < nodeY[i - 1, j] < y_max:
-                    k[i - 1, j] = 0.01
-                else: 
-                    k[i - 1, j] = 20
-                
-                if x_min < nodeX[i, j + 1] < x_max or y_min < nodeY[i, j + 1] < y_max:
-                    k[i, j + 1] = 0.01
-                else: 
-                    k[i, j + 1] = 20
-                
-                if x_min < nodeX[i, j - 1] < x_max or y_min < nodeY[i, j - 1] < y_max:
-                    k[i, j - 1] = 0.01
-                else: 
-                    k[i, j - 1] = 20
-                    
             else:
                 k[i, j] = 20
-                
+            
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            # East face
             k_e[i, j] = fxe[i, j] * k[i + 1, j] + (1 - fxe[i, j]) * k[i, j]
+            
+            # West face
             k_w[i, j] = fxw[i, j] * k[i - 1, j] + (1 - fxw[i, j]) * k[i, j]
+            
+            # North face
             k_n[i, j] = fyn[i, j] * k[i, j + 1] + (1 - fyn[i, j]) * k[i, j]
+            
+            # South face
             k_s[i, j] = fys[i, j] * k[i, j - 1] + (1 - fys[i, j]) * k[i, j]
 
 def updateSourceTerms(Su, Sp,
