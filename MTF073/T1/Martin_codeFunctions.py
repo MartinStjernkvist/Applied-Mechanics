@@ -437,14 +437,32 @@ def correctBoundaries(T,
     
     A = dx_we
     
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
                 
-                if j == 1:
-                    # TW = (h * A[i, j] * T_inf + k_s[i, j] * A[i, j] / dy_SP[i, j] * T[i, j]) / (k_s[i, j] * A[i, j] / dy_SP[i, j] + h * A[i, j])
+    #             if j == 1:
+    #                 # TW = (h * A[i, j] * T_inf + k_s[i, j] * A[i, j] / dy_SP[i, j] * T[i, j]) / (k_s[i, j] * A[i, j] / dy_SP[i, j] + h * A[i, j])
                     
-                    # T[i, j] = h * A[i, j] * (TW - T_inf)  / (k_s[i, j] * A[i, j]) * dy_SP[i, j] + TW
-                    pass
+    #                 # T[i, j] = h * A[i, j] * (TW - T_inf)  / (k_s[i, j] * A[i, j]) * dy_SP[i, j] + TW
+    #                 pass
+    
+    j_top = nJ - 1
+    j_int = nJ - 2
+
+    for i in range(1, nI - 1):
+        T[i, j_top] = T[i, j_int]
+
+    for i in range(1, nI - 1):
+        k_face = k_s[i, 1]
+        dy = dy_SP[i, 1]
+
+        if np.isnan(k_face) or np.isnan(dy):
+            continue
+
+        T_P = T[i, 1]
+
+        T_wall = (k_face * T_P / dy + h * T_inf) / (h + k_face / dy)
+        T[i, 0] = T_wall
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \
