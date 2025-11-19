@@ -475,48 +475,54 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     #   Sin: Source heat rate into the domain
     #   Sout: Source heat rate out of the domain
     # Non-normalized residual:
+    # r0 = 0
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         r0 += 0 # ADD CODE HERE
+    # # Calculate normalization factor as
+    # # F =  Din + Sin
+    # # Calculate normalized residual:
+    # r = 1 # ADD CODE HERE
+    # # Append residual at present iteration to list of all residuals, for plotting:
+    # res.append(r)
+    # print('iteration: %5d, res = %.5e' % (explCorrIter, r))
+
+    # # Calculate the global imbalance as
+    # # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    # # glob_imbal_plot.append(glob_imbal)
+    # glob_imbal_plot.append(1) # Comment when you have added your code above!
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     r0 = 0
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            r0 += 0 # ADD CODE HERE
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            balance = (aP[i, j] * T[i, j]
+                       - (aE[i, j] * T[i + 1, j]
+                          + aW[i, j] * T[i - 1, j]
+                          + aN[i, j] * T[i, j + 1]
+                          + aS[i, j] * T[i, j - 1]
+                          + Su[i, j]))
+            r0 += abs(balance)
     # Calculate normalization factor as
-    # F =  Din + Sin
+    F = 0.0
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            F += abs(aP[i, j] * T[i, j])
+
+    if F <= 1e-30:
+        F = 1.0
     # Calculate normalized residual:
-    r = 1 # ADD CODE HERE
+    r = r0 / F
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r)
     print('iteration: %5d, res = %.5e' % (explCorrIter, r))
 
-    # Calculate the global imbalance as
-    # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
-    # glob_imbal_plot.append(glob_imbal)
-    glob_imbal_plot.append(1) # Comment when you have added your code above!
-    
-            # """
-            # --------------------------------
-            # # ADDED CODE
-            # --------------------------------
-            # """
-    """
-            r0 += ...
-    Din = ...
-    Dout = ...
-    Sin = ...
-    Sout = ...
-    
-    # Calculate normalization factor
-    F =  Din + Sin
-    # Calculate normalized residual:
-    r = ...
-    
-    # Append residual at present iteration to list of all residuals, for plotting:
-    res.append(r)
-    print('iteration: %5d, res = %.5e' % (explCorrIter, r))
+    glob_imbal_plot.append(r)
 
-    # Calculate the global imbalance
-    glob_imbal = np.abs((Din - Dout + Sin - Sout)/(Din + Sin))
-    glob_imbal_plot.append(glob_imbal)
-    """
     
 def createDefaultPlots(
                        nI, nJ, pointX, pointY, nodeX, nodeY,
