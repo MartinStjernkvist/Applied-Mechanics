@@ -508,54 +508,53 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
                         + Su[i, j]))
             r0 += abs(balance)
             
-    # Calculate normalization factor as
-    
+    # Calculate normalization factor
     Din = 0
+    Dout = 0
     Sin = 0
+    Sout = 0
 
     i = nI - 2
     for j in range(1, nJ - 1):
         east = aE[i, j] * (T[i + 1, j] - T[i, j])
         Din += max(east, 0)
+        Dout += abs(min(east, 0))
     
     i = 1
     for j in range(1, nJ - 1):
         west = aW[i, j] * (T[i - 1, j] - T[i, j])
         Din += max(west, 0)
+        Dout += abs(min(west, 0))
     
     j = nJ - 2
     for i in range(1, nI - 1):
         north = aN[i, j] * (T[i, j + 1] - T[i, j])
         Din += max(north, 0)
+        Dout += abs(min(north, 0))
     
     j = 1
     for i in range(1, nI - 1):
         south = aS[i, j] * (T[i, j - 1] - T[i, j])
         Din += max(south, 0)
+        Dout += abs(min(south, 0))
     
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
             source = Su[i, j] + T[i, j] * Sp[i, j]
             Sin += max(source, 0)
-            
+            Sout += abs(min(source, 0))
     
     F = Din + Sin
-    
-    # F = 0.0
-    # for i in range(1, nI - 1):
-    #     for j in range(1, nJ - 1):
-    #         F += abs(aP[i, j] * T[i, j])
-
-    # if F <= 1e-30:
-    #     F = 1.0
         
     # Calculate normalized residual:
     r = r0 / F
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r)
     print('iteration: %5d, res = %.5e' % (explCorrIter, r))
-
-    glob_imbal_plot.append(r)
+    
+    # Calculate the global imbalance
+    glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    glob_imbal_plot.append(glob_imbal)
 
     
 def createDefaultPlots(
