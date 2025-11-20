@@ -500,21 +500,55 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     r0 = 0
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            balance = (aP[i, j] * T[i, j]
+            balance = (aP[i, j] * T[i, j] 
                        - (aE[i, j] * T[i + 1, j]
-                          + aW[i, j] * T[i - 1, j]
-                          + aN[i, j] * T[i, j + 1]
-                          + aS[i, j] * T[i, j - 1]
-                          + Su[i, j]))
+                        + aW[i, j] * T[i - 1, j] 
+                        + aN[i, j] * T[i, j + 1]
+                        + aS[i, j] * T[i, j - 1] 
+                        + Su[i, j]))
             r0 += abs(balance)
+            
     # Calculate normalization factor as
-    F = 0.0
+    
+    Din = 0
+    Sin = 0
+
+    i = nI - 2
+    for j in range(1, nJ - 1):
+        east = aE[i, j] * (T[i + 1, j] - T[i, j])
+        Din += max(east, 0)
+    
+    i = 1
+    for j in range(1, nJ - 1):
+        west = aW[i, j] * (T[i - 1, j] - T[i, j])
+        Din += max(west, 0)
+    
+    j = nJ - 2
+    for i in range(1, nI - 1):
+        north = aN[i, j] * (T[i, j + 1] - T[i, j])
+        Din += max(north, 0)
+    
+    j = 1
+    for i in range(1, nI - 1):
+        south = aS[i, j] * (T[i, j - 1] - T[i, j])
+        Din += max(south, 0)
+    
     for i in range(1, nI - 1):
         for j in range(1, nJ - 1):
-            F += abs(aP[i, j] * T[i, j])
+            source = Su[i, j] + T[i, j] * Sp[i, j]
+            Sin += max(source, 0)
+            
+    
+    F = Din + Sin
+    
+    # F = 0.0
+    # for i in range(1, nI - 1):
+    #     for j in range(1, nJ - 1):
+    #         F += abs(aP[i, j] * T[i, j])
 
-    if F <= 1e-30:
-        F = 1.0
+    # if F <= 1e-30:
+    #     F = 1.0
+        
     # Calculate normalized residual:
     r = r0 / F
     # Append residual at present iteration to list of all residuals, for plotting:
@@ -578,20 +612,28 @@ def createDefaultPlots(
     plt.savefig('Figures/Case_'+str(caseID)+'_residualConvergence.png')
 
     # Plot heat flux vectors in nodes (not at boundaries)
-    qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
-    qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
+    # qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
+    # qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
                 # qX[i,j] = 1 # ADD CODE HERE
                 # qY[i,j] = 1 # ADD CODE HERE
                 
-                """
-                --------------------------------
-                # ADDED CODE
-                --------------------------------
-                """
-                qX[i,j] = 1 # ADD CODE HERE
-                qY[i,j] = 1 # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    # Plot heat flux vectors in nodes (not at boundaries)
+    qX = np.zeros((nI, nJ)) * nan  # Array for heat flux in x-direction, in nodes
+    qY = np.zeros((nI, nJ)) * nan  # Array for heat flux in y-direction, in nodes
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            dTdx = (T[i+1,j] - T[i-1,j]) / (nodeX[i+1,j] - nodeX[i-1,j])
+            dTdy = (T[i,j+1] - T[i,j-1]) / (nodeY[i,j+1] - nodeY[i,j-1])
+
+            qX[i, j] = -k[i,j] * dTdx
+            qY[i, j] = -k[i,j] * dTdy
                 
     plt.figure()
     plt.xlabel('x [m]')
@@ -610,45 +652,58 @@ def createDefaultPlots(
     
     # Plot heat flux vectors NORMAL TO WALL boundary face centers ONLY (not in corners)
     # Use temperature gradient just inside domain (note difference to set heat flux)
-    qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
-    qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
-    for j in range(1,nJ-1):
-        i = 0
+    # qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
+    # qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
+    # for j in range(1,nJ-1):
+    #     i = 0
         # qX[i,j] = 1 # ADD CODE HERE
         # qY[i,j] = 0 # ADD CODE HERE
         # i = nI-1
         # qX[i,j] = 1 # ADD CODE HERE
         # qY[i,j] = 0 # ADD CODE HERE
         
-        """
-        --------------------------------
-        # ADDED CODE
-        --------------------------------
-        """
-        qX[i,j] = 1 # ADD CODE HERE
-        qY[i,j] = 0 # ADD CODE HERE
-        i = nI-1
-        qX[i,j] = 1 # ADD CODE HERE
-        qY[i,j] = 0 # ADD CODE HERE
-        
-    for i in range(1,nI-1):
-        j = 0
+    # for i in range(1,nI-1):
+    #     j = 0
         # qX[i,j] = 0 # ADD CODE HERE
         # qY[i,j] = 1 # ADD CODE HERE
         # j = nJ-1
         # qX[i,j] = 0 # ADD CODE HERE
         # qY[i,j] = 1 # ADD CODE HERE
         
-        """
-        --------------------------------
-        # ADDED CODE
-        --------------------------------
-        """
-        qX[i,j] = 0 # ADD CODE HERE
-        qY[i,j] = 1 # ADD CODE HERE
-        j = nJ-1
-        qX[i,j] = 0 # ADD CODE HERE
-        qY[i,j] = 1 # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+        
+        # Plot heat flux vectors NORMAL TO WALL boundary face centers ONLY (not in corners)
+    # Use temperature gradient just inside domain (note difference to set heat flux)
+    qX = np.zeros((nI, nJ)) * nan  # Array for heat flux in x-direction, in nodes
+    qY = np.zeros((nI, nJ)) * nan  # Array for heat flux in y-direction, in nodes
+    
+    for j in range(1, nJ - 1):
+        
+        i = 0
+        dTdx_left = (T[i + 1, j] - T[i, j]) / (nodeX[i + 1, j] - nodeX[i, j])
+        qX[i, j] = -k[i, j] * dTdx_left
+        qY[i, j] = 0.0
+        
+        i = nI - 1
+        dTdx_right = (T[i, j] - T[i - 1, j]) / (nodeX[i, j] - nodeX[i - 1, j])
+        qX[i, j] = -k[i, j] * dTdx_right
+        qY[i, j] = 0.0
+        
+    for i in range(1, nI - 1):
+        
+        j = 0
+        dTdy_bottom = (T[i, j + 1] - T[i, j]) / (nodeY[i, j + 1] - nodeY[i, j])
+        qX[i, j] = 0.0
+        qY[i, j] = -k[i, j] * dTdy_bottom
+        
+        j = nJ - 1
+        dTdy_top = (T[i, j] - T[i, j - 1]) / (nodeY[i, j] - nodeY[i, j - 1])
+        qX[i, j] = 0.0
+        qY[i, j] = -k[i, j] * dTdy_top
         
     plt.figure()
     plt.xlabel('x [m]')
