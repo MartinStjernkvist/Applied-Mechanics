@@ -582,8 +582,8 @@ def createDefaultPlots(
     plt.hlines(pointY[0,:],0,L,colors = 'k',linestyles = 'dashed')
     plt.plot(nodeX, nodeY, 'ro')
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_mesh_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_mesh.png')
     
     # Plot temperature contour
     plt.figure()
@@ -595,8 +595,8 @@ def createDefaultPlots(
     cbar=plt.colorbar(tempmap)
     cbar.set_label('Temperature [K]')
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_temperatureDistribution_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_temperatureDistribution.png')
     
     # Plot residual convergence
     plt.figure()
@@ -607,9 +607,9 @@ def createDefaultPlots(
     plt.plot(resLength, res)
     plt.grid()
     plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_residualConvergence_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_residualConvergence.png')
-
+    
     # Plot heat flux vectors in nodes (not at boundaries)
     # qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
     # qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
@@ -646,8 +646,8 @@ def createDefaultPlots(
     plt.xlim(-0.2*L, 1.2*L)
     plt.ylim(-0.2*H, 1.2*H)
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_heatFlux_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_heatFlux.png')
     
     # Plot heat flux vectors NORMAL TO WALL boundary face centers ONLY (not in corners)
     # Use temperature gradient just inside domain (note difference to set heat flux)
@@ -716,8 +716,8 @@ def createDefaultPlots(
     plt.xlim(-0.2*L, 1.2*L)
     plt.ylim(-0.2*H, 1.2*H)
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_wallHeatFlux_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_wallHeatFlux.png')
 
     # Plot global heat rate imbalance convergence
     plt.figure()
@@ -728,8 +728,8 @@ def createDefaultPlots(
     plt.plot(glob_imbal_plotLength, glob_imbal_plot)
     plt.grid()
     plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_globalHeatRateImbalanceConvergence_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_globalHeatRateImbalanceConvergence.png')
 
 def createAdditionalPlots():
     # ADD CODE HERE IF NECESSARY
