@@ -466,7 +466,7 @@ def correctBoundaries(T,
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \
-                            aP, aE, aW, aN, aS, Su, Sp):
+                            aP, aE, aW, aN, aS, Su, Sp, F_data=1):
     # Calculate and print normalized residuals, and sane 
     # Only change arrays in first row of argument list!
     # Normalize as shown in lecture notes, using:
@@ -545,6 +545,10 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
             Sout += abs(min(source, 0))
     
     F = Din + Sin
+    print('Din: ', Din)
+    print('Sin: ', Sin)
+    print('fraction of q_in and q_out:', (Din + Sin) / (Dout + Sout))
+    F_data.append(F)
         
     # Calculate normalized residual:
     r = r0 / F
@@ -731,10 +735,28 @@ def createDefaultPlots(
     plt.savefig('Figures/Case_'+str(caseID)+'_globalHeatRateImbalanceConvergence_results.png')
     plt.show()
 
-def createAdditionalPlots():
+def createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
+                       L, H, T, k,
+                       explCorrIter, res, glob_imbal_plot, caseID, F_data):
     # ADD CODE HERE IF NECESSARY
     # Also add needed arguments to the function - and then also add those
     # arguments for the same function in the main code.
     # Don't change the values of any arrays supplied as arguments!
-    pass # Comment this line when you have added your code!
+    # pass # Comment this line when you have added your code!
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    # Plot F
+    plt.figure()
+    plt.title('F')
+    plt.xlabel('Iterations')
+    plt.ylabel('F')
+    resLength = np.arange(0,len(res),1)
+    plt.plot(resLength, F_data)
+    plt.grid()
+    plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_FConvergence_results.png')
+    plt.show()
 #%%
