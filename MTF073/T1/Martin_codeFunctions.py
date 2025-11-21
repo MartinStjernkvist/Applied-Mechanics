@@ -437,18 +437,36 @@ def correctBoundaries(T,
     
     A = dx_we
     
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
                 
-                if j == 1:
-                    # TW = (h * A[i, j] * T_inf + k_s[i, j] * A[i, j] / dy_SP[i, j] * T[i, j]) / (k_s[i, j] * A[i, j] / dy_SP[i, j] + h * A[i, j])
+    #             if j == 1:
+    #                 # TW = (h * A[i, j] * T_inf + k_s[i, j] * A[i, j] / dy_SP[i, j] * T[i, j]) / (k_s[i, j] * A[i, j] / dy_SP[i, j] + h * A[i, j])
                     
-                    # T[i, j] = h * A[i, j] * (TW - T_inf)  / (k_s[i, j] * A[i, j]) * dy_SP[i, j] + TW
-                    pass
+    #                 # T[i, j] = h * A[i, j] * (TW - T_inf)  / (k_s[i, j] * A[i, j]) * dy_SP[i, j] + TW
+    #                 pass
+    
+    j_top = nJ - 1
+    j_int = nJ - 2
+
+    for i in range(1, nI - 1):
+        T[i, j_top] = T[i, j_int]
+
+    for i in range(1, nI - 1):
+        k_face = k_s[i, 1]
+        dy = dy_SP[i, 1]
+
+        if np.isnan(k_face) or np.isnan(dy):
+            continue
+
+        T_P = T[i, 1]
+
+        T_wall = (k_face * T_P / dy + h * T_inf) / (h + k_face / dy)
+        T[i, 0] = T_wall
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \
-                            aP, aE, aW, aN, aS, Su, Sp):
+                            aP, aE, aW, aN, aS, Su, Sp, F_data=1, T_data=1):
     # Calculate and print normalized residuals, and sane 
     # Only change arrays in first row of argument list!
     # Normalize as shown in lecture notes, using:
@@ -457,48 +475,96 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     #   Sin: Source heat rate into the domain
     #   Sout: Source heat rate out of the domain
     # Non-normalized residual:
+    # r0 = 0
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         r0 += 0 # ADD CODE HERE
+    # # Calculate normalization factor as
+    # # F =  Din + Sin
+    # # Calculate normalized residual:
+    # r = 1 # ADD CODE HERE
+    # # Append residual at present iteration to list of all residuals, for plotting:
+    # res.append(r)
+    # print('iteration: %5d, res = %.5e' % (explCorrIter, r))
+
+    # # Calculate the global imbalance as
+    # # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    # # glob_imbal_plot.append(glob_imbal)
+    # glob_imbal_plot.append(1) # Comment when you have added your code above!
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     r0 = 0
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            r0 += 0 # ADD CODE HERE
-    # Calculate normalization factor as
-    # F =  Din + Sin
-    # Calculate normalized residual:
-    r = 1 # ADD CODE HERE
-    # Append residual at present iteration to list of all residuals, for plotting:
-    res.append(r)
-    print('iteration: %5d, res = %.5e' % (explCorrIter, r))
-
-    # Calculate the global imbalance as
-    # glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
-    # glob_imbal_plot.append(glob_imbal)
-    glob_imbal_plot.append(1) # Comment when you have added your code above!
-    
-            # """
-            # --------------------------------
-            # # ADDED CODE
-            # --------------------------------
-            # """
-    """
-            r0 += ...
-    Din = ...
-    Dout = ...
-    Sin = ...
-    Sout = ...
-    
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            balance = (aP[i, j] * T[i, j] 
+                       - (aE[i, j] * T[i + 1, j]
+                        + aW[i, j] * T[i - 1, j] 
+                        + aN[i, j] * T[i, j + 1]
+                        + aS[i, j] * T[i, j - 1] 
+                        + Su[i, j]))
+            r0 += abs(balance)
+            
     # Calculate normalization factor
-    F =  Din + Sin
-    # Calculate normalized residual:
-    r = ...
+    Din = 0
+    Dout = 0
+    Sin = 0
+    Sout = 0
+
+    i = nI - 2
+    for j in range(1, nJ - 1):
+        east = aE[i, j] * (T[i + 1, j] - T[i, j])
+        Din += max(east, 0)
+        Dout += abs(min(east, 0))
     
+    i = 1
+    for j in range(1, nJ - 1):
+        west = aW[i, j] * (T[i - 1, j] - T[i, j])
+        Din += max(west, 0)
+        Dout += abs(min(west, 0))
+    
+    j = nJ - 2
+    for i in range(1, nI - 1):
+        north = aN[i, j] * (T[i, j + 1] - T[i, j])
+        Din += max(north, 0)
+        Dout += abs(min(north, 0))
+    
+    j = 1
+    for i in range(1, nI - 1):
+        south = aS[i, j] * (T[i, j - 1] - T[i, j])
+        Din += max(south, 0)
+        Dout += abs(min(south, 0))
+    
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            source = Su[i, j] + T[i, j] * Sp[i, j]
+            Sin += max(source, 0)
+            Sout += abs(min(source, 0))
+    
+    F = Din + Sin
+    print('Din: ', Din)
+    print('Sin: ', Sin)
+    print('fraction of q_in and q_out:', (Din + Sin) / (Dout + Sout))
+    F_data.append(F)
+        
+    # Calculate normalized residual:
+    r = r0 / F
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r)
     print('iteration: %5d, res = %.5e' % (explCorrIter, r))
-
+    
     # Calculate the global imbalance
-    glob_imbal = np.abs((Din - Dout + Sin - Sout)/(Din + Sin))
+    glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
     glob_imbal_plot.append(glob_imbal)
-    """
+    
+    i_selected = 10
+    j_selected = 10
+    T_value = T[i_selected, j_selected]
+    T_data.append(T_value)
+
     
 def createDefaultPlots(
                        nI, nJ, pointX, pointY, nodeX, nodeY,
@@ -525,8 +591,8 @@ def createDefaultPlots(
     plt.hlines(pointY[0,:],0,L,colors = 'k',linestyles = 'dashed')
     plt.plot(nodeX, nodeY, 'ro')
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_mesh_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_mesh.png')
     
     # Plot temperature contour
     plt.figure()
@@ -538,8 +604,8 @@ def createDefaultPlots(
     cbar=plt.colorbar(tempmap)
     cbar.set_label('Temperature [K]')
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_temperatureDistribution_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_temperatureDistribution.png')
     
     # Plot residual convergence
     plt.figure()
@@ -550,24 +616,32 @@ def createDefaultPlots(
     plt.plot(resLength, res)
     plt.grid()
     plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_residualConvergence_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_residualConvergence.png')
-
+    
     # Plot heat flux vectors in nodes (not at boundaries)
-    qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
-    qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
+    # qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
+    # qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
                 # qX[i,j] = 1 # ADD CODE HERE
                 # qY[i,j] = 1 # ADD CODE HERE
                 
-                """
-                --------------------------------
-                # ADDED CODE
-                --------------------------------
-                """
-                qX[i,j] = 1 # ADD CODE HERE
-                qY[i,j] = 1 # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    # Plot heat flux vectors in nodes (not at boundaries)
+    qX = np.zeros((nI, nJ)) * nan  # Array for heat flux in x-direction, in nodes
+    qY = np.zeros((nI, nJ)) * nan  # Array for heat flux in y-direction, in nodes
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            dTdx = (T[i+1,j] - T[i-1,j]) / (nodeX[i+1,j] - nodeX[i-1,j])
+            dTdy = (T[i,j+1] - T[i,j-1]) / (nodeY[i,j+1] - nodeY[i,j-1])
+
+            qX[i, j] = -k[i,j] * dTdx
+            qY[i, j] = -k[i,j] * dTdy
                 
     plt.figure()
     plt.xlabel('x [m]')
@@ -581,50 +655,63 @@ def createDefaultPlots(
     plt.xlim(-0.2*L, 1.2*L)
     plt.ylim(-0.2*H, 1.2*H)
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_heatFlux_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_heatFlux.png')
     
     # Plot heat flux vectors NORMAL TO WALL boundary face centers ONLY (not in corners)
     # Use temperature gradient just inside domain (note difference to set heat flux)
-    qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
-    qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
-    for j in range(1,nJ-1):
-        i = 0
+    # qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
+    # qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
+    # for j in range(1,nJ-1):
+    #     i = 0
         # qX[i,j] = 1 # ADD CODE HERE
         # qY[i,j] = 0 # ADD CODE HERE
         # i = nI-1
         # qX[i,j] = 1 # ADD CODE HERE
         # qY[i,j] = 0 # ADD CODE HERE
         
-        """
-        --------------------------------
-        # ADDED CODE
-        --------------------------------
-        """
-        qX[i,j] = 1 # ADD CODE HERE
-        qY[i,j] = 0 # ADD CODE HERE
-        i = nI-1
-        qX[i,j] = 1 # ADD CODE HERE
-        qY[i,j] = 0 # ADD CODE HERE
-        
-    for i in range(1,nI-1):
-        j = 0
+    # for i in range(1,nI-1):
+    #     j = 0
         # qX[i,j] = 0 # ADD CODE HERE
         # qY[i,j] = 1 # ADD CODE HERE
         # j = nJ-1
         # qX[i,j] = 0 # ADD CODE HERE
         # qY[i,j] = 1 # ADD CODE HERE
         
-        """
-        --------------------------------
-        # ADDED CODE
-        --------------------------------
-        """
-        qX[i,j] = 0 # ADD CODE HERE
-        qY[i,j] = 1 # ADD CODE HERE
-        j = nJ-1
-        qX[i,j] = 0 # ADD CODE HERE
-        qY[i,j] = 1 # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+        
+        # Plot heat flux vectors NORMAL TO WALL boundary face centers ONLY (not in corners)
+    # Use temperature gradient just inside domain (note difference to set heat flux)
+    qX = np.zeros((nI, nJ)) * nan  # Array for heat flux in x-direction, in nodes
+    qY = np.zeros((nI, nJ)) * nan  # Array for heat flux in y-direction, in nodes
+    
+    for j in range(1, nJ - 1):
+        
+        i = 0
+        dTdx_left = (T[i + 1, j] - T[i, j]) / (nodeX[i + 1, j] - nodeX[i, j])
+        qX[i, j] = -k[i, j] * dTdx_left
+        qY[i, j] = 0.0
+        
+        i = nI - 1
+        dTdx_right = (T[i, j] - T[i - 1, j]) / (nodeX[i, j] - nodeX[i - 1, j])
+        qX[i, j] = -k[i, j] * dTdx_right
+        qY[i, j] = 0.0
+        
+    for i in range(1, nI - 1):
+        
+        j = 0
+        dTdy_bottom = (T[i, j + 1] - T[i, j]) / (nodeY[i, j + 1] - nodeY[i, j])
+        qX[i, j] = 0.0
+        qY[i, j] = -k[i, j] * dTdy_bottom
+        
+        j = nJ - 1
+        dTdy_top = (T[i, j] - T[i, j - 1]) / (nodeY[i, j] - nodeY[i, j - 1])
+        qX[i, j] = 0.0
+        qY[i, j] = -k[i, j] * dTdy_top
         
     plt.figure()
     plt.xlabel('x [m]')
@@ -638,8 +725,8 @@ def createDefaultPlots(
     plt.xlim(-0.2*L, 1.2*L)
     plt.ylim(-0.2*H, 1.2*H)
     plt.tight_layout()
+    plt.savefig('Figures/Case_'+str(caseID)+'_wallHeatFlux_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_wallHeatFlux.png')
 
     # Plot global heat rate imbalance convergence
     plt.figure()
@@ -650,13 +737,45 @@ def createDefaultPlots(
     plt.plot(glob_imbal_plotLength, glob_imbal_plot)
     plt.grid()
     plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_globalHeatRateImbalanceConvergence_results.png')
     plt.show()
-    plt.savefig('Figures/Case_'+str(caseID)+'_globalHeatRateImbalanceConvergence.png')
 
-def createAdditionalPlots():
+def createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
+                       L, H, T, k,
+                       explCorrIter, res, glob_imbal_plot, caseID, F_data, T_data):
     # ADD CODE HERE IF NECESSARY
     # Also add needed arguments to the function - and then also add those
     # arguments for the same function in the main code.
     # Don't change the values of any arrays supplied as arguments!
-    pass # Comment this line when you have added your code!
+    # pass # Comment this line when you have added your code!
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    # Plot F
+    plt.figure()
+    plt.title('F vs iterations')
+    plt.xlabel('Iterations')
+    plt.ylabel('F')
+    resLength = np.arange(0,len(res),1)
+    plt.plot(resLength, F_data)
+    plt.grid()
+    # plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_FConvergence_results.png')
+    plt.show()
+    
+    # Plot T
+    plt.figure()
+    plt.title('Temperature vs iterations')
+    plt.xlabel('Iterations')
+    plt.ylabel('T')
+    resLength = np.arange(0,len(res),1)
+    plt.plot(resLength, T_data)
+    plt.grid()
+    # plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_results.png')
+    plt.show()
+    
+    
 #%%

@@ -30,8 +30,8 @@ import Martin_codeFunctions as cF
 
 L = 1.5 # Length of the domain in X direction
 H = 0.5 # Length of the domain in Y direction
-mI = 4 # Number of mesh points X direction.
-mJ = 4 # Number of mesh points Y direction.
+mI = 21 # Number of mesh points X direction.
+mJ = 21 # Number of mesh points Y direction.
 mesh_type = 'non-equidistant' # Set 'non-equidistant' or 'equidistant'
 
 # Case-specific input
@@ -87,6 +87,9 @@ k_n    = np.zeros((nI,nJ))*nan # Array for conductivity at north face
 k_s    = np.zeros((nI,nJ))*nan # Array for conductivity at south face
 res    = []                    # Array for appending residual each iteration
 glob_imbal_plot    = []        # Array for appending glob_imbalance each iteration
+
+F_data = [] # Array for appending F each iteration
+T_data = [] # Array for appending T each iteration
 
 # Set mesh point positions
 match mesh_type:
@@ -161,7 +164,7 @@ for explCorrIter in range(nExplCorrIter):
     # Calculate and print normalized residuals
     cF.calcNormalizedResiduals(res, glob_imbal_plot,
                                nI, nJ, explCorrIter, T,
-                               aP, aE, aW, aN, aS, Su, Sp)
+                               aP, aE, aW, aN, aS, Su, Sp, F_data, T_data)
     
     # Stop iterations if converged
     if res[-1] < resTol:
@@ -183,6 +186,8 @@ cF.createDefaultPlots(
 # Create additional plots
 # Implement this function for additional plots!
 # No arrays should be changed!
-cF.createAdditionalPlots()
+cF.createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
+                       L, H, T, k,
+                       explCorrIter, res, glob_imbal_plot, caseID, F_data, T_data)
 
 #%%
