@@ -32,9 +32,9 @@ import Raphael_codeFunctions as cF
 
 L = 1.5  # Length of the domain in X direction
 H = 0.5  # Length of the domain in Y direction
-mI = 21  # Number of mesh points X direction.
-mJ = 21  # Number of mesh points Y direction.
-mesh_type = 'non-equidistant'  # Set 'non-equidistant' or 'equidistant'
+mI = 20  # Number of mesh points X direction.
+mJ = 20  # Number of mesh points Y direction.
+mesh_type = 'equidistant'  # Set 'non-equidistant' or 'equidistant'
 
 # Case-specific input
 
@@ -46,7 +46,7 @@ T_inf = 10  # Keep as it is if you do not have a convective boundary condition
 
 nExplCorrIter = 1000  # Maximum number of explicit correction iterations
 nLinSolIter = 10  # Number of linear solver (Gauss-Seidel) iterations
-resTol = 0.001  # Convergence criteria for residuals
+resTol = 0.0001  # Convergence criteria for residuals
 
 # ====================== Code ======================
 
@@ -89,6 +89,7 @@ k_n = np.zeros((nI, nJ)) * nan  # Array for conductivity at north face
 k_s = np.zeros((nI, nJ)) * nan  # Array for conductivity at south face
 res = []  # Array for appending residual each iteration
 glob_imbal_plot = []  # Array for appending glob_imbalance each iteration
+T_center_plot = []
 
 # Set mesh point positions
 match mesh_type:
@@ -161,7 +162,7 @@ for explCorrIter in range(nExplCorrIter):
                          h, T_inf, caseID)
 
     # Calculate and print normalized residuals
-    cF.calcNormalizedResiduals(res, glob_imbal_plot,
+    cF.calcNormalizedResiduals(res, glob_imbal_plot, T_center_plot,
                                nI, nJ, explCorrIter, T,
                                aP, aE, aW, aN, aS, Su, Sp)
 
