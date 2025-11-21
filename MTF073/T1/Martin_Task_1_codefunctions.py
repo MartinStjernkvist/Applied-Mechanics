@@ -89,6 +89,7 @@ res    = []                    # Array for appending residual each iteration
 glob_imbal_plot    = []        # Array for appending glob_imbalance each iteration
 
 F_data = [] # Array for appending F each iteration
+T_data = [] # Array for appending T each iteration
 
 # Set mesh point positions
 match mesh_type:
@@ -163,7 +164,7 @@ for explCorrIter in range(nExplCorrIter):
     # Calculate and print normalized residuals
     cF.calcNormalizedResiduals(res, glob_imbal_plot,
                                nI, nJ, explCorrIter, T,
-                               aP, aE, aW, aN, aS, Su, Sp, F_data)
+                               aP, aE, aW, aN, aS, Su, Sp, F_data, T_data)
     
     # Stop iterations if converged
     if res[-1] < resTol:
@@ -187,6 +188,6 @@ cF.createDefaultPlots(
 # No arrays should be changed!
 cF.createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
                        L, H, T, k,
-                       explCorrIter, res, glob_imbal_plot, caseID, F_data)
+                       explCorrIter, res, glob_imbal_plot, caseID, F_data, T_data)
 
 #%%

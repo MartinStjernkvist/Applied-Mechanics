@@ -466,7 +466,7 @@ def correctBoundaries(T,
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \
-                            aP, aE, aW, aN, aS, Su, Sp, F_data=1):
+                            aP, aE, aW, aN, aS, Su, Sp, F_data=1, T_data=1):
     # Calculate and print normalized residuals, and sane 
     # Only change arrays in first row of argument list!
     # Normalize as shown in lecture notes, using:
@@ -559,6 +559,11 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     # Calculate the global imbalance
     glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
     glob_imbal_plot.append(glob_imbal)
+    
+    i_selected = 10
+    j_selected = 10
+    T_value = T[i_selected, j_selected]
+    T_data.append(T_value)
 
     
 def createDefaultPlots(
@@ -737,7 +742,7 @@ def createDefaultPlots(
 
 def createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
                        L, H, T, k,
-                       explCorrIter, res, glob_imbal_plot, caseID, F_data):
+                       explCorrIter, res, glob_imbal_plot, caseID, F_data, T_data):
     # ADD CODE HERE IF NECESSARY
     # Also add needed arguments to the function - and then also add those
     # arguments for the same function in the main code.
@@ -750,13 +755,27 @@ def createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
     """
     # Plot F
     plt.figure()
-    plt.title('F')
+    plt.title('F vs iterations')
     plt.xlabel('Iterations')
     plt.ylabel('F')
     resLength = np.arange(0,len(res),1)
     plt.plot(resLength, F_data)
     plt.grid()
-    plt.yscale('log')
+    # plt.yscale('log')
     plt.savefig('Figures/Case_'+str(caseID)+'_FConvergence_results.png')
     plt.show()
+    
+    # Plot T
+    plt.figure()
+    plt.title('Temperature vs iterations')
+    plt.xlabel('Iterations')
+    plt.ylabel('T')
+    resLength = np.arange(0,len(res),1)
+    plt.plot(resLength, T_data)
+    plt.grid()
+    # plt.yscale('log')
+    plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_results.png')
+    plt.show()
+    
+    
 #%%
