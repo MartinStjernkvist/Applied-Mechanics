@@ -456,6 +456,138 @@ def q(x):
 #---------------------------------------------------------------------------------------------------
 new_subtask('e)')
 
+n_elem = 1
+iteration = 5
+
+x_analytical = np.linspace(0, L, 100)
+u_analytical = (q0 * L**2 / (6 * EA)) * (3 * x_analytical / L - (x_analytical / L)**3)
+N_analytical = q0 * L / 2 * (1 - x_analytical**2 / L**2)
+u_exact = u_analytical[-1]
+N_exact = N_analytical[0]
+
+
+def FEM_3(n_elem_start, iterations):
+    u_error_list = []
+    N_error_list = []
+    n_elem_list = []
+    
+    for iteration in range(iterations + 1):
+        print('\nIteraration: ', iteration)
+        
+        n_elem = n_elem_start * 2**iteration
+        # Mesh generation
+        n_nodes = n_elem + 1
+        x_nodes = np.linspace(0, L, n_nodes)
+        Le = L / n_elem  # element length
+
+        # Initialize global stiffness matrix and load vector
+        K_global = np.zeros((n_nodes, n_nodes))
+        fl_global = np.zeros(n_nodes)
+
+        # Assemble element contributions
+        for e in range(n_elem):
+            print(f'element {e}')
+            # Element nodes
+            i = e
+            j = e + 1
+            
+            # Element stiffness matrix (linear bar element)
+            K_e = (EA / Le) * np.array([[1, -1],
+                                        [-1, 1]])
+            
+            # Element load vector using midpoint rule
+            x_mid = (x_nodes[i] + x_nodes[j]) / 2
+            fl_e = q0 * x_mid * Le / (2 * L) * np.array([1, 1])
+            
+            # Assemble into global system
+            K_global[i : j + 1, i : j + 1] += K_e
+            fl_global[i : j + 1] += fl_e
+            
+            # displayvar('K_{global}', K_global)
+            # displayvar('fl_{global}', fl_global)
+
+        # Apply boundary condition: u(0) = 0
+        # Remove first DOF (fixed at node 0)
+        K_reduced = K_global[1:, 1:]
+        fl_reduced = fl_global[1:]
+        
+        # displayvar('K_{reduced}', K_reduced)
+        # displayvar('fl_{reduced}', fl_reduced)
+
+        # Solve system
+        a_reduced = np.linalg.solve(K_reduced, fl_reduced)
+
+        # Full displacement vector
+        a = np.zeros(n_nodes)
+        a[1:] = a_reduced
+
+        # Results
+        print(f"Number of elements: {n_elem}")
+        print(f"Nodal coordinates: {x_nodes}")
+        print(f"Displacements: {a}")
+        print(f"Displacement at free end u(L): {a[-1]:.2e} m")
+        
+        
+        N_list = []
+        # Compute normal forces at element ends
+        print("Normal forces:")
+        for e in range(n_elem):
+            i = e
+            j = e + 1
+            N = (EA / Le) * (a[j] - a[i])
+            print(f"Element {e+1}: N = {N:.2f} N")
+            N_list.append(N)
+
+        # # Plot displacement
+        # plt.figure()
+        # plt.plot(x_nodes, a * 1e3, 'o-', linewidth=2, markersize=8)
+        # plt.xlabel('x (m)')
+        # plt.ylabel('u (mm)')
+        # plt.title('Displacement along bar')
+        # plt.grid()
+        # plt.show()
+        # sfig('Displacement along bar.png')
+        
+        u_FEM = a[-1]
+        N_FEM = N_list[0]
+        
+        u_error = (u_exact - u_FEM) / u_exact
+        N_error = (N_exact - N_FEM) / N_exact
+        
+        if u_error <= 0.02:
+            print('u convergence at iteration: ', iteration)
+        if N_error <= 0.02:
+            print('N convergence at iteration: ', iteration)
+        
+        u_error_list.append(u_error)
+        N_error_list.append(N_error)
+        n_elem_list.append(n_elem)
+        
+    return u_error_list, N_error_list, n_elem_list
+
+n_elem_start = 1
+iterations = 2
+u_error_list, N_error_list, n_elem_list = FEM_3(n_elem_start, iterations)
+
+# Plot displacement error
+plt.figure()
+plt.plot(n_elem_list, u_error_list, 'o-')
+plt.xlabel('number of elements')
+plt.ylabel('u_error')
+plt.title('Displacement error')
+plt.grid()
+sfig('Displacement error.png')
+plt.show()     
+   
+# Plot normal force error
+plt.figure()
+plt.plot(n_elem_list, N_error_list, 'o-')
+plt.xlabel('number of elements')
+plt.ylabel('N_error')
+plt.title('Normal force error')
+plt.grid()
+sfig('Normal force error.png')
+plt.show()
 
 #---------------------------------------------------------------------------------------------------
 # 3g)
@@ -470,7 +602,6 @@ def N(x):
 
 def e_u(u_exact, u_FEM):
     return (u_exact - u_FEM) / u_exact
-
 
 
 #%%
