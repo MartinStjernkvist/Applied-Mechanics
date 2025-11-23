@@ -13,28 +13,6 @@ from mha021 import *
 from colorama import Fore
 import numpy as np
 import matplotlib.pyplot as plt
-import sympy as sp
-import math
-import pandas as pd
-
-from IPython.display import display, Math
-from mpl_toolkits.mplot3d import axes3d
-from mpl_toolkits.mplot3d import Axes3D
-from numpy.random import rand
-from IPython.display import HTML
-from matplotlib import animation
-import scipy.io as sio
-from scipy.optimize import fsolve
-from matplotlib import rcParams
-import matplotlib.ticker as ticker
-
-import calfem.core as cfc
-import calfem.vis_mpl as cfv
-import calfem.mesh as cfm
-import calfem.utils as cfu
-
-from scipy.sparse import coo_matrix, csr_matrix
-import matplotlib.cm as cm
 
 from pathlib import Path
 
@@ -196,7 +174,6 @@ displayvar("r", np.round(r))
 # Vertical deflection p
 displayvar("p_{truss}", a[10-1]) 
 
-
 #---------------------------------------------------------------------------------------------------
 # 1c)
 #---------------------------------------------------------------------------------------------------
@@ -213,7 +190,6 @@ fig = draw_discrete_elements(
 )
 plot_deformed_bars(fig, Ex, Ey, Ed)
 fig.show()
-
 
 #---------------------------------------------------------------------------------------------------
 # 1d)
@@ -393,7 +369,6 @@ displayvar("stress bottom", sigma_bottom)
 print('max tensile stress: ', max(np.max(sigma_top), np.max(sigma_bottom)))
 print('max compressive stress: ', min(np.min(sigma_top), np.min(sigma_bottom)))
 
-
 #---------------------------------------------------------------------------------------------------
 # 2d)
 #---------------------------------------------------------------------------------------------------
@@ -420,7 +395,7 @@ for el in range(num_el):
 
 # Same boundary conditions
 
-# # Solve the system
+# Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
 displayvar("a", a, 2)
@@ -428,7 +403,6 @@ displayvar("r", np.round(r), 2)
 
 # Vertical deflection p
 displayvar("p_q", a[14-1]) 
-
 
 #%%
 ####################################################################################################
@@ -478,6 +452,7 @@ def FEM_3(n_elem_start, iterations):
         print('\nIteraration: ', iteration)
         
         n_elem = n_elem_start * 2**iteration
+        
         # Mesh generation
         n_nodes = n_elem + 1
         x_nodes = np.linspace(0, L, n_nodes)
@@ -509,22 +484,20 @@ def FEM_3(n_elem_start, iterations):
             # displayvar('K_{global}', K_global)
             # displayvar('fl_{global}', fl_global)
 
-        # Apply boundary condition: u(0) = 0
         # Remove first DOF (fixed at node 0)
         K_reduced = K_global[1:, 1:]
         fl_reduced = fl_global[1:]
         
         # displayvar('K_{reduced}', K_reduced)
         # displayvar('fl_{reduced}', fl_reduced)
-
-        # Solve system
+        
+        # Solve the system
         a_reduced = np.linalg.solve(K_reduced, fl_reduced)
 
-        # Full displacement vector
+        # Displacement vector
         a = np.zeros(n_nodes)
         a[1:] = a_reduced
 
-        # Results
         print(f"Number of elements: {n_elem}")
         print(f"Nodal coordinates: {x_nodes}")
         print(f"Displacements: {a}")
@@ -532,7 +505,6 @@ def FEM_3(n_elem_start, iterations):
         
         
         N_list = []
-        # Compute normal forces at element ends
         print("Normal forces:")
         for e in range(n_elem):
             i = e
@@ -605,7 +577,6 @@ def N(x):
 
 def e_u(u_exact, u_FEM):
     return (u_exact - u_FEM) / u_exact
-
 
 #%%
 ####################################################################################################
@@ -691,10 +662,10 @@ def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
     K_reduced = K_global[np.ix_(free_dofs, free_dofs)]
     f_reduced = f_global[free_dofs]
     
-    # Solve
+    # Solve the system
     a_reduced = np.linalg.solve(K_reduced, f_reduced)
     
-    # Full displacement vector
+    # Displacement vector
     a = np.zeros(n_dof)
     a[free_dofs] = a_reduced
     
@@ -712,7 +683,7 @@ def compute_bending_moments(n_elem, a):
         j = e + 1
         
         # Element DOFs
-        a_e = np.array([a[2*i], a[2*i+1], a[2*j], a[2*j+1]])
+        a_e = np.array([a[2 * i], a[2 * i + 1], a[2 * j], a[2 * j + 1]])
         
         # Element stiffness
         K_e = hermite_beam_stiffness(EI, Le)
@@ -720,10 +691,9 @@ def compute_bending_moments(n_elem, a):
         # Element forces
         f_e = K_e @ a_e
         
-        # Bending moments (from shear-moment relationship)
-        M[e, 0] = -f_e[1]  # M at node i
-        M[e, 1] = f_e[3]   # M at node j
-    
+        # Bending moments
+        M[e, 0] = -f_e[1]  # node i
+        M[e, 1] = f_e[3]   # node j
     return M
 
 #---------------------------------------------------------------------------------------------------
@@ -759,9 +729,9 @@ for n in elem_counts:
 # Check convergence
 for i in range(1, len(elem_counts)):
     rel_change = abs(max_deflections[i] - max_deflections[i-1]) / max_deflections[i] * 100
-    print(f"{elem_counts[i-1]} -> {elem_counts[i]} elements: {rel_change:.3f}% change")
+    print(f"{elem_counts[i - 1]} -> {elem_counts[i]} elements: {rel_change:.3f}% change")
 
-# Choose converged mesh
+# Converged mesh
 chosen_n_elem = 32
 print(f"Chosen: {chosen_n_elem} elements (converged to <0.1%)")
 
@@ -803,5 +773,4 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 sfig('Bending Moment Distribution.png')
 plt.show()
-
 #%%
