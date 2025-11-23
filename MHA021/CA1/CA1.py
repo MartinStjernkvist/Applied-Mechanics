@@ -464,7 +464,7 @@ def FEM_3(n_elem_start, iterations):
 
         # Assemble element contributions
         for e in range(n_elem):
-            print(f'element {e}')
+            # print(f'element {e}')
             # Element nodes
             i = e
             j = e + 1
