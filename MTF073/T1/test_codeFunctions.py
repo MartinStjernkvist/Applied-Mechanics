@@ -36,7 +36,7 @@ from IPython import get_ipython
 get_ipython().run_line_magic('reset', '-sf')
 import numpy as np
 import copy
-import Martin_codeFunctions as cF
+import codeFunctions as cF
 
 # Case inputs:
 caseID  = 8

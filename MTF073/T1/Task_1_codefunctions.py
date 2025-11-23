@@ -17,7 +17,7 @@ plt.close('all')
 import sys # For sys.exit()
 import os
 # All functions of the code (some to be implemented by you):
-import Martin_codeFunctions as cF
+import codeFunctions as cF
 # Info: Use cF to call functions that are defined in codeFunctions_template.py.
 # Hint: Click on the function name and press Ctrl-g to go to the function.
 # Rule: Only change values of arrays in the first line of the argument list in the functions!
@@ -30,9 +30,9 @@ import Martin_codeFunctions as cF
 
 L = 1.5 # Length of the domain in X direction
 H = 0.5 # Length of the domain in Y direction
-mI = 21 # Number of mesh points X direction.
-mJ = 21 # Number of mesh points Y direction.
-mesh_type = 'equidistant' # Set 'non-equidistant' or 'equidistant'
+mI = 20 # Number of mesh points X direction.
+mJ = 20 # Number of mesh points Y direction.
+mesh_type = 'non-equidistant' # Set 'non-equidistant' or 'equidistant'
 
 # Case-specific input
 

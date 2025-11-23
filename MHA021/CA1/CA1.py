@@ -39,7 +39,7 @@ import matplotlib.cm as cm
 from pathlib import Path
 
 def new_task(string):
-    print_string = '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n'
+    print_string = '\n' + '=' * 80 + '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n' + '=' * 80 + '\n'
     return print(print_string)
 
 def new_subtask(string):
@@ -298,7 +298,7 @@ fig.show()
 
 # Radius and area moment of inertia for cross-sectional area
 radius = np.sqrt(A / np.pi)
-I = np.pi / 4 * radius**4
+I = np.pi * radius**4 / 4 
 displayvar("I", I)
 
 # Topology matrix (connectivity)
@@ -384,11 +384,14 @@ sigma_bottom = np.zeros((num_el, 2))
 # Navier's formula
 for i in range(7):
     for j in range(2):
-        sigma_top[i, j] = M[i, j] * radius / I
-        sigma_bottom[i, j] = M[i, j] * (-radius) / I
+        sigma_top[i, j] = M[i, j] * radius / I + N[i, j] / A
+        sigma_bottom[i, j] = M[i, j] * (-radius) / I + N[i, j] / A
         
 displayvar("stress top", sigma_top) 
 displayvar("stress bottom", sigma_bottom) 
+
+print('max tensile stress: ', max(np.max(sigma_top), np.max(sigma_bottom)))
+print('max compressive stress: ', min(np.min(sigma_top), np.min(sigma_bottom)))
 
 
 #---------------------------------------------------------------------------------------------------
@@ -629,87 +632,76 @@ P = 70 * 10**3          # [N]
 
 EI = E * I_y
 
-def hermite_beam_stiffness(EI, L):
-    K_e = (EI / L**3) * np.array([
-        [12,      6*L,    -12,     6*L],
-        [6*L,     4*L**2,  -6*L,    2*L**2],
-        [-12,    -6*L,     12,     -6*L],
-        [6*L,     2*L**2,  -6*L,    4*L**2]
+def hermite_beam_stiffness(EI, Le):
+    K_e = (EI / Le**3) * np.array([
+        [12,      6*Le,    -12,     6*Le],
+        [6*Le,     4*Le**2,  -6*Le,    2*Le**2],
+        [-12,    -6*Le,     12,     -6*Le],
+        [6*Le,     2*Le**2,  -6*Le,    4*Le**2]
     ])
     return K_e
 
-def winkler_stiffness(K_w, L):
-    K_w_e = (K_w * L / 420) * np.array([
-        [156,     22*L,    54,      -13*L],
-        [22*L,    4*L**2,  13*L,    -3*L**2],
-        [54,      13*L,    156,     -22*L],
-        [-13*L,  -3*L**2, -22*L,    4*L**2]
+def winkler_stiffness(K_w, Le):
+    K_w_e = (K_w * Le / 420) * np.array([
+        [156,     22*Le,    54,      -13*Le],
+        [22*Le,    4*Le**2,  13*Le,    -3*Le**2],
+        [54,      13*Le,    156,     -22*Le],
+        [-13*Le,  -3*Le**2, -22*Le,    4*Le**2]
     ])
     return K_w_e
 
-def solve_winkler_beam(n_elem, k_w=K_w, bc_type='pinned-pinned', P_load=P):
-    """
-    bc_type: 'pinned-pinned', 'cantilever', 'fixed-fixed'
-    """
-    n_nodes = n_elem + 1
-    Le = L / n_elem
-    x_nodes = np.linspace(0, L, n_nodes)
+def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
     
-    # DOFs: 2 per node (w, theta)
+    n_nodes = n_elem + 1
     n_dof = 2 * n_nodes
+    Le = L / n_elem
+    
     K_global = np.zeros((n_dof, n_dof))
     f_global = np.zeros(n_dof)
     
-    # Assemble element matrices
     for e in range(n_elem):
         i = e
         j = e + 1
         
-        # Element stiffness
         K_e = hermite_beam_stiffness(EI, Le)
         K_w_e = winkler_stiffness(k_w, Le)
         K_total_e = K_e + K_w_e
         
-        # Global DOF indices for this element
-        dofs = [2*i, 2*i+1, 2*j, 2*j+1]
-        
-        # Assemble
+        # DOFs: [w_i, th_i, w_j, th_j]
+        dofs = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1] 
         for ii in range(4):
             for jj in range(4):
                 K_global[dofs[ii], dofs[jj]] += K_total_e[ii, jj]
-    
-    # Apply point load at center
-    center_node = n_nodes // 2
-    f_global[2*center_node] = -P_load  # negative for downward
-    
+        
+    # Load at left end (x=0)
+        f_global[0] = -P  # negative for downward
+        
     # Apply boundary conditions
     fixed_dofs = []
     
-    if bc_type == 'pinned-pinned':
-        # Pin at both ends: w=0 at x=0 and x=L
-        fixed_dofs = [0, 2*(n_nodes-1)]
-    elif bc_type == 'cantilever':
+    if bc_type == 'semi-infinite':
+        fixed_dofs = []
+        
+    if bc_type == 'cantilever':
         # Fixed at x=0: w=0, theta=0
-        fixed_dofs = [0, 1]
-    elif bc_type == 'fixed-fixed':
-        # Fixed at both ends: w=0, theta=0
-        fixed_dofs = [0, 1, 2*(n_nodes-1), 2*(n_nodes-1)+1]
-    
+        fixed_dofs = [2 * (n_nodes - 1), 2 * (n_nodes - 1) + 1]
+        
     # Remove fixed DOFs
     free_dofs = [i for i in range(n_dof) if i not in fixed_dofs]
     K_reduced = K_global[np.ix_(free_dofs, free_dofs)]
     f_reduced = f_global[free_dofs]
     
+    # Solve
     a_reduced = np.linalg.solve(K_reduced, f_reduced)
     
+    # Full displacement vector
     a = np.zeros(n_dof)
     a[free_dofs] = a_reduced
     
-    # Deflections and rotations
+    x = np.linspace(0, L, n_nodes)
     w = a[0::2]
-    theta = a[1::2]
     
-    return x_nodes, w, theta, K_global, a
+    return x, w, a 
 
 def compute_bending_moments(n_elem, a):
     Le = L / n_elem
@@ -739,14 +731,16 @@ def compute_bending_moments(n_elem, a):
 #---------------------------------------------------------------------------------------------------
 new_subtask('c)')
 
-# Simply supported beam with center load
-w_analytical = P * L**3 / (48 * EI)
+# Cantilever beam (point load P at tip)
+w_analytical = -P * L**3 / (3 * EI)
 print(f"Analytical max deflection: {w_analytical:.2e} m")
 
+# Verification
 n_elem_verify = 10
-x_v, w_v, theta_v, _, _ = solve_winkler_beam(n_elem_verify, k_w=0, bc_type='pinned-pinned')
-print(f"FEM max deflection: {abs(min(w_v)):.2e} m")
-print(f"Relative error: {abs(abs(min(w_v)) - w_analytical)/w_analytical * 100:.2f}%")
+x_ver, w_ver, _ = solve_rail(n_elem=n_elem_verify, k_w=0, bc_type='cantilever')
+
+print(f"FEM max deflection: {min(w_ver):.2e} m") # Min because w is negative downward
+print(f"Relative error: {abs(min(w_ver) - w_analytical)/abs(w_analytical) * 100:.2f}%")
 
 #---------------------------------------------------------------------------------------------------
 # 4d)
@@ -757,7 +751,7 @@ elem_counts = [2, 4, 8, 16, 32]
 max_deflections = []
 
 for n in elem_counts:
-    x, w, theta, _, _ = solve_winkler_beam(n, k_w=K_w, bc_type='pinned-pinned')
+    x, w, a = solve_rail(n_elem=n, k_w=K_w)
     max_def = abs(min(w))
     max_deflections.append(max_def)
     print(f"Elements: {n}, Max deflection: {max_def:.2e} m")
@@ -776,9 +770,7 @@ print(f"Chosen: {chosen_n_elem} elements (converged to <0.1%)")
 #---------------------------------------------------------------------------------------------------
 new_subtask('e)')
 
-x_final, w_final, theta_final, K_final, a_final = solve_winkler_beam(
-    chosen_n_elem, k_w=K_w, bc_type='pinned-pinned'
-)
+x_final, w_final, a_final = solve_rail(n_elem=chosen_n_elem, k_w=K_w)
 
 M_final = compute_bending_moments(chosen_n_elem, a_final)
 
@@ -787,30 +779,29 @@ print(f"Maximum bending moment: {np.max(np.abs(M_final)):.2f} Nm")
 
 plt.figure()
 plt.plot(x_final, w_final, 'b-o')
-plt.axhline(y=0, color='k', linestyle='--', alpha=0.3)
 plt.xlabel('Position x [m]')
 plt.ylabel('Deflection w [m]')
 plt.title(f'Beam Deflection ({chosen_n_elem} elements)')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+sfig('Beam Deflection.png')
 plt.show()
-
 
 x_M = []
 M_plot = []
 for e in range(chosen_n_elem):
-    h = L / chosen_n_elem
-    x_M.extend([e*h, (e+1)*h])
-    M_plot.extend([M_final[e, 0]/1000, M_final[e, 1]/1000])
+    Le = L / chosen_n_elem
+    x_M.extend([e*Le, (e+1)*Le])
+    M_plot.extend([M_final[e, 0], M_final[e, 1]])
     
 plt.figure()
 plt.plot(x_M, M_plot, 'r-o')
-plt.axhline(y=0, color='k', linestyle='--', alpha=0.3)
 plt.xlabel('Position x [m]')
 plt.ylabel('Bending Moment [Nm]')
 plt.title(f'Bending Moment Distribution ({chosen_n_elem} elements)')
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+sfig('Bending Moment Distribution.png')
 plt.show()
 
 #%%
