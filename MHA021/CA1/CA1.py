@@ -503,7 +503,6 @@ def FEM_3(n_elem_start, iterations):
         print(f"Displacements: {a}")
         print(f"Displacement at free end u(L): {a[-1]:.2e} m")
         
-        
         N_list = []
         print("Normal forces:")
         for e in range(n_elem):
@@ -541,14 +540,17 @@ def FEM_3(n_elem_start, iterations):
     return u_error_list, N_error_list, n_elem_list
 
 n_elem_start = 1
-iterations = 2
+iterations = 5
 u_error_list, N_error_list, n_elem_list = FEM_3(n_elem_start, iterations)
+
+u_error_list_percent = [i  * 100 for i in u_error_list]
+N_error_list_percent = [i * 100 for i in N_error_list]
 
 # Plot displacement error
 plt.figure()
-plt.plot(n_elem_list, u_error_list, 'o-')
+plt.plot(n_elem_list, u_error_list_percent, 'o-')
 plt.xlabel('number of elements')
-plt.ylabel('u_error')
+plt.ylabel('u_error (%)')
 plt.title('Displacement error')
 plt.grid()
 sfig('Displacement error.png')
@@ -556,9 +558,9 @@ plt.show()
    
 # Plot normal force error
 plt.figure()
-plt.plot(n_elem_list, N_error_list, 'o-')
+plt.plot(n_elem_list, N_error_list_percent, 'o-')
 plt.xlabel('number of elements')
-plt.ylabel('N_error')
+plt.ylabel('N_error (%)')
 plt.title('Normal force error')
 plt.grid()
 sfig('Normal force error.png')
