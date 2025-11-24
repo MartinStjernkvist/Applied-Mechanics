@@ -297,3 +297,59 @@ print("- Shear force V(L) → 0 (no external force)")
 print("- Moment M(L) → 0 (free end)")
 print("These are automatically satisfied in the weak formulation.")
 #%%
+
+
+
+def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
+    
+    n_nodes = n_elem + 1
+    n_dof = 2 * n_nodes
+    Le = L / n_elem
+    
+    K_global = np.zeros((n_dof, n_dof))
+    f_global = np.zeros(n_dof)
+    
+    for e in range(n_elem):
+        i = e
+        j = e + 1
+        
+        K_e = hermite_beam_stiffness(EI, Le)
+        K_w_e = winkler_stiffness(k_w, Le)
+        K_total_e = K_e + K_w_e
+        
+        # DOFs: [w_i, th_i, w_j, th_j]
+        dofs = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1] 
+        for ii in range(4):
+            for jj in range(4):
+                K_global[dofs[ii], dofs[jj]] += K_total_e[ii, jj]
+        
+    # Load at left end (x=0)
+    f_global[0] = -P  # negative for downward
+        
+    # Apply boundary conditions
+    fixed_dofs = []
+    
+    if bc_type == 'semi-infinite':
+        fixed_dofs = []
+        
+    if bc_type == 'cantilever':
+        # Fixed at x=0: w=0, theta=0
+        fixed_dofs = [2 * (n_nodes - 1), 2 * (n_nodes - 1) + 1]
+        
+    # Create boolean mask for free DOFs
+    free_mask = np.ones(n_dof, dtype=bool)
+    free_mask[fixed_dofs] = False
+    
+    # Use boolean indexing instead of np.ix_
+    K_reduced = K_global[free_mask][:, free_mask]
+    f_reduced = f_global[free_mask]
+    
+    # Solve the system
+    a_reduced = np.linalg.solve(K_reduced, f_reduced)
+    
+    # Displacement vector
+    a = np.zeros(n_dof)
+    a[free_mask] = a_reduced
+    
+    x = np.linspace(0, L, n_nodes)
+    w = a[0::2]

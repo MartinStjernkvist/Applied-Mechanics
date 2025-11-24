@@ -78,7 +78,6 @@ def printt(**kwargs):
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-
 new_task('1 - Planar truss')
 
 # Define input data
@@ -94,7 +93,6 @@ sigma_y = 250e6     # Yielding [Pa]
 new_subtask('1a)')
 
 # See labeling of elements in the report
-
 Ly = 3 * L / 4
 Ex = np.array([
     [0, 0],
@@ -115,7 +113,6 @@ Ey = np.array([
     [Ly, Ly]
 ])
 
-# Plot the truss geometry
 fig = draw_discrete_elements(
     Ex, Ey,
     title="Geometry with nodes and elements",
@@ -135,10 +132,10 @@ Edof = np.array([
     [5, 6, 9, 10],  # Element 6
     [7, 8, 9, 10]   # Element 7
 ])
+
 # Number of elements
 num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
 num_dofs = np.max(np.max(Edof))
-
 print(f"number of dofs = {num_dofs}")
 print(f"number of elements = {num_el}")
 
@@ -223,7 +220,6 @@ displayvar("FOS", sigma_y / np.max(np.abs(sigma))) # stresses in Pa
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-
 new_task('2 - Planar frame')
 
 # Define input data
@@ -241,7 +237,6 @@ new_subtask('2a)')
 q = 0
 
 # See labeling of elements in the report
-
 Ly = 3 * L / 4
 Ex = np.array([
     [0, 0],
@@ -442,7 +437,6 @@ N_analytical = q0 * L / 2 * (1 - x_analytical**2 / L**2)
 u_exact = u_analytical[-1]
 N_exact = N_analytical[0]
 
-
 def FEM_3(n_elem_start, iterations):
     u_error_list = []
     N_error_list = []
@@ -464,8 +458,6 @@ def FEM_3(n_elem_start, iterations):
 
         # Assemble element contributions
         for e in range(n_elem):
-            # print(f'element {e}')
-            # Element nodes
             i = e
             j = e + 1
             
@@ -473,23 +465,17 @@ def FEM_3(n_elem_start, iterations):
             K_e = (EA / Le) * np.array([[1, -1],
                                         [-1, 1]])
             
-            # Element load vector using midpoint rule
+            # Element load vector, midpoint rule
             x_mid = (x_nodes[i] + x_nodes[j]) / 2
             fl_e = q0 * x_mid * Le / (2 * L) * np.array([1, 1])
             
             # Assemble into global system
             K_global[i : j + 1, i : j + 1] += K_e
             fl_global[i : j + 1] += fl_e
-            
-            # displayvar('K_{global}', K_global)
-            # displayvar('fl_{global}', fl_global)
 
         # Remove first DOF (fixed at node 0)
         K_reduced = K_global[1:, 1:]
         fl_reduced = fl_global[1:]
-        
-        # displayvar('K_{reduced}', K_reduced)
-        # displayvar('fl_{reduced}', fl_reduced)
         
         # Solve the system
         a_reduced = np.linalg.solve(K_reduced, fl_reduced)
@@ -509,22 +495,12 @@ def FEM_3(n_elem_start, iterations):
             i = e
             j = e + 1
             N = (EA / Le) * (a[j] - a[i])
-            print(f"Element {e+1}: N = {N:.2f} N")
+            print(f"Element {j}: N = {N:.2f} N")
             N_list.append(N)
-
-        # # Plot displacement
-        # plt.figure()
-        # plt.plot(x_nodes, a * 1e3, 'o-', linewidth=2, markersize=8)
-        # plt.xlabel('x (m)')
-        # plt.ylabel('u (mm)')
-        # plt.title('Displacement along bar')
-        # plt.grid()
-        # plt.show()
-        # sfig('Displacement along bar.png')
         
+        # Compute errors
         u_FEM = a[-1]
         N_FEM = N_list[0]
-        
         u_error = (u_exact - u_FEM) / u_exact
         N_error = (N_exact - N_FEM) / N_exact
         
@@ -539,6 +515,11 @@ def FEM_3(n_elem_start, iterations):
         
     return u_error_list, N_error_list, n_elem_list
 
+#---------------------------------------------------------------------------------------------------
+# 3f, g)
+#---------------------------------------------------------------------------------------------------
+new_subtask('f, g)')
+
 n_elem_start = 1
 iterations = 5
 u_error_list, N_error_list, n_elem_list = FEM_3(n_elem_start, iterations)
@@ -546,7 +527,6 @@ u_error_list, N_error_list, n_elem_list = FEM_3(n_elem_start, iterations)
 u_error_list_percent = [i  * 100 for i in u_error_list]
 N_error_list_percent = [i * 100 for i in N_error_list]
 
-# Plot displacement error
 plt.figure()
 plt.plot(n_elem_list, u_error_list_percent, 'o-')
 plt.xlabel('number of elements')
@@ -556,7 +536,6 @@ plt.grid()
 sfig('Displacement error.png')
 plt.show()     
    
-# Plot normal force error
 plt.figure()
 plt.plot(n_elem_list, N_error_list_percent, 'o-')
 plt.xlabel('number of elements')
@@ -565,20 +544,6 @@ plt.title('Normal force error')
 plt.grid()
 sfig('Normal force error.png')
 plt.show()
-
-#---------------------------------------------------------------------------------------------------
-# 3g)
-#---------------------------------------------------------------------------------------------------
-new_subtask('g)')
-
-def u(x):
-    return q0 * L**2 / (6 * EA) * (3 * x / L - x**3 / L**3)
-
-def N(x):
-    return q0 * L / 2 * (1 - x**2 / L**2)
-
-def e_u(u_exact, u_FEM):
-    return (u_exact - u_FEM) / u_exact
 
 #%%
 ####################################################################################################
@@ -647,33 +612,35 @@ def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
                 K_global[dofs[ii], dofs[jj]] += K_total_e[ii, jj]
         
     # Load at left end (x=0)
-        f_global[0] = -P  # negative for downward
-        
-    # Apply boundary conditions
-    fixed_dofs = []
+    f_global[0] = -P  # negative for downward
     
+    fixed_dofs = []
+
+    # Apply boundary conditions
     if bc_type == 'semi-infinite':
         fixed_dofs = []
         
     if bc_type == 'cantilever':
         # Fixed at x=0: w=0, theta=0
         fixed_dofs = [2 * (n_nodes - 1), 2 * (n_nodes - 1) + 1]
-        
+    
+    # Create boolean mask for free DOFs
+    free_dofs_mask = np.ones(n_dof, dtype=bool)
+    free_dofs_mask[fixed_dofs] = False
+    
     # Remove fixed DOFs
-    free_dofs = [i for i in range(n_dof) if i not in fixed_dofs]
-    K_reduced = K_global[np.ix_(free_dofs, free_dofs)]
-    f_reduced = f_global[free_dofs]
+    K_reduced = K_global[free_dofs_mask][:, free_dofs_mask]
+    f_reduced = f_global[free_dofs_mask]
     
     # Solve the system
     a_reduced = np.linalg.solve(K_reduced, f_reduced)
     
     # Displacement vector
     a = np.zeros(n_dof)
-    a[free_dofs] = a_reduced
+    a[free_dofs_mask] = a_reduced
     
     x = np.linspace(0, L, n_nodes)
     w = a[0::2]
-    
     return x, w, a 
 
 def compute_bending_moments(n_elem, a):
@@ -711,7 +678,7 @@ print(f"Analytical max deflection: {w_analytical:.2e} m")
 n_elem_verify = 10
 x_ver, w_ver, _ = solve_rail(n_elem=n_elem_verify, k_w=0, bc_type='cantilever')
 
-print(f"FEM max deflection: {min(w_ver):.2e} m") # Min because w is negative downward
+print(f"FEM max deflection: {min(w_ver):.2e} m")
 print(f"Relative error: {abs(min(w_ver) - w_analytical)/abs(w_analytical) * 100:.2f}%")
 
 #---------------------------------------------------------------------------------------------------
@@ -762,9 +729,11 @@ plt.show()
 x_M = []
 M_plot = []
 for e in range(chosen_n_elem):
+    i = e
+    j = e + 1
     Le = L / chosen_n_elem
-    x_M.extend([e*Le, (e+1)*Le])
-    M_plot.extend([M_final[e, 0], M_final[e, 1]])
+    x_M.extend([i * Le, j * Le])
+    M_plot.extend([M_final[i, 0], M_final[i, 1]])
     
 plt.figure()
 plt.plot(x_M, M_plot, 'r-o')
