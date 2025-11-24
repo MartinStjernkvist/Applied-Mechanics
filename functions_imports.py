@@ -18,18 +18,17 @@ from scipy.optimize import fsolve
 from matplotlib import rcParams
 import matplotlib.ticker as ticker
 
-import calfem.core as cfc
-import calfem.vis_mpl as cfv
-import calfem.mesh as cfm
-import calfem.utils as cfu
-
 from scipy.sparse import coo_matrix, csr_matrix
 import matplotlib.cm as cm
 
 from pathlib import Path
 
-def new_prob(string):
-    print_string = '\n' + '=' * 80 + '\n' + 'Assignment ' + str(string) + '\n' + '=' * 80 + '\n'
+def new_task(string):
+    print_string = '\n' + '=' * 80 + '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n' + '=' * 80 + '\n'
+    return print(print_string)
+
+def new_subtask(string):
+    print_string = '\n' + '-' * 80 + '\n' + 'Subtask ' + str(string) + '\n' + '-' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -49,8 +48,15 @@ plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
-def fig(fig_name):
-    fig_output_file = script_dir / "fig" / fig_name
+def sfig(fig_name):
+    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
+    print('figure name: ', fig_name)
+
+
+def figgg(fig_name):
+    fig_output_file = script_dir / "figures" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.legend()
     plt.grid(True, alpha = 0.3)
@@ -79,7 +85,3 @@ def printt(**kwargs):
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-
-stone = 10
-
-printt(stone_value=stone)
