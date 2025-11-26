@@ -255,15 +255,19 @@ def calcF(Fe, Fw, Fn, Fs,
     # ADD CODE HERE
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            Fe[i,j] = 0
-            Fw[i,j] = 0
-            Fn[i,j] = 0
-            Fs[i,j] = 0
+            # Fe[i,j] = 0 # ADD CODE HERE
+            # Fw[i,j] = 0 # ADD CODE HERE
+            # Fn[i,j] = 0 # ADD CODE HERE
+            # Fs[i,j] = 0 # ADD CODE HERE
             """
             --------------------------------
             # ADDED CODE
             --------------------------------
             """
+            Fe[i,j] = 0
+            Fw[i,j] = 0
+            Fn[i,j] = 0
+            Fs[i,j] = 0
 
 def calcHybridCoeffs(aE, aW, aN, aS, aP,
                      nI, nJ, De, Dw, Dn, Ds, Fe, Fw, Fn, Fs,
@@ -381,6 +385,7 @@ def solveTDMA(phi, P, Q,
     # so it can be reused for all variables.
     # Do it in two directions
     # Only change arrays in first row of argument list!
+    
     # ADD CODE HERE
     # for linSolIter in range(0,nLinSolIter):
     #     # March from west to east
@@ -457,6 +462,12 @@ def correctBoundaries(T,
     # ADDED CODE
     --------------------------------
     """
+    # Copy T to walls where (non-)homogeneous Neumann is applied
+    # Note that specified heat flux is positive INTO computational domain!
+    
+    
+    # Copy T to outlets (where homogeneous Neumann should always be applied):
+    
 
 
     """
