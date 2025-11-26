@@ -38,7 +38,7 @@ import Martin_T2_codeFunctions as cF
 #===================== Inputs =====================
 
 # Case number (same as case in description, 1-25)
-caseID = 1
+caseID = 8
 
 # Geometric and mesh inputs (mesh is read from file)
 # L, H, mI, mJ, nI, nJ are set later, from the imported mesh

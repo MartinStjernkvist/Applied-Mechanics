@@ -11,9 +11,11 @@ import os # For saving plots
 
 def createMesh(pointX, pointY,
                mI, mJ, pointXvector, pointYvector):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Only changes arrays in first row of argument list!
     # Sets point coordinates for Task 2 cases.
     for i in range(0, mI):
@@ -23,9 +25,11 @@ def createMesh(pointX, pointY,
     
 def calcNodePositions(nodeX, nodeY,
                       nI, nJ, pointX, pointY):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Only changes arrays in first row of argument list!
     # Calculates node coordinates.
     # Internal nodes:
@@ -49,12 +53,23 @@ def calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
     # ADD CODE HERE
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            dx_PE[i,j] = 0 # ADD CODE HERE
-            dx_WP[i,j] = 0 # ADD CODE HERE
-            dy_PN[i,j] = 0 # ADD CODE HERE
-            dy_SP[i,j] = 0 # ADD CODE HERE
-            dx_we[i,j] = 0 # ADD CODE HERE
-            dy_sn[i,j] = 0 # ADD CODE HERE
+            # dx_PE[i,j] = 0 # ADD CODE HERE
+            # dx_WP[i,j] = 0 # ADD CODE HERE
+            # dy_PN[i,j] = 0 # ADD CODE HERE
+            # dy_SP[i,j] = 0 # ADD CODE HERE
+            # dx_we[i,j] = 0 # ADD CODE HERE
+            # dy_sn[i,j] = 0 # ADD CODE HERE
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """     
+            dx_PE[i,j] = 0 
+            dx_WP[i,j] = 0 
+            dy_PN[i,j] = 0 
+            dy_SP[i,j] = 0 
+            dx_we[i,j] = 0 
+            dy_sn[i,j] = 0 
 
 def calcInterpolationFactors(fxe, fxw, fyn, fys,
                              nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn):
@@ -64,16 +79,27 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
     # ADD CODE HERE
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            fxe[i,j] = 0 # ADD CODE HERE
-            fxw[i,j] = 0 # ADD CODE HERE
-            fyn[i,j] = 0 # ADD CODE HERE
-            fys[i,j] = 0 # ADD CODE HERE 
+            # fxe[i,j] = 0 # ADD CODE HERE
+            # fxw[i,j] = 0 # ADD CODE HERE
+            # fyn[i,j] = 0 # ADD CODE HERE
+            # fys[i,j] = 0 # ADD CODE HERE 
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+            fxe[i,j] = 0
+            fxw[i,j] = 0
+            fyn[i,j] = 0
+            fys[i,j] = 0 
 
 def initArray(T,
               T_init):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Sets initial default temperature
     # (in all nodes, for contour plot).
     T[:,:] = T_init
@@ -84,30 +110,60 @@ def setDirichletBCs(T,
     # (only changes arrays in first row of argument list)
     # Note that a value is needed in all nodes for contour plot
     # Inlets (found by velocity into domain):
+    # for i in range(nI):
+    #     j = nJ-1
+    #     # ADD CODE HERE
+    #     j = 0
+    #     # ADD CODE HERE
+    # for j in range(nJ):
+    #     i = nI-1
+    #     # ADD CODE HERE
+    #     i = 0
+    #     # ADD CODE HERE
+    # # Outlets:
+    #     # Homogeneous Neumann:
+    #     # Set coefficients later, default value already set
+    # # Walls (found by zero velocity), Dirichlet or initial guess:
+    # for i in range(nI):
+    #     j = nJ-1
+    #     # ADD CODE HERE
+    #     j = 0
+    #     # ADD CODE HERE
+    # for j in range(nJ):
+    #     i = nI-1
+    #     # ADD CODE HERE
+    #     i = 0
+    #     # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for i in range(nI):
         j = nJ-1
-        # ADD CODE HERE
+        
         j = 0
-        # ADD CODE HERE
+        
     for j in range(nJ):
         i = nI-1
-        # ADD CODE HERE
+        
         i = 0
-        # ADD CODE HERE
+        
     # Outlets:
         # Homogeneous Neumann:
         # Set coefficients later, default value already set
+        
     # Walls (found by zero velocity), Dirichlet or initial guess:
     for i in range(nI):
         j = nJ-1
-        # ADD CODE HERE
+        
         j = 0
-        # ADD CODE HERE
+        
     for j in range(nJ):
         i = nI-1
-        # ADD CODE HERE
+        
         i = 0
-        # ADD CODE HERE
+        
 
 def calcSourceTerms(Su, Sp,
                     nI, nJ, q_wall, Cp, u, v, dx_we, dy_sn, rho, deltaT, T_o, caseID):
@@ -115,28 +171,56 @@ def calcSourceTerms(Su, Sp,
     # (only change arrays in first row of argument list)
     # Keep 'nan' where values are not needed!
     
+    # # Default values:
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         Su[i,j] = 0 # ADD CODE HERE
+    #         Sp[i,j] = 0 # ADD CODE HERE
+
+    # # Heat rate walls (found by zero velocity):
+    # for i in range(1,nI-1):
+    #     j = nJ-2
+    #     # ADD CODE HERE
+    #     j = 1
+    #     # ADD CODE HERE
+    # for j in range(1,nJ-1):
+    #     i = nI-2
+    #     # ADD CODE HERE
+    #     i = 1
+    #     # ADD CODE HERE
+
+    # # Time term:
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         pass # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     # Default values:
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            Su[i,j] = 0 # ADD CODE HERE
-            Sp[i,j] = 0 # ADD CODE HERE
+            Su[i,j] = 0 
+            Sp[i,j] = 0 
 
     # Heat rate walls (found by zero velocity):
     for i in range(1,nI-1):
         j = nJ-2
-        # ADD CODE HERE
+        
         j = 1
-        # ADD CODE HERE
+        
     for j in range(1,nJ-1):
         i = nI-2
-        # ADD CODE HERE
+        
         i = 1
-        # ADD CODE HERE
+        
 
     # Time term:
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            pass # ADD CODE HERE
+            pass 
+    
 
 def calcD(De, Dw, Dn, Ds,
           gamma, nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn):
@@ -147,10 +231,19 @@ def calcD(De, Dw, Dn, Ds,
     # ADD CODE HERE
     for i in range (1,nI-1):
         for j in range(1,nJ-1):
-            De[i,j] = 0 # ADD CODE HERE
-            Dw[i,j] = 0 # ADD CODE HERE
-            Dn[i,j] = 0 # ADD CODE HERE
-            Ds[i,j] = 0 # ADD CODE HERE
+            # De[i,j] = 0 # ADD CODE HERE
+            # Dw[i,j] = 0 # ADD CODE HERE
+            # Dn[i,j] = 0 # ADD CODE HERE
+            # Ds[i,j] = 0 # ADD CODE HERE
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
+            De[i,j] = 0 
+            Dw[i,j] = 0 
+            Dn[i,j] = 0 
+            Ds[i,j] = 0 
 
 def calcF(Fe, Fw, Fn, Fs,
           rho, nI, nJ, dx_we, dy_sn, fxe, fxw, fyn, fys, u, v):
@@ -162,51 +255,96 @@ def calcF(Fe, Fw, Fn, Fs,
     # ADD CODE HERE
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            Fe[i,j] = 0 # ADD CODE HERE
-            Fw[i,j] = 0 # ADD CODE HERE
-            Fn[i,j] = 0 # ADD CODE HERE
-            Fs[i,j] = 0 # ADD CODE HERE
+            Fe[i,j] = 0
+            Fw[i,j] = 0
+            Fn[i,j] = 0
+            Fs[i,j] = 0
+            """
+            --------------------------------
+            # ADDED CODE
+            --------------------------------
+            """
 
 def calcHybridCoeffs(aE, aW, aN, aS, aP,
                      nI, nJ, De, Dw, Dn, Ds, Fe, Fw, Fn, Fs,
                      fxe, fxw, fyn, fys, dy_sn, Sp, u, v,
                      nodeX, nodeY, L, H, caseID):
     # (only changes arrays in first row of argument list)
+    # # Calculate constant Hybrid scheme coefficients (not taking into account boundary conditions)
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         aE[i,j] = 0 # ADD CODE HERE
+    #         aW[i,j] = 0 # ADD CODE HERE
+    #         aN[i,j] = 0 # ADD CODE HERE
+    #         aS[i,j] = 0 # ADD CODE HERE
+            
+    # # At outlets (found by velocity out of domain), set homogeneous Neumann
+    # for j in range(1,nJ-1):
+    #     i = nI-2
+    #     # ADD CODE HERE
+    #     i = 1
+    #     # ADD CODE HERE
+    # for i in range(1,nI-1):
+    #     j = nJ-2
+    #     # ADD CODE HERE
+    #     j = 1
+    #     # ADD CODE HERE
+    
+    # # (Homogeneous) Neumann walls (found by zero velocity):
+    # for i in range(1,nI-1):
+    #     j = nJ-2
+    #     # ADD CODE HERE
+    #     j = 1
+    #     # ADD CODE HERE
+    # for j in range(1,nJ-1):
+    #     i = nI-2
+    #     # ADD CODE HERE
+    #     i = 1
+    #     # ADD CODE HERE
+    
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):       
+    #         aP[i,j] = 0 # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     # Calculate constant Hybrid scheme coefficients (not taking into account boundary conditions)
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            aE[i,j] = 0 # ADD CODE HERE
-            aW[i,j] = 0 # ADD CODE HERE
-            aN[i,j] = 0 # ADD CODE HERE
-            aS[i,j] = 0 # ADD CODE HERE
+            aE[i,j] = 0 
+            aW[i,j] = 0 
+            aN[i,j] = 0
+            aS[i,j] = 0
             
     # At outlets (found by velocity out of domain), set homogeneous Neumann
     for j in range(1,nJ-1):
         i = nI-2
-        # ADD CODE HERE
+
         i = 1
-        # ADD CODE HERE
+        
     for i in range(1,nI-1):
         j = nJ-2
-        # ADD CODE HERE
+        
         j = 1
-        # ADD CODE HERE
+        
     
     # (Homogeneous) Neumann walls (found by zero velocity):
     for i in range(1,nI-1):
         j = nJ-2
-        # ADD CODE HERE
+        
         j = 1
-        # ADD CODE HERE
+        
     for j in range(1,nJ-1):
         i = nI-2
-        # ADD CODE HERE
+        
         i = 1
-        # ADD CODE HERE
+        
     
     for i in range(1,nI-1):
         for j in range(1,nJ-1):       
-            aP[i,j] = 0 # ADD CODE HERE
+            aP[i,j] = 0 
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
@@ -215,13 +353,27 @@ def solveGaussSeidel(phi,
     # Do it in two directions
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    for linSolIter in range(nLinSolIter):   
+    # for linSolIter in range(nLinSolIter):   
+    #     for i in range(1,nI-1):
+    #         for j in range(1,nJ-1):
+    #             pass # ADD CODE HERE
+    #     for j in range(1,nJ-1):
+    #         for i in range(1,nI-1):
+    #             pass # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    for linSolIter in range(nLinSolIter):  
+         
         for i in range(1,nI-1):
             for j in range(1,nJ-1):
-                pass # ADD CODE HERE
+                pass 
+            
         for j in range(1,nJ-1):
             for i in range(1,nI-1):
-                pass # ADD CODE HERE
+                pass 
 
 def solveTDMA(phi, P, Q,
               nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
@@ -230,32 +382,63 @@ def solveTDMA(phi, P, Q,
     # Do it in two directions
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
+    # for linSolIter in range(0,nLinSolIter):
+    #     # March from west to east
+    #     # Sweep from south to north
+    #     for j in range(1,nJ-1):
+    #         # ADD CODE HERE
+
+    #         for i in range(2,nI-2):
+    #             pass # ADD CODE HERE
+                
+    #         pass# ADD CODE HERE
+            
+    #         for i in reversed(range(1,nI-1)):
+    #             pass # ADD CODE HERE
+            
+    #     # March from north to south
+    #     # Sweep from west to east 
+    #     for i in range(1,nI-1):
+    #         pass # ADD CODE HERE
+            
+    #         for j in range(2,nJ-2):
+    #             pass # ADD CODE HERE
+                
+    #         pass # ADD CODE HERE
+            
+    #         for j in reversed(range(1,nJ-1)):
+    #             pass # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for linSolIter in range(0,nLinSolIter):
         # March from west to east
         # Sweep from south to north
         for j in range(1,nJ-1):
-            # ADD CODE HERE
+            
 
             for i in range(2,nI-2):
-                pass # ADD CODE HERE
+                pass 
                 
-            pass# ADD CODE HERE
+            pass
             
             for i in reversed(range(1,nI-1)):
-                pass # ADD CODE HERE
+                pass 
             
         # March from north to south
         # Sweep from west to east 
         for i in range(1,nI-1):
-            pass # ADD CODE HERE
+            pass 
             
             for j in range(2,nJ-2):
-                pass # ADD CODE HERE
+                pass 
                 
-            pass # ADD CODE HERE
+            pass 
             
             for j in reversed(range(1,nJ-1)):
-                pass # ADD CODE HERE
+                pass 
 
 def correctBoundaries(T,
                       nI, nJ, q_wall, k, dx_PE, dx_WP, dy_PN, dy_SP,
@@ -268,7 +451,19 @@ def correctBoundaries(T,
     
     # Copy T to outlets (where homogeneous Neumann should always be applied):
     # ADD CODE HERE
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
+
+    """
+    ################################
+    # DO NOT CHANGE ANYTHING BELOW!
+    ################################
+    """
     # Set cornerpoint values to average of neighbouring boundary points
     T[0,0]   = 0.5*(T[1,0]+T[0,1])     # DO NOT CHANGE
     T[-1,0]  = 0.5*(T[-2,0]+T[-1,1])   # DO NOT CHANGE
@@ -278,9 +473,23 @@ def correctBoundaries(T,
 def calcNormalizedResiduals(res,
                             nI, nJ, explCorrIter, T,
                             aP, aE, aW, aN, aS, Su, Sp):
+    # # Compute and print residuals (taking into account normalization):
+    # # Non-normalized residual:
+    # r0 = 1.0 # ADD CODE HERE
+
+    # # Append residual at present iteration to list of all residuals, for plotting:
+    # res.append(r0)
+    
+    # print('iteration: %5d, res = %.5e' % (explCorrIter, res[-1]/res[0]))
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     # Compute and print residuals (taking into account normalization):
     # Non-normalized residual:
-    r0 = 1.0 # ADD CODE HERE
+    r0 = 1.0
 
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r0)
@@ -289,9 +498,11 @@ def calcNormalizedResiduals(res,
 
 def probe(nodeX, nodeY, T, probeX, probeY, method='linear'):
     # method (str): interpolation method ('linear', 'nearest', 'cubic')
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     from scipy.interpolate import griddata
     # Flatten the grid for griddata
     points = np.column_stack((nodeX.ravel(), nodeY.ravel()))
@@ -307,9 +518,11 @@ def createDefaultPlots(
                        dx_WP, dx_PE, dy_SP, dy_PN, Fe, Fw, Fn, Fs,
                        aE, aW, aN, aS, L, H, T, u, v, k,
                        explCorrIter, res, grid_type, caseID):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # (Do not change any input arrays!)
     if not os.path.isdir('Figures'):
         os.makedirs('Figures')
@@ -374,6 +587,7 @@ def createDefaultPlots(
         if u[i,j] == 0 and v[i,j] == 0:
             qX[i,j] = 0
             qY[i,j] = 1 # ADD CODE HERE
+            
     plt.figure()
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')

@@ -12,7 +12,7 @@ import Martin_T2_codeFunctions as cF
 #===================== Inputs =====================
 
 # Case number (same as case in description, 1-25)
-caseID  = 1
+caseID  = 8
 rho     = 1      # Density
 k       = 1      # Thermal conductivity 
 Cp      = 500    # Specific heat
@@ -52,11 +52,12 @@ rTol = 1e-07
 # (will only be the case if the order of operations are exactly the same)
 # aTol = 0
 # rTol = 0
-
+"""
 ###########################################
 # DON'T CHANGE ANYTHING BELOW!            #
 # DON'T TRY TO UNDERSTAND THE CODE BELOW! #
 ###########################################
+"""
 # For Håkan: First switch useModData to False to generate modified arrays. Then switch back.
 # This does not work for students.
 # Note: Modified arrays is for those where the output of the function will not (necessarily)
