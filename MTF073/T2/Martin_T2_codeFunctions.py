@@ -142,8 +142,11 @@ def setDirichletBCs(T,
     # ADDED CODE
     --------------------------------
     """
+    # Inlets (found by velocity into domain):
     for i in range(nI):
         j = nJ-1
+        T[0, j] = T_in
+
         
         j = 0
         
@@ -552,8 +555,8 @@ def createDefaultPlots(
     plt.vlines(pointX[:,0],pointY[0,0],pointY[0,-1],colors = 'k',linestyles = 'dashed')
     plt.hlines(pointY[0,:],pointX[0,0],pointX[-1,0],colors = 'k',linestyles = 'dashed')
     plt.plot(nodeX, nodeY, 'ro')
-    plt.show()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_mesh.png')
+    plt.show()
     
     # Plot velocity vectors
     plt.figure()
@@ -562,8 +565,8 @@ def createDefaultPlots(
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.axis('equal')
-    plt.show()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_velocityVectors.png')
+    plt.show()
     
     # Plot temperature contour
     plt.figure()
@@ -576,8 +579,8 @@ def createDefaultPlots(
     plt.ylabel('y [m]')
     plt.axis('equal')
     plt.tight_layout()
-    plt.show()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_temperatureDistribution.png')
+    plt.show()
     
     # Plot heat flux vectors NORMAL TO WALL boundary face centers ONLY (not in corners)
     # Use temperature gradient just inside domain (note difference to set heat flux)
@@ -614,8 +617,8 @@ def createDefaultPlots(
     plt.xlim(-0.5*L, 3/2*L)
     plt.ylim(-0.5*H, 3/2*H)
     plt.tight_layout()
-    plt.show()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_wallHeatFlux.png')
+    plt.show()
     
     # Plot residual convergence
     plt.figure()
@@ -627,8 +630,8 @@ def createDefaultPlots(
     plt.plot(resLength, normalized)
     plt.grid()
     plt.yscale('log')
-    plt.show()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_residualConvergence.png')    
+    plt.show()
 
 def createTimeEvolutionPlots(
                              probeX, probeY, probeValues, caseID, grid_type):
@@ -645,9 +648,9 @@ def createTimeEvolutionPlots(
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_timeEvolution.png')
-
+    plt.show()
+      
 def createAnimatedPlots(
                        nodeX, nodeY, savedT):
     # Create animated plot
