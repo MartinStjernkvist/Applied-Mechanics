@@ -64,12 +64,15 @@ def calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
             # ADDED CODE
             --------------------------------
             """     
-            dx_PE[i,j] = 0 
-            dx_WP[i,j] = 0 
-            dy_PN[i,j] = 0 
-            dy_SP[i,j] = 0 
-            dx_we[i,j] = 0 
-            dy_sn[i,j] = 0 
+            
+            dx_PE[i, j] = nodeX[i + 1, j] - nodeX[i, j] # P->E
+            dx_WP[i, j] = nodeX[i, j] - nodeX[i - 1, j] # W->P
+            
+            dy_PN[i, j] = nodeY[i, j + 1] - nodeY[i, j] # P->N
+            dy_SP[i, j] = nodeY[i, j] - nodeY[i, j - 1] # S->P
+            
+            dx_we[i, j] = pointX[i, 0] - pointX[i - 1, 0] # Length W-E
+            dy_sn[i, j] = pointY[0, j] - pointY[0, j - 1] # Length S-N
 
 def calcInterpolationFactors(fxe, fxw, fyn, fys,
                              nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn):
@@ -88,10 +91,10 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
             # ADDED CODE
             --------------------------------
             """
-            fxe[i,j] = 0
-            fxw[i,j] = 0
-            fyn[i,j] = 0
-            fys[i,j] = 0 
+            fxe[i, j] = 0.5 * dx_we[i, j] / dx_PE[i, j] # P->face e / P->E
+            fxw[i, j] = 0.5 * dx_we[i, j] / dx_WP[i, j] # face w->P  / W->P
+            fyn[i, j] = 0.5 * dy_sn[i, j] / dy_PN[i, j] # P->face n / P->N
+            fys[i, j] = 0.5 * dy_sn[i, j] / dy_SP[i, j] # face s->P  / S->P
 
 def initArray(T,
               T_init):
@@ -240,10 +243,10 @@ def calcD(De, Dw, Dn, Ds,
             # ADDED CODE
             --------------------------------
             """
-            De[i,j] = 0 
-            Dw[i,j] = 0 
-            Dn[i,j] = 0 
-            Ds[i,j] = 0 
+            De[i,j] = gamma / dx_PE[i,j]
+            Dw[i,j] = gamma / dx_WP[i,j]
+            Dn[i,j] = gamma / dy_PN[i,j]
+            Ds[i,j] = gamma / dy_SP[i,j]
 
 def calcF(Fe, Fw, Fn, Fs,
           rho, nI, nJ, dx_we, dy_sn, fxe, fxw, fyn, fys, u, v):
@@ -264,10 +267,10 @@ def calcF(Fe, Fw, Fn, Fs,
             # ADDED CODE
             --------------------------------
             """
-            Fe[i,j] = 0
-            Fw[i,j] = 0
-            Fn[i,j] = 0
-            Fs[i,j] = 0
+            Fe[i,j] = rho * u[i, j]
+            Fw[i,j] = rho * u[i, j]
+            Fn[i,j] = rho * v[i, j]
+            Fs[i,j] = rho * v[i, j]
 
 def calcHybridCoeffs(aE, aW, aN, aS, aP,
                      nI, nJ, De, Dw, Dn, Ds, Fe, Fw, Fn, Fs,
@@ -317,10 +320,10 @@ def calcHybridCoeffs(aE, aW, aN, aS, aP,
     # Calculate constant Hybrid scheme coefficients (not taking into account boundary conditions)
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            aE[i,j] = 0 
-            aW[i,j] = 0 
-            aN[i,j] = 0
-            aS[i,j] = 0
+            aE[i,j] = np.max([-Fe[i, j], De[i, j] - Fe[i, j] / 2, 0])
+            aW[i,j] = np.max([Fw[i, j], Dw[i, j] + Fw[i, j] / 2, 0])
+            aN[i,j] = np.max([-Fn[i, j], Dn[i, j] - Fn[i, j] / 2, 0])
+            aS[i,j] = np.max([Fs[i, j], Ds[i, j] + Fs[i, j] / 2, 0])
             
     # At outlets (found by velocity out of domain), set homogeneous Neumann
     for j in range(1,nJ-1):
@@ -348,7 +351,7 @@ def calcHybridCoeffs(aE, aW, aN, aS, aP,
     
     for i in range(1,nI-1):
         for j in range(1,nJ-1):       
-            aP[i,j] = 0 
+            aP[i,j] = aE[i,j] + aW[i,j] + aN[i,j] + aS[i,j] - Sp[i,j]
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
