@@ -249,10 +249,10 @@ def calcD(De, Dw, Dn, Ds,
             # ADDED CODE
             --------------------------------
             """
-            De[i,j] = gamma / dx_PE[i,j]
-            Dw[i,j] = gamma / dx_WP[i,j]
-            Dn[i,j] = gamma / dy_PN[i,j]
-            Ds[i,j] = gamma / dy_SP[i,j]
+            De[i,j] = gamma / dx_PE[i,j] * dy_sn[i,j]
+            Dw[i,j] = gamma / dx_WP[i,j] * dy_sn[i,j]
+            Dn[i,j] = gamma / dy_PN[i,j] * dx_we[i,j]
+            Ds[i,j] = gamma / dy_SP[i,j] * dx_we[i,j]
 
 def calcF(Fe, Fw, Fn, Fs,
           rho, nI, nJ, dx_we, dy_sn, fxe, fxw, fyn, fys, u, v):
@@ -273,10 +273,10 @@ def calcF(Fe, Fw, Fn, Fs,
             # ADDED CODE
             --------------------------------
             """
-            Fe[i,j] = rho * u[i, j]
-            Fw[i,j] = rho * u[i, j]
-            Fn[i,j] = rho * v[i, j]
-            Fs[i,j] = rho * v[i, j]
+            Fe[i,j] = rho * u[i, j] * dy_sn[i,j]
+            Fw[i,j] = rho * u[i, j] * dy_sn[i,j]
+            Fn[i,j] = rho * v[i, j] * dx_we[i,j]
+            Fs[i,j] = rho * v[i, j] * dx_we[i,j]
 
 def calcHybridCoeffs(aE, aW, aN, aS, aP,
                      nI, nJ, De, Dw, Dn, Ds, Fe, Fw, Fn, Fs,
