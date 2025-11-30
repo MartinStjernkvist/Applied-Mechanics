@@ -218,10 +218,11 @@ def calcSourceTerms(Su, Sp,
         
         j = 1
         
-    for j in range(1,nJ-1):
+    for j in range(3,nJ-4): # modified
         i = nI-2
-        
+    
         i = 1
+        Su[i,j] = q_wall / Cp * dy_sn[i, j]
         
 
     # Time term:
