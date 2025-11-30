@@ -145,8 +145,10 @@ def setDirichletBCs(T,
     # Inlets (found by velocity into domain):
     for i in range(nI):
         j = nJ-1
-        T[0, j] = T_in
-
+        T[0, j-1] = T_in
+        T[0, j-2] = T_in
+        T[0, j-3] = T_in
+    
         
         j = 0
         
