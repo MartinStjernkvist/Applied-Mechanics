@@ -273,10 +273,10 @@ def calcF(Fe, Fw, Fn, Fs,
             # ADDED CODE
             --------------------------------
             """
-            Fe[i,j] = rho * u[i, j] * dy_sn[i,j]
-            Fw[i,j] = rho * u[i, j] * dy_sn[i,j]
-            Fn[i,j] = rho * v[i, j] * dx_we[i,j]
-            Fs[i,j] = rho * v[i, j] * dx_we[i,j]
+            Fe[i,j] = rho * (fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j]) * dy_sn[i,j]
+            Fw[i,j] = rho * (fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j]) * dy_sn[i,j]
+            Fn[i,j] = rho * (fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j]) * dx_we[i,j]
+            Fs[i,j] = rho * (fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j]) * dx_we[i,j]
 
 def calcHybridCoeffs(aE, aW, aN, aS, aP,
                      nI, nJ, De, Dw, Dn, Ds, Fe, Fw, Fn, Fs,
