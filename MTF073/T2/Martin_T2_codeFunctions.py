@@ -145,10 +145,9 @@ def setDirichletBCs(T,
     # Inlets (found by velocity into domain):
     for i in range(nI):
         j = nJ-1
-        T[0, j-1] = T_in
-        T[0, j-2] = T_in
-        T[0, j-3] = T_in
-    
+        # T[0, j-1] = T_in
+        # T[0, j-2] = T_in
+        # T[0, j-3] = T_in
         
         j = 0
         
@@ -156,7 +155,9 @@ def setDirichletBCs(T,
         i = nI-1
         
         i = 0
-        
+        if u[i,j] > 0: 
+            T[i,j] = T_in
+            
     # Outlets:
         # Homogeneous Neumann:
         # Set coefficients later, default value already set
@@ -218,11 +219,12 @@ def calcSourceTerms(Su, Sp,
         
         j = 1
         
-    for j in range(3,nJ-4): # modified
+    for j in range(1,nJ-1): # modified
         i = nI-2
     
         i = 1
-        Su[i,j] = q_wall / Cp * dy_sn[i, j]
+        if u[i-1,j] == 0 and v[i-1,j] == 0:
+            Su[i,j] = q_wall / Cp * dy_sn[i, j]
         
 
     # Time term:
@@ -336,6 +338,8 @@ def calcHybridCoeffs(aE, aW, aN, aS, aP,
         i = nI-2
 
         i = 1
+        if u[i - 1, j] < 0:
+            aW[i, j] = 0
         
     for i in range(1,nI-1):
         j = nJ-2
@@ -346,14 +350,21 @@ def calcHybridCoeffs(aE, aW, aN, aS, aP,
     # (Homogeneous) Neumann walls (found by zero velocity):
     for i in range(1,nI-1):
         j = nJ-2
-        
+        if u[i,j+1] == 0 and v[i,j+1] == 0:
+            aN[i, j] = 0
+            
         j = 1
+        if u[i,j-1] == 0 and v[i,j-1] == 0:
+            aS[i, j] = 0
         
     for j in range(1,nJ-1):
         i = nI-2
-        
+        if v[i+1,j] == 0 and v[i+1,j] == 0:
+            aE[i, j] = 0
+            
         i = 1
-        
+        if v[i-1,j] == 0 and v[i-1,j] == 0:
+            aW[i, j] = 0
     
     for i in range(1,nI-1):
         for j in range(1,nJ-1):       
