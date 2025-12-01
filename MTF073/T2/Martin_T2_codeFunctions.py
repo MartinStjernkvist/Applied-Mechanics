@@ -328,10 +328,11 @@ def calcHybridCoeffs(aE, aW, aN, aS, aP,
     # Calculate constant Hybrid scheme coefficients (not taking into account boundary conditions)
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            aE[i,j] = np.max([-Fe[i, j], De[i, j] - Fe[i, j] / 2, 0])
-            aW[i,j] = np.max([Fw[i, j], Dw[i, j] + Fw[i, j] / 2, 0])
-            aN[i,j] = np.max([-Fn[i, j], Dn[i, j] - Fn[i, j] / 2, 0])
-            aS[i,j] = np.max([Fs[i, j], Ds[i, j] + Fs[i, j] / 2, 0])
+            
+            aE[i,j] = np.max([-Fe[i, j], De[i, j] - fxe[i,j] * Fe[i, j], 0])
+            aW[i,j] = np.max([Fw[i, j], Dw[i, j] + fxw[i,j] * Fw[i, j], 0])
+            aN[i,j] = np.max([-Fn[i, j], Dn[i, j] - fyn[i,j] * Fn[i, j], 0])
+            aS[i,j] = np.max([Fs[i, j], Ds[i, j] + fys[i,j] * Fs[i, j], 0])
             
     # At outlets (found by velocity out of domain), set homogeneous Neumann
     for j in range(1,nJ-1):
