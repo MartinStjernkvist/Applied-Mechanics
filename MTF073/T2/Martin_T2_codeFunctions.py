@@ -360,11 +360,11 @@ def calcHybridCoeffs(aE, aW, aN, aS, aP,
         
     for j in range(1,nJ-1):
         i = nI-2
-        if v[i+1,j] == 0 and v[i+1,j] == 0:
+        if u[i+1,j] == 0 and v[i+1,j] == 0:
             aE[i, j] = 0
             
         i = 1
-        if v[i-1,j] == 0 and v[i-1,j] == 0:
+        if u[i-1,j] == 0 and v[i-1,j] == 0:
             aW[i, j] = 0
     
     for i in range(1,nI-1):
