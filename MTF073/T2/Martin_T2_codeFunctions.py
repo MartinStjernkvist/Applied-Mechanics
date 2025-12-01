@@ -450,29 +450,66 @@ def solveTDMA(phi, P, Q,
     for linSolIter in range(0,nLinSolIter):
         # March from west to east
         # Sweep from south to north
-        for j in range(1,nJ-1):
+        for j in range(1, nJ - 1):
             
-
-            for i in range(2,nI-2):
-                pass 
+            i = 1
+            
+            a = aP
+            b = aE
+            c = aW
+            
+            d = (aN[i, j] * phi[i, j + 1] + 
+                 aS[i, j] * phi[i, j - 1] + 
+                 Su[i, j])
+            
+            P[i, j] = b[i, j] / a[i, j]
+            Q[i, j] = (d + c[i, j] * phi[i - 1, j]) / a[i, j]
+            
+            for i in range(2, nI - 1):
                 
-            pass
+                d = (aN[i, j] * phi[i, j + 1] + 
+                     aS[i, j] * phi[i, j - 1] + 
+                     Su[i, j])
+                
+                denominator = a[i, j] - c[i, j] * P[i - 1, j]
+                
+                P[i, j] = b[i, j] / denominator
+                Q[i, j] = (d + c[i, j] * Q[i - 1, j]) / denominator
             
-            for i in reversed(range(1,nI-1)):
-                pass 
+            for i in reversed(range(1, nI - 1)):
+                phi[i, j] = P[i, j] * phi[i + 1, j] + Q[i, j]
             
         # March from north to south
         # Sweep from west to east 
-        for i in range(1,nI-1):
-            pass 
+        for i in range(1, nI - 1):
             
-            for j in range(2,nJ-2):
-                pass 
+            j = nJ - 2
+            
+            a = aP
+            b = aS
+            c = aN
+            
+            d = (aE[i, j] * phi[i + 1, j] + 
+                 aW[i, j] * phi[i - 1, j] + 
+                 Su[i, j])
+            
+            P[i, j] = b[i, j] / a[i, j]
+            Q[i, j] = (d + c[i, j] * phi[i, j + 1]) / a[i, j]
+            
+            for j in range(nJ - 3, 0, -1):
+            
+                d = (aE[i, j] * phi[i + 1, j] + 
+                     aW[i, j] * phi[i - 1, j] + 
+                     Su[i, j])
                 
-            pass 
+                denominator = a[i, j] - c[i, j] * P[i, j + 1]
+                
+                P[i, j] = b[i, j] / denominator
+                Q[i, j] = (d + c[i, j] * Q[i, j + 1]) / denominator
             
-            for j in reversed(range(1,nJ-1)):
-                pass 
+            for j in reversed(range(1, nJ - 1)):
+                
+                phi[i, j] = P[i, j] * phi[i, j - 1] + Q[i, j]
 
 def correctBoundaries(T,
                       nI, nJ, q_wall, k, dx_PE, dx_WP, dy_PN, dy_SP,
