@@ -394,11 +394,19 @@ def solveGaussSeidel(phi,
          
         for i in range(1,nI-1):
             for j in range(1,nJ-1):
-                pass 
+                phi[i,j] = (aE[i, j] * phi[i + 1, j] +
+                            aW[i, j] * phi[i - 1, j] +
+                            aN[i, j] * phi[i, j + 1] +
+                            aS[i, j] * phi[i, j - 1] +
+                            Su[i, j]) / aP[i, j]
             
         for j in range(1,nJ-1):
             for i in range(1,nI-1):
-                pass 
+                phi[i,j] = (aE[i, j] * phi[i + 1, j] +
+                            aW[i, j] * phi[i - 1, j] +
+                            aN[i, j] * phi[i, j + 1] +
+                            aS[i, j] * phi[i, j - 1] +
+                            Su[i, j]) / aP[i, j]
 
 def solveTDMA(phi, P, Q,
               nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
