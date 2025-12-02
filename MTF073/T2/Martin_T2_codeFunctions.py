@@ -454,27 +454,30 @@ def solveTDMA(phi, P, Q,
             
             i = 1
             
-            a = aP
-            b = aE
-            c = aW
+            a = aP[i, j]
+            b = aE[i, j]
+            c = aW[i, j]
             
             d = (aN[i, j] * phi[i, j + 1] + 
                  aS[i, j] * phi[i, j - 1] + 
                  Su[i, j])
             
-            P[i, j] = b[i, j] / a[i, j]
-            Q[i, j] = (d + c[i, j] * phi[i - 1, j]) / a[i, j]
+            P[i, j] = b / a
+            Q[i, j] = (d + c * phi[i - 1, j]) / a
             
             for i in range(2, nI - 1):
                 
+                a = aP[i, j]
+                b = aE[i, j]
+                c = aW[i, j]
                 d = (aN[i, j] * phi[i, j + 1] + 
                      aS[i, j] * phi[i, j - 1] + 
                      Su[i, j])
                 
-                denominator = a[i, j] - c[i, j] * P[i - 1, j]
+                denominator = a - c * P[i - 1, j]
                 
-                P[i, j] = b[i, j] / denominator
-                Q[i, j] = (d + c[i, j] * Q[i - 1, j]) / denominator
+                P[i, j] = b / denominator
+                Q[i, j] = (d + c * Q[i - 1, j]) / denominator
             
             for i in reversed(range(1, nI - 1)):
                 phi[i, j] = P[i, j] * phi[i + 1, j] + Q[i, j]
@@ -483,33 +486,35 @@ def solveTDMA(phi, P, Q,
         # Sweep from west to east 
         for i in range(1, nI - 1):
             
-            j = nJ - 2
+            j = 1
             
-            a = aP
-            b = aS
-            c = aN
-            
+            a = aP[i, j]
+            b = aN[i, j]
+            c = aS[i, j]
             d = (aE[i, j] * phi[i + 1, j] + 
                  aW[i, j] * phi[i - 1, j] + 
                  Su[i, j])
             
-            P[i, j] = b[i, j] / a[i, j]
-            Q[i, j] = (d + c[i, j] * phi[i, j + 1]) / a[i, j]
+            P[i, j] = b / a
+            Q[i, j] = (d + c * phi[i, j - 1]) / a
             
-            for j in range(nJ - 3, 0, -1):
+            for j in range(2, nJ - 1):
             
+                a = aP[i, j]
+                b = aN[i, j]
+                c = aS[i, j]
                 d = (aE[i, j] * phi[i + 1, j] + 
                      aW[i, j] * phi[i - 1, j] + 
                      Su[i, j])
                 
-                denominator = a[i, j] - c[i, j] * P[i, j + 1]
+                denominator = a - c * P[i, j - 1]
                 
-                P[i, j] = b[i, j] / denominator
-                Q[i, j] = (d + c[i, j] * Q[i, j + 1]) / denominator
+                P[i, j] = b / denominator
+                Q[i, j] = (d + c * Q[i, j - 1]) / denominator
             
             for j in reversed(range(1, nJ - 1)):
                 
-                phi[i, j] = P[i, j] * phi[i, j - 1] + Q[i, j]
+                phi[i, j] = P[i, j] * phi[i, j + 1] + Q[i, j]
 
 def correctBoundaries(T,
                       nI, nJ, q_wall, k, dx_PE, dx_WP, dy_PN, dy_SP,
