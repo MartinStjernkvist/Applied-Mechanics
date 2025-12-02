@@ -556,13 +556,16 @@ def correctBoundaries(T,
         T[nI-1, j] = T[nI-2, j]
 
     # West
-    for i in range(1, nJ - 1):
+    for j in range(1, nJ - 1):
         
         if u[0, j] == 0:
             
             dx = dx_WP[1, j]
 
             T[0, j] = T[1, j] + (q_wall * dx / k)
+            
+        if u[0, j] < 0:
+            T[0, j] = T[1, j]
     
 
 
