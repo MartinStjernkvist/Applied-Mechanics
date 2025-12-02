@@ -599,11 +599,23 @@ def calcNormalizedResiduals(res,
     """
     # Compute and print residuals (taking into account normalization):
     # Non-normalized residual:
-    r0 = 1.0
+    r0 = 0
+    
+    for i in range(1, nI - 1):
+        for j in range(1, nJ - 1):
+            balance = (aP[i, j] * T[i, j] 
+                       - (aE[i, j] * T[i + 1, j]
+                        + aW[i, j] * T[i - 1, j] 
+                        + aN[i, j] * T[i, j + 1]
+                        + aS[i, j] * T[i, j - 1] 
+                        + Su[i, j]))
+            r0 += abs(balance)
 
     # Append residual at present iteration to list of all residuals, for plotting:
     res.append(r0)
     
+    
+      
     print('iteration: %5d, res = %.5e' % (explCorrIter, res[-1]/res[0]))
 
 def probe(nodeX, nodeY, T, probeX, probeY, method='linear'):
