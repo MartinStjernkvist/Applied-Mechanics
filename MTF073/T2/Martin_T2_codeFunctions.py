@@ -230,7 +230,10 @@ def calcSourceTerms(Su, Sp,
     # Time term:
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            pass 
+            volume = dx_we[i, j] * dy_sn[i, j]
+            inertia = (rho * volume) / deltaT
+            Su[i, j] += inertia * T_o[i, j]
+            Sp[i, j] -= inertia
     
 
 def calcD(De, Dw, Dn, Ds,

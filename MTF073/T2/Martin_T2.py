@@ -54,9 +54,10 @@ unsteady = False # True or False
 
 if unsteady:
     # For unsteady:
-    # ADD CODE HERE: PLAY WITH THESE ONCE YOUR CODE IS WORKING
+    """# ADD CODE HERE: PLAY WITH THESE ONCE YOUR CODE IS WORKING"""
     deltaT = 1   # ADD CODE HERE
     endTime = 50 # ADD CODE HERE
+    
     # Note that a frame is saved every "saveInterval" time step if
     # unsteady = True and createAnimatedPlots = True! Don't overload
     # your computer! Set createAnimatedPlots to False to save time.
@@ -77,7 +78,7 @@ T_east  = T_init # Default, initialization for (Homogeneous) Neumann
 T_west  = T_init # Default, initialization for (Homogeneous) Neumann
 T_north = T_init # Default, initialization for (Homogeneous) Neumann
 T_south = T_init # Default, initialization for (Homogeneous) Neumann
-q_wall  = 0      # Default heat flux at a wall
+q_wall  = 100      # Default heat flux at a wall
 T_in    = 20     # Inlet temperature
 T_north = 10     # North wall Dirichlet value
 
