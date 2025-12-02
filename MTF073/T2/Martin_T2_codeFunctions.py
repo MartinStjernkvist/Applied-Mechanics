@@ -482,7 +482,7 @@ def solveTDMA(phi, P, Q,
             for i in reversed(range(1, nI - 1)):
                 phi[i, j] = P[i, j] * phi[i + 1, j] + Q[i, j]
             
-        # March from north to south
+        # March from north to south <- THIS IS WRONG, we're marching from south to north
         # Sweep from west to east 
         for i in range(1, nI - 1):
             
