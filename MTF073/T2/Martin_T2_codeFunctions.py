@@ -791,9 +791,9 @@ def createAnimatedPlots(
     # Create animation with looping
     ani = FuncAnimation(fig, update, frames=len(savedT), interval=100,
                         blit=False, repeat=True)
-    # plt.show()
+    plt.show()
     # Save as GIF (works without ffmpeg)
-    ani.save('animated_contour.gif', writer='pillow')
+    ani.save('Figures/Case_8_'+'animated_contour.gif', writer='pillow')
 
 def createAdditionalPlots():
     pass

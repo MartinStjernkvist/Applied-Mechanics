@@ -63,7 +63,7 @@ if unsteady:
     # your computer! Set createAnimatedPlots to False to save time.
     saveInterval = 2 # Save T at every "saveInterval" time step, for
                      # animated plot
-    createAnimatedPlots = False # True or False
+    createAnimatedPlots = True # True or False
     # Set any number of probe positions, relative to L and H (0-1)
     probeX = np.array([0.1, 0.9, 0.1, 0.9])
     probeY = np.array([0.1, 0.1, 0.9, 0.9])
@@ -80,7 +80,7 @@ T_north = T_init # Default, initialization for (Homogeneous) Neumann
 T_south = T_init # Default, initialization for (Homogeneous) Neumann
 q_wall  = 100      # Default heat flux at a wall
 T_in    = 20     # Inlet temperature
-T_north = 10     # North wall Dirichlet value
+T_north = 0     # North wall Dirichlet value
 
 # Solver inputs
 nExplCorrIter = 2000   # Maximum number of explicit correction iterations
