@@ -542,6 +542,28 @@ def correctBoundaries(T,
     
     # Copy T to outlets (where homogeneous Neumann should always be applied):
     
+    
+    # North boundary
+    for i in range(1, nI - 1):
+        T[i, nJ-1] = T[i, nJ-2]
+
+    # South
+    for i in range(1, nI - 1):
+        T[i, 0] = T[i, 1]
+        
+    # East
+    for j in range(1, nJ - 1):
+        T[nI-1, j] = T[nI-2, j]
+
+    # West
+    for i in range(1, nJ - 1):
+        
+        if u[0, j] == 0:
+            
+            dx = dx_WP[1, j]
+
+            T[0, j] = T[1, j] + (q_wall * dx / k)
+    
 
 
     """
