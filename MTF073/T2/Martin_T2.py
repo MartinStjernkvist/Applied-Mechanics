@@ -50,7 +50,7 @@ k       = 1      # Thermal conductivity
 Cp      = 500    # Specific heat
 gamma = k/Cp   # Calculated diffusion coefficient
 
-unsteady = False # True or False
+unsteady = True # True or False
 
 if unsteady:
     # For unsteady:

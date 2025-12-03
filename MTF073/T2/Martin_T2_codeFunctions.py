@@ -691,24 +691,66 @@ def createDefaultPlots(
     # Use temperature gradient just inside domain (note difference to set heat flux)
     qX = np.zeros((nI,nJ))*nan # Array for heat flux in x-direction, in nodes
     qY = np.zeros((nI,nJ))*nan # Array for heat flux in y-direction, in nodes
-    for j in range(1,nJ-1):
+    # for j in range(1,nJ-1):
+    #     i = 0
+    #     if u[i,j] == 0 and v[i,j] == 0:
+    #         qX[i,j] = 1 # ADD CODE HERE
+    #         qY[i,j] = 0
+    #     i = nI-1
+    #     if u[i,j] == 0 and v[i,j] == 0:
+    #         qX[i,j] = 1 # ADD CODE HERE
+    #         qY[i,j] = 0
+    # for i in range(1,nI-1):
+    #     j = 0
+    #     if u[i,j] == 0 and v[i,j] == 0:
+    #         qX[i,j] = 0
+    #         qY[i,j] = 1 # ADD CODE HERE
+    #     j = nJ-1
+    #     if u[i,j] == 0 and v[i,j] == 0:
+    #         qX[i,j] = 0
+    #         qY[i,j] = 1 # ADD CODE HERE
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    # VERTICAL WALLS (x = 0 e x = L)
+    for j in range(1, nJ - 1):
+        # WEST:
         i = 0
-        if u[i,j] == 0 and v[i,j] == 0:
-            qX[i,j] = 1 # ADD CODE HERE
-            qY[i,j] = 0
-        i = nI-1
-        if u[i,j] == 0 and v[i,j] == 0:
-            qX[i,j] = 1 # ADD CODE HERE
-            qY[i,j] = 0
-    for i in range(1,nI-1):
+        if u[i, j] == 0 and v[i, j] == 0:
+
+            dTdx = (T[1, j] - T[0, j]) / dx_WP[1, j]
+
+            qX[i, j] = -k * dTdx
+            qY[i, j] = 0.0
+
+        # EAST:
+        i = nI - 1
+        if u[i, j] == 0 and v[i, j] == 0:
+
+            dTdx = (T[nI - 1, j] - T[nI - 2, j]) / dx_PE[nI - 2, j]
+            qX[i, j] = -k * dTdx
+            qY[i, j] = 0.0
+
+    # HORIZONTAL WALLS (y = 0 e y = H)
+    for i in range(1, nI - 1):
+        # SOUTH:
         j = 0
-        if u[i,j] == 0 and v[i,j] == 0:
-            qX[i,j] = 0
-            qY[i,j] = 1 # ADD CODE HERE
-        j = nJ-1
-        if u[i,j] == 0 and v[i,j] == 0:
-            qX[i,j] = 0
-            qY[i,j] = 1 # ADD CODE HERE
+        if u[i, j] == 0 and v[i, j] == 0:
+
+            dTdy = (T[i, 1] - T[i, 0]) / dy_SP[i, 1]
+            qX[i, j] = 0.0
+            qY[i, j] = -k * dTdy
+
+        # NORTH: j = nJ-1
+        j = nJ - 1
+        if u[i, j] == 0 and v[i, j] == 0:
+
+            dTdy = (T[i, nJ - 1] - T[i, nJ - 2]) / dy_PN[i, nJ - 2]
+            qX[i, j] = 0.0
+            qY[i, j] = -k * dTdy
             
     plt.figure()
     plt.xlabel('x [m]')
