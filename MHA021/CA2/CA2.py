@@ -217,13 +217,13 @@ def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
     right_max_norm_stress = np.max(right_norm_stresses)
     print(f'maximum normal stress at right edge: {right_max_norm_stress:.3e} Pa')
     
-    print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection} vs {delta_analytic} \n Deflection: {right_max_norm_stress} vs {sigma_analytic}')
+    print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection} m vs {delta_analytic} m \n Deflection: {right_max_norm_stress} Pa vs {sigma_analytic} Pa')
 
     return avg_deflection, right_max_norm_stress
     
 # task1(element_type='cst', nelx=10, nely=5, plot_n_print=True)
 
-nelx_list = np.arange(50, 100, 25)
+nelx_list = np.arange(50, 250, 25)
 nely_list = [int(i * (H / W)) for i in nelx_list]
 print(nelx_list)
 print(nely_list)
@@ -232,15 +232,24 @@ avg_deflection_list = []
 max_norm_stress_list = []
 num_of_nodes_list = []
 for i in range(len(nelx_list)):
-    print('test')
-    # avg_deflection, right_max_norm_stress = task1(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
-    # avg_deflection_list.append(avg_deflection_list)
-    # max_norm_stress_list.append(max_norm_stress_list)
-    # num_of_nodes_list.append(nelx_list[i] * nely_list[i])
+    avg_deflection, right_max_norm_stress = task1(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    avg_deflection_list.append(avg_deflection)
+    max_norm_stress_list.append(right_max_norm_stress)
+    num_of_nodes_list.append(int(nelx_list[i] * nely_list[i]))
+    print(num_of_nodes_list)
+    print(np.shape(avg_deflection_list))
 
-plt.figure()
-plt.plot(num_of_nodes_list, avg_deflection_list)
-plt.show()
+    plt.figure()
+    plt.plot(num_of_nodes_list, avg_deflection_list, 'X-')
+    plt.xlabel('Number of nodes')
+    plt.ylabel('Average deflection (m)')
+    plt.show()
+    
+    plt.figure()
+    plt.plot(num_of_nodes_list, avg_deflection_list, 'X-', color='red')
+    plt.xlabel('Number of nodes')
+    plt.ylabel('Maximum normal stress (Pa)')
+    plt.show()
 #%%
 
 #%%
