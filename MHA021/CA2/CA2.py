@@ -100,18 +100,29 @@ g = 9.81 # m/s^2
 b = [0, -rho * g] # N
 
 
-# Analytical: simply supported beam with uniform load q = rho*g*A
-q = rho * g * (H * t)
-I = t * H**3 / 12
-# L here is the FULL length (W_full)
-delta_analytic = -(5 * q * (W * 2)**4) / (384 * E * I)
-
-# Max Stress (My/I): M_max = qL^2/8
-M_max = q * (W * 2)**2 / 8
-sigma_analytic = M_max * (H/2) / I
 
 
-def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
+L = W * 2 
+A = t * H
+I = (t * (H**3)) / 12
+w = rho * A * g 
+delta_analytic = -(5 * w * (L**4)) / (384 * E * I)
+M_max = (w * (L**2)) / 8
+c = H / 2
+sigma_analytic = (M_max * c) / I
+
+# # Analytical: simply supported beam with uniform load q = rho*g*A
+# q = rho * g * (H * t)
+# I = t * H**3 / 12
+# # L here is the FULL length (W_full)
+# delta_analytic = -(5 * q * (W * 2)**4) / (384 * E * I)
+
+# # Max Stress (My/I): M_max = qL^2/8
+# M_max = q * (W * 2)**2 / 8
+# sigma_analytic = M_max * (H/2) / I
+
+
+def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
 
     mesh = MeshGenerator.structured_rectangle_mesh(
         width=W,
@@ -131,16 +142,15 @@ def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
         fig = mesh.plot('mesh')
         fig = plot_mesh(nodes, elements, edge_nodes)
         fig.show()
-        displayvar('right edge nodes', edge_nodes['right'])
+        # displayvar('right edge nodes', edge_nodes['right'])
         # display(Edof)
     else:
         pass
     
     edof_map = build_edof(elements, dofs_per_node=2)
 
-    # Plane Stress D-Matrix
     D = hooke_2d_plane_stress(E, nu)
-    displayvar('D', D)
+    # displayvar('D', D)
     
     # Assembly of K and f
     ndofs = nodes.shape[0] * 2
@@ -164,7 +174,7 @@ def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
     for n in right_nodes:
         dof_x = 2 * (n - 1) + 1
         bc_dofs.append(dof_x)
-        bc_vals.append(0.0)
+        bc_vals.append(0)
 
     # Support condition (left bottom node)
     left_nodes = edge_nodes['left']
@@ -176,9 +186,9 @@ def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
             break
             
     if support_node:
-        bc_dofs.append(2 * (support_node - 1) + 1) # u_x
+        # bc_dofs.append(2 * (support_node - 1) + 1) # u_x
+        # bc_vals.append(0)
         bc_dofs.append(2 * (support_node - 1) + 2) # u_y
-        bc_vals.append(0)
         bc_vals.append(0)
     else:
         print("support node not found")
@@ -187,15 +197,13 @@ def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
     # displayvar('a', a, accuracy=3)
     # displayvar('r', r, accuracy=3)
     
-    right_dofs_y = [2*(n-1) + 2 for n in right_nodes]
+    right_dofs_y = [2 * (n - 1) + 2 for n in right_nodes]
     disp_y_right = a[np.array(right_dofs_y) - 1]
     avg_deflection = np.mean(disp_y_right)
-    displayvar('u_{right, avg}', avg_deflection, accuracy=3)
+    # displayvar('u_{right, avg}', avg_deflection, accuracy=3)
     
     ed = extract_dofs(a, Edof)
     if plot_n_print == True:
-        fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='utotal')
-        fig.show()
         fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='utotal')
         fig.show()
     else:
@@ -212,16 +220,27 @@ def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
     
     right_norm_stresses = []
     
-    for n in right_nodes:
-        right_norm_stresses.append(el_stresses[n, :])
-    right_max_norm_stress = np.max(right_norm_stresses)
+    # for n in right_nodes:
+    #     right_norm_stresses.append(el_stresses[n, :])
+    right_elements = [el for el in range(len(elements)) 
+                  if sum(n in right_nodes for n in elements[el, :]) >= 2]
+
+    right_edge_stresses = el_stresses[right_elements, :]
+    right_max_norm_stress = np.max(np.abs(right_edge_stresses[:, 0]))
     print(f'maximum normal stress at right edge: {right_max_norm_stress:.3e} Pa')
     
-    print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection} m vs {delta_analytic} m \n Deflection: {right_max_norm_stress} Pa vs {sigma_analytic} Pa')
+    print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection:.3e} m vs {delta_analytic:.3e} m \n Stress: {right_max_norm_stress:.3e} Pa vs {sigma_analytic:.3e} Pa')
 
     return avg_deflection, right_max_norm_stress
-    
-# task1(element_type='cst', nelx=10, nely=5, plot_n_print=True)
+
+task1(element_type='cst', nelx=40, nely=8, plot_n_print=True)
+# task1(element_type='cst', nelx=250, nely=50, plot_n_print=False)
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Convergence
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 1 - Convergence')
 
 nelx_list = np.arange(50, 250, 25)
 nely_list = [int(i * (H / W)) for i in nelx_list]
@@ -241,13 +260,15 @@ for i in range(len(nelx_list)):
 
     plt.figure()
     plt.plot(num_of_nodes_list, avg_deflection_list, 'X-')
-    plt.xlabel('Number of nodes')
+    plt.axhline(delta_analytic, color='orange', linestyle='--', alpha=0.5)
+    plt.xlabel('Number of elements')
     plt.ylabel('Average deflection (m)')
     plt.show()
     
     plt.figure()
-    plt.plot(num_of_nodes_list, avg_deflection_list, 'X-', color='red')
-    plt.xlabel('Number of nodes')
+    plt.plot(num_of_nodes_list, max_norm_stress_list, 'X-', color='red')
+    plt.axhline(sigma_analytic, color='orange', linestyle='--', alpha=0.5)
+    plt.xlabel('Number of elements')
     plt.ylabel('Maximum normal stress (Pa)')
     plt.show()
 #%%
