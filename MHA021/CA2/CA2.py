@@ -109,14 +109,22 @@ M_max = (w * (L**2)) / 8
 c = H / 2
 sigma_analytic = (M_max * c) / I
 
-def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
+def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
 
-    mesh = MeshGenerator.structured_rectangle_mesh(
-        width=W,
-        height=H,
-        nx=nelx,
-        ny=nely
-    )
+    if element_type == 'cst':
+        mesh = MeshGenerator.structured_rectangle_mesh(
+            width=W,
+            height=H,
+            nx=nelx,
+            ny=nely
+        )
+    else:
+        mesh = MeshGenerator.semistructured_rectangle_mesh_quads(
+            width=W,
+            height=H,
+            nx=nelx,
+            ny=nely
+        )
 
     nodes = mesh.nodes
     elements = mesh.elements
@@ -142,7 +150,12 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     f = np.zeros(ndofs)
     
     for el in range(len(elements)):
-        Ke, fe = cst_element(nodes[elements[el, :] - 1], D, t, b)
+        
+        if element_type == 'cst':
+            Ke, fe = cst_element(nodes[elements[el, :] - 1], D, t, b)
+        else:
+            Ke, fe = bilinear_element(nodes[elements[el, :] - 1], D, t, b, ngp=4)
+            
         dofs = Edof[el, :]
         assem(K, Ke, dofs)
         assem(f, fe, dofs)
@@ -197,7 +210,12 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
         nodes[elements[el, :] - 1]
         dofs = Edof[el, :]
         ae = a[dofs - 1]
-        σe, ϵe = cst_element_stress_strain(nodes[elements[el, :] - 1], D, ae)
+        
+        if element_type == 'cst':
+            σe, ϵe = cst_element_stress_strain(nodes[elements[el, :] - 1], D, ae)
+        else:
+            σe, ϵe = bilinear_element_stress_strain(nodes[elements[el, :] - 1], D, ae)
+            
         el_stresses[el, :] = σe
     # displayvar('σ', el_stresses, accuracy=3)
     
@@ -213,7 +231,7 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
 
     return avg_deflection, right_max_norm_stress, ndofs, fraction_displacement
 
-task1(element_type='cst', nelx=40, nely=8, plot_n_print=True)
+task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -231,7 +249,7 @@ max_norm_stress_list = []
 ndofs_list = []
 fraction_displacement_list = []
 for i in range(len(nelx_list)):
-    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement = task1(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
     avg_deflection_list.append(avg_deflection)
     max_norm_stress_list.append(right_max_norm_stress)
     ndofs_list.append(ndofs)
@@ -492,4 +510,10 @@ fe_ref = np.array([0.3   , 0.6   , 0.2775, 0.555 , 0.3075, 0.615 , 0.33  , 0.66 
 print(f" Ke is correct: {np.allclose(Ke, Ke_ref)}")
 print(f" fe is correct: {np.allclose(fe, fe_ref)}")
 
+
+#---------------------------------------------------------------------------------------------------
+# Run the analysis
+#---------------------------------------------------------------------------------------------------
+
+task12(element_type='quad', nelx=40, nely=8, plot_n_print=True)
 #%%
