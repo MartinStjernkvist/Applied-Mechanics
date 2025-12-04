@@ -13,6 +13,8 @@ import os
 parent_dir = os.path.abspath(os.path.join(os.getcwd(),'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
+    
+from mha021 import *
 
 from IPython.display import display, Math
 from mpl_toolkits.mplot3d import axes3d
@@ -30,8 +32,12 @@ import matplotlib.cm as cm
 
 from pathlib import Path
 
-def new_prob(string):
-    print_string = '\n' + '=' * 80 + '\n' + 'Assignment ' + str(string) + '\n' + '=' * 80 + '\n'
+def new_task(string):
+    print_string = '\n' + '=' * 80 + '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n' + '=' * 80 + '\n'
+    return print(print_string)
+
+def new_subtask(string):
+    print_string = '\n' + '-' * 80 + '\n' + 'Subtask ' + str(string) + '\n' + '-' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -51,7 +57,7 @@ plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
-def fig(fig_name):
+def figg(fig_name):
     fig_output_file = script_dir / "fig" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.legend()
@@ -66,7 +72,7 @@ def printt(**kwargs):
         print(f"\033[94m{name}\033[0m:")
         print(f"\033[92m{value}\033[0m")
         print('\n')
-    
+
 #%%
 ####################################################################################################
 ####################################################################################################
@@ -74,14 +80,189 @@ def printt(**kwargs):
 
 
 
+# Task 1
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_task('Task 1')
+
+# Define inputs
+W = 5 # m
+H = 0.4 # m
+t = 0.01 # m
+E = 210e9 # Pa
+nu = 0.3
+rho = 7800 # kg/m^3
+g = 9.81 # m/s^2
+b = [0, -rho * g] # N
+
+
+# Analytical: simply supported beam with uniform load q = rho*g*A
+q = rho * g * (H * t)
+I = t * H**3 / 12
+# L here is the FULL length (W_full)
+delta_analytic = -(5 * q * (W * 2)**4) / (384 * E * I)
+
+# Max Stress (My/I): M_max = qL^2/8
+M_max = q * (W * 2)**2 / 8
+sigma_analytic = M_max * (H/2) / I
+
+
+def task1(element_type='cst', nelx=10, nely=5, plot_n_print=False):
+
+    mesh = MeshGenerator.structured_rectangle_mesh(
+        width=W,
+        height=H,
+        nx=nelx,
+        ny=nely
+        # dofs_per_node = 2
+        # element_type = "tri"
+    )
+
+    nodes = mesh.nodes
+    elements = mesh.elements
+    edge_nodes = mesh.edges
+    Edof = mesh.edofs
+
+    if plot_n_print == True:
+        fig = mesh.plot('mesh')
+        fig = plot_mesh(nodes, elements, edge_nodes)
+        fig.show()
+        displayvar('right edge nodes', edge_nodes['right'])
+        # display(Edof)
+    else:
+        pass
+    
+    edof_map = build_edof(elements, dofs_per_node=2)
+
+    # Plane Stress D-Matrix
+    D = hooke_2d_plane_stress(E, nu)
+    displayvar('D', D)
+    
+    # Assembly of K and f
+    ndofs = nodes.shape[0] * 2
+    K = np.zeros((ndofs, ndofs))
+    f = np.zeros(ndofs)
+    
+    for el in range(len(elements)):
+        Ke, fe = cst_element(nodes[elements[el, :] - 1], D, t, b)
+        dofs = Edof[el, :]
+        assem(K, Ke, dofs)
+        assem(f, fe, dofs)
+    
+    # displayvar('K', K, accuracy=3)
+    # displayvar('f', f, accuracy=3)
+    
+    bc_dofs = []
+    bc_vals = []
+    
+    # Symmetry condition (right edge)
+    right_nodes = edge_nodes['right']
+    for n in right_nodes:
+        dof_x = 2 * (n - 1) + 1
+        bc_dofs.append(dof_x)
+        bc_vals.append(0.0)
+
+    # Support condition (left bottom node)
+    left_nodes = edge_nodes['left']
+    min_y = np.min(nodes[left_nodes - 1, 1])
+    support_node = None
+    for n in left_nodes:
+        if np.isclose(nodes[n - 1, 1], min_y):
+            support_node = n
+            break
+            
+    if support_node:
+        bc_dofs.append(2 * (support_node - 1) + 1) # u_x
+        bc_dofs.append(2 * (support_node - 1) + 2) # u_y
+        bc_vals.append(0)
+        bc_vals.append(0)
+    else:
+        print("support node not found")
+        
+    a, r = solve_eq(K, f, bc_dofs, bc_vals)
+    # displayvar('a', a, accuracy=3)
+    # displayvar('r', r, accuracy=3)
+    
+    right_dofs_y = [2*(n-1) + 2 for n in right_nodes]
+    disp_y_right = a[np.array(right_dofs_y) - 1]
+    avg_deflection = np.mean(disp_y_right)
+    displayvar('u_{right, avg}', avg_deflection, accuracy=3)
+    
+    ed = extract_dofs(a, Edof)
+    if plot_n_print == True:
+        fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='utotal')
+        fig.show()
+        fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='utotal')
+        fig.show()
+    else:
+        pass
+    
+    el_stresses = np.zeros((len(elements), 3))
+    for el in range(len(elements)):
+        nodes[elements[el, :] - 1]
+        dofs = Edof[el, :]
+        ae = a[dofs - 1]
+        σe, ϵe = cst_element_stress_strain(nodes[elements[el, :] - 1], D, ae)
+        el_stresses[el, :] = σe
+    # displayvar('σ', el_stresses, accuracy=3)
+    
+    right_norm_stresses = []
+    
+    for n in right_nodes:
+        right_norm_stresses.append(el_stresses[n, :])
+    right_max_norm_stress = np.max(right_norm_stresses)
+    print(f'maximum normal stress at right edge: {right_max_norm_stress:.3e} Pa')
+    
+    print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection} vs {delta_analytic} \n Deflection: {right_max_norm_stress} vs {sigma_analytic}')
+
+    return avg_deflection, right_max_norm_stress
+    
+# task1(element_type='cst', nelx=10, nely=5, plot_n_print=True)
+
+nelx_list = np.arange(50, 100, 25)
+nely_list = [int(i * (H / W)) for i in nelx_list]
+print(nelx_list)
+print(nely_list)
+
+avg_deflection_list = []
+max_norm_stress_list = []
+num_of_nodes_list = []
+for i in range(len(nelx_list)):
+    print('test')
+    # avg_deflection, right_max_norm_stress = task1(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    # avg_deflection_list.append(avg_deflection_list)
+    # max_norm_stress_list.append(max_norm_stress_list)
+    # num_of_nodes_list.append(nelx_list[i] * nely_list[i])
+
+plt.figure()
+plt.plot(num_of_nodes_list, avg_deflection_list)
+plt.show()
+#%%
+
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Task 2
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_task('Task 2')
+
+#---------------------------------------------------------------------------------------------------
 # Starting point
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_prob('Starting point')
+#---------------------------------------------------------------------------------------------------
+new_subtask('Starting point')
 
 # These functions need to be finalized by you
 
@@ -106,27 +287,65 @@ def compute_Ne_Be_detJ(nodes, ξ, η):
     """
     
     # Shape functions
-    Ne = ...
+    # Order: (-1,-1), (1,-1), (1,1), (-1,1) -> Counter-clockwise
+    Ne = 0.25 * np.array([
+        (1 - ξ) * (1 - η),
+        (1 + ξ) * (1 - η),
+        (1 + ξ) * (1 + η),
+        (1 - ξ) * (1 + η)
+    ])
+    
+    # dN_dξ
+    dN_dxi = 0.25 * np.array([
+        -(1 - η),
+         (1 - η),
+         (1 + η),
+        -(1 + η)
+    ])
+    
+    # dN_dη
+    dN_deta = 0.25 * np.array([
+        -(1 - ξ),
+        -(1 + ξ),
+         (1 + ξ),
+         (1 - ξ)
+    ])
 
     # Derivatives of shape functions
-    dNe = ...
+    dNe = np.vstack((dN_dxi, dN_deta))
 
     # Jacobian matrix
-    J = ...
+    J = dNe @ nodes
 
-    detJ = ...
+    detJ = np.linalg.det(J)
+    
     minDetJ = 1e-16
     if detJ < minDetJ:
         raise ValueError(f"Bad element geometry: detJ = {detJ}") # may happen if the nodes are not counter-clockwize 
-
+    Jinv = np.linalg.inv(J)
+    
     # Derivatives of shape functions w.r.t global coordinates x, y
-    dNedxy = ...
+    dNedxy = Jinv @ dNe
 
     # N matrix 
-    N = ...
+    N = np.zeros((2, 8))
+    N[0, 0::2] = Ne
+    N[1, 1::2] = Ne
 
     # B-matrix
-    Be = ...
+    Be = np.zeros((3, 8))
+    for i in range(4):
+        dNdx = dNedxy[0, i]
+        dNdy = dNedxy[1, i]
+        
+        # Column indices for u_i and v_i
+        idx_u = 2 * i
+        idx_v = 2 * i + 1
+        
+        Be[0, idx_u] = dNdx
+        Be[1, idx_v] = dNdy
+        Be[2, idx_u] = dNdy
+        Be[2, idx_v] = dNdx
 
     return N, Be, detJ
 
@@ -155,24 +374,25 @@ def bilinear_element(nodes, D, t, body_load, ngp):
     """
     b = np.asarray(body_load, dtype=float).reshape(2)
     
-    Ke = np.zeros(...)
-    fe = np.zeros(...)
+    Ke = np.zeros((8, 8))
+    fe = np.zeros(8)
 
     # Define Gauss points and weights should handle three cases: 1^2, 2^2, 3^2 points
     # see function gauss_integration_rule in mha021 for support
-    weights = ...
-    coords = ...
+    coords, weights = gauss_integration_rule(int(np.sqrt(ngp))) 
     
     for gpIndex_1, weight_ξ in enumerate(weights):
         for gpIndex_2, weight_η in enumerate(weights):
-            ξ = ...
-            η = ...
+            ξ = coords[gpIndex_1]
+            η = coords[gpIndex_2]
             
             N, Be, detJ = compute_Ne_Be_detJ(nodes, ξ, η) # use the function you wrote earlier
+            
+            weight_factor =weight_ξ *weight_η
 
             # Stiffness matrix and force vector
-            Ke += ...
-            fe += ...
+            Ke += Be.T @ D @ Be * detJ * weight_factor
+            fe += (N.T @ b) * detJ * weight_factor
 
     return Ke, fe
 
@@ -196,29 +416,16 @@ def bilinear_element_stress_strain(nodes: np.ndarray, D: np.ndarray, ae: np.ndar
     strain : (3,) ndarray
         Strain vector [ε_xx, ε_yy, γ_xy].
     """
-    ϵe = ...
-    σe = ...
+    _, Be, _ = compute_Ne_Be_detJ(nodes, 0.0, 0.0)
+    ϵe = Be @ ae
+    σe = D @ ϵe
     return σe, ϵe
 
-#%%
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
+#---------------------------------------------------------------------------------------------------
 # Verification
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_prob('Verification')
-
 #---------------------------------------------------------------------------------------------------
-# 
-#---------------------------------------------------------------------------------------------------
+new_subtask('Verification')
+
 nodes = np.array([[0.1, 0.0],
                 [1.0, 0.0],
                 [1.2, 1.0],
@@ -270,17 +477,3 @@ print(f" Ke is correct: {np.allclose(Ke, Ke_ref)}")
 print(f" fe is correct: {np.allclose(fe, fe_ref)}")
 
 #%%
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-# Verification
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_prob('Verification')

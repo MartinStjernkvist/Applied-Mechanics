@@ -7,7 +7,7 @@ stiffness/force routines for springs, bars, and 2D frames, as well as helpers
 for assembly, solving, and post-processing.
 
 - Author: Jim Brouzoulis (adapted & cleaned by Copilot)
-- Version: 2025-11-10
+- Version: 2025-12-02
 
 Conventions
 -----------
@@ -26,16 +26,19 @@ Dependencies
 """
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 plt.rcParams['figure.dpi']=120
 import plotly.graph_objects as go
-from IPython.display import Math, display, Latex
-from typing import  Union
-
+from IPython.display import Math, display
+from typing import Union, Dict
+from typing import Literal 
+ElementType = Literal["quad", "tri"]
+import math
+from scipy.linalg import eigh
 
 # Add parent directory to path and import functions from mha021.py
 """
@@ -1089,43 +1092,66 @@ def solve_eq(K, f, bc_dofs=None, bc_vals=None):
     >>> a.shape, r.shape
     ((2,), (2,))
     """
-    # Convert to arrays and flatten f for consistent algebra
+
+
+    # Normalize inputs
     K = np.asarray(K, dtype=float)
     f = np.asarray(f, dtype=float).reshape(-1)
-
     n = K.shape[0]
+
     if K.ndim != 2 or K.shape[1] != n or f.shape[0] != n:
         raise ValueError("Incompatible shapes: K must be (n,n) and f must be (n,) or (n,1).")
 
-    # If constraints are absent (None) or empty, solve directly
-    if bc_dofs is None or bc_vals is None:
+    # No essential BCs -> direct solve
+    if bc_dofs is None or bc_vals is None or len(bc_dofs) == 0:
         a = np.linalg.solve(K, f)
         r = K @ a - f
         return a, r
 
-    # Validate constraints
+    # Convert to arrays
     bc_dofs = np.asarray(bc_dofs, dtype=int)
     bc_vals = np.asarray(bc_vals, dtype=float)
+
     if bc_dofs.shape[0] != bc_vals.shape[0]:
         raise ValueError("bc_dofs and bc_vals must have the same length.")
     if np.any(bc_dofs <= 0) or np.any(bc_dofs > n):
         raise ValueError("bc_dofs must be valid 1-based indices in [1, n].")
 
-    # Convert to 0-based for indexing; build constrained/free sets
-    c = bc_dofs - 1
-    c = np.unique(c)  # guard against duplicates
-    a = np.zeros(n, dtype=float)
-    a[c] = bc_vals
+    # Convert to 0-based
+    c0 = bc_dofs - 1
+    v0 = bc_vals
 
+    # ---- Stable unique on DOFs, preserving the *first* occurrence (and its value) ----
+    # np.unique(..., return_index=True) gives first indices; sorting those preserves input order.
+    uniq_c, first_idx = np.unique(c0, return_index=True)
+    order = np.sort(first_idx)                    # stable keep-first
+    c = c0[order]
+    vals = v0[order]
+
+    # ---- Check for conflicting duplicates (same DOF with different values) ----
+    # If there were duplicates, ensure all values for each DOF match the kept one.
+    if len(c) != len(c0):
+        # map dof -> kept value
+        kept = {d: val for d, val in zip(c, vals)}
+        for d_in, v_in in zip(c0, v0):
+            if not np.isclose(v_in, kept[d_in]):
+                raise ValueError(f"Conflicting duplicate BC for DOF {d_in+1}: "
+                                 f"{v_in} vs {kept[d_in]}.")
+
+    # Build free set
     all_dofs = np.arange(n, dtype=int)
     fset = np.setdiff1d(all_dofs, c, assume_unique=False)
 
-    # Partitioned solve on free DOFs
+    # Initialize solution with zeros, set constrained values
+    a = np.zeros(n, dtype=float)
+    a[c] = vals
+
+    # If everything is constrained, reactions only
     if fset.size == 0:
-        # All DOFs constrained: just compute reactions r = K a - f
         r = K @ a - f
         return a, r
 
+    # Partitioned system
     Kff = K[np.ix_(fset, fset)]
     Kfc = K[np.ix_(fset, c)]
     ff  = f[fset]
@@ -1133,7 +1159,6 @@ def solve_eq(K, f, bc_dofs=None, bc_vals=None):
     rhs = ff - Kfc @ a[c]
     a[fset] = np.linalg.solve(Kff, rhs)
 
-    # Reactions everywhere (mostly nonzero at constrained DOFs)
     r = K @ a - f
     return a, r
 
@@ -1171,61 +1196,7 @@ def extract_dofs(a: Sequence[float], Edofs: np.ndarray) -> np.ndarray:
     return Aelem
 
 
-# def assem(K: np.ndarray, Ke: np.ndarray, dofs: Sequence[int]) -> np.ndarray:
-#     """Assemble an element contribution into a global vector or matrix.
 
-#     ``dofs`` are **1-based** indices. If ``K`` is square, ``Ke`` is assumed to
-#     be a square element matrix of compatible size and is added into ``K`` at the
-#     corresponding DOF positions. If ``K`` is a column vector, ``Ke`` is assumed
-#     to be an element right-hand-side vector (column) and is added accordingly.
-
-#     Parameters
-#     ----------
-#     K : ndarray
-#         Global target (square matrix or column vector).
-#     Ke : ndarray
-#         Element matrix (if ``K`` is square) or element vector (if ``K`` is a
-#         column vector).
-#     dofs : sequence of int
-#         **1-based** global DOF numbers for this element.
-
-#     Returns
-#     -------
-#     ndarray
-#         Updated global array ``K`` (mutated and returned for convenience).
-
-#     Examples
-#     --------
-#     >>> import numpy as np
-#     >>> K = np.zeros((4, 4))
-#     >>> Ke = np.ones((2, 2))
-#     >>> assem(K, Ke, [1, 3])
-#     array([[1., 0., 1., 0.],
-#            [0., 0., 0., 0.],
-#            [1., 0., 1., 0.],
-#            [0., 0., 0., 0.]])
-#     """
-#     K = np.asarray(K)
-#     Ke = np.asarray(Ke)
-#     nrows, ncols = K.shape
-
-#     dofs = np.asarray(dofs, int)
-#     if np.max(dofs) > nrows:
-#         raise AssertionError("Attempting to assemble into DOFs beyond global size")
-#     if np.min(dofs) <= 0:
-#         raise AssertionError(f"All DOF numbers must be > 0. dofs = {dofs.tolist()}")
-
-#     if nrows == ncols:  # square matrix
-#         for row, dof_i in enumerate(dofs):
-#             for col, dof_j in enumerate(dofs):
-#                 K[dof_i - 1, dof_j - 1] += Ke[row, col]
-#     elif ncols == 1:  # column vector
-#         for row, dof_i in enumerate(dofs):
-#             K[dof_i - 1, 0] += Ke[row]
-#     else:
-#         raise AssertionError("K must be square or a column vector")
-#     return K
-import numpy as np
 
 def assem(K, Ke, dofs):
     """
@@ -1353,3 +1324,1521 @@ def assem(K, Ke, dofs):
         raise AssertionError(
             f"K must be a square matrix (n,n) or a vector (n,) / (n,1). Got K.shape={K.shape}, K.ndim={K.ndim}."
         )
+
+
+def plot_mesh(
+    nodes: np.ndarray,
+    elements: np.ndarray,
+    edges: Dict[str, np.ndarray],
+    node_size: int = 6,
+    show_node_ids: bool = False,
+    show_element_ids: bool = False,
+    title: str = "Mesh",
+) -> go.Figure:
+    """
+    Interactive Plotly visualization of a 2D mesh.
+
+    Automatically detects element type (triangle or quad) based on connectivity length.
+
+    Parameters
+    ----------
+    nodes : np.ndarray
+        Array of nodal coordinates, shape (N, 2).
+    elements : np.ndarray
+        Connectivity array, shape (M, k) where k = 3 (triangles) or 4 (quads).
+    edges : dict
+        Dictionary with boundary node indices for sides: {"bottom", "right", "top", "left"}.
+    node_size : int
+        Size of node markers.
+    show_node_ids : bool
+        If True, display node IDs.
+    show_element_ids : bool
+        If True, display element IDs.
+    title : str
+        Plot title.
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Interactive Plotly figure.
+
+    Examples
+    --------
+    Minimal Working Example for a triangular mesh:
+    >>> import numpy as np
+    >>> nodes_tri = np.array([[0.0, 0.0],
+    ...                       [1.0, 0.0],
+    ...                       [0.5, 1.0]])
+    >>> elements_tri = np.array([[1, 2, 3]])
+    >>> edges_tri = {"bottom": np.array([1, 2]),
+    ...              "right": np.array([2, 3]),
+    ...              "top": np.array([3, 1]),
+    ...              "left": np.array([])}
+    >>> fig = plot_mesh(nodes_tri, elements_tri, edges_tri,
+    ...                 show_node_ids=True, title="Triangle Mesh")
+    >>> fig.show()
+
+    Minimal Working Example for a quadrilateral mesh:
+    >>> nodes_quad = np.array([[0.0, 0.0],
+    ...                        [1.0, 0.0],
+    ...                        [1.0, 1.0],
+    ...                        [0.0, 1.0]])
+    >>> elements_quad = np.array([[1, 2, 3, 4]])
+    >>> edges_quad = {"bottom": np.array([1, 2]),
+    ...               "right": np.array([2, 3]),
+    ...               "top": np.array([3, 4]),
+    ...               "left": np.array([4, 1])}
+    >>> fig = plot_mesh(nodes_quad, elements_quad, edges_quad,
+    ...                 show_node_ids=True, title="Quad Mesh")
+    >>> fig.show()
+    """
+    # Convert to 0-based indexing
+    e0 = elements - 1
+    k = elements.shape[1]
+
+    seg_x, seg_y = [], []
+    if k == 4:  # quad
+        cyc = [0, 1, 2, 3, 0]
+    elif k == 3:  # triangle
+        cyc = [0, 1, 2, 0]
+    else:
+        raise ValueError("Elements must have 3 (tri) or 4 (quad) nodes.")
+
+    for conn in e0:
+        pts = nodes[conn]
+        for a, b in zip(cyc[:-1], cyc[1:]):
+            seg_x += [pts[a, 0], pts[b, 0], None]
+            seg_y += [pts[a, 1], pts[b, 1], None]
+
+    fig = go.Figure()
+    # Element edges
+    fig.add_trace(go.Scatter(
+        x=seg_x, y=seg_y, mode="lines",
+        line=dict(color="black", width=1),
+        name="Element edges", hoverinfo="skip"
+    ))
+
+    # Nodes
+    fig.add_trace(go.Scatter(
+        x=nodes[:, 0], y=nodes[:, 1],
+        mode="markers+text" if show_node_ids else "markers",
+        text=[str(i + 1) for i in range(nodes.shape[0])] if show_node_ids else None,
+        textposition="top center",
+        marker=dict(size=node_size, color="rgba(120,120,120,0.9)"),
+        name="Nodes",
+        hovertemplate="(%{x:.3f}, %{y:.3f})<extra></extra>"
+    ))
+
+    # Boundary edges
+    colors = {"bottom": "royalblue", "right": "darkorange", "top": "seagreen", "left": "crimson"}
+    for side in ["bottom", "right", "top", "left"]:
+        if side in edges and len(edges[side]) > 0:
+            idx0 = edges[side] - 1
+            fig.add_trace(go.Scatter(
+                x=nodes[idx0, 0], y=nodes[idx0, 1],
+                mode="markers",
+                marker=dict(size=node_size + 2, color=colors[side]),
+                name=side.capitalize(),
+                hovertemplate=f"{side} node<extra></extra>"
+            ))
+
+    # Element IDs
+    if show_element_ids:
+        centers = np.array([nodes[conn].mean(axis=0) for conn in e0])
+        fig.add_trace(go.Scatter(
+            x=centers[:, 0], y=centers[:, 1],
+            mode="text",
+            text=[str(i + 1) for i in range(e0.shape[0])],
+            textfont=dict(color="midnightblue"),
+            name="Element ID"
+        ))
+
+    fig.update_layout(
+        title=title,
+        xaxis=dict(title="x", scaleanchor="y", scaleratio=1, zeroline=False),
+        yaxis=dict(title="y", zeroline=False),
+        legend=dict(orientation="h", yanchor="bottom", y=0.9, xanchor="left", x=0),
+        template="plotly_white",
+        margin=dict(l=10, r=10, t=40, b=10),
+        dragmode="pan"
+    )
+    return fig
+
+
+def plot_deformed_mesh(
+    nodes: np.ndarray,
+    elements: np.ndarray,
+    Ed: np.ndarray,
+    scale: float = 1.0,
+    field: str = "utotal",           # "ux", "uy", "utotal"
+    colorscale: str = "jet",
+    showscale: bool = True,
+    colorbar_title: str | None = None,
+    show_original: bool = True,      # Toggle original mesh visibility
+    original_color: str = "lightgray",
+    title: str = "Deformed Mesh (Interpolated Colors)"
+) -> go.Figure:
+    """
+    Plot deformed mesh with interpolated colors inside each element using Plotly.
+
+    Parameters
+    ----------
+    nodes : np.ndarray
+        Array of nodal coordinates, shape (N, 2).
+    elements : np.ndarray
+        Connectivity array, shape (M, k) where k = 3 (triangles) or 4 (quads).
+    Ed : np.ndarray
+        Element displacement array, shape (M, 2*k).
+    scale : float
+        Scale factor for visualizing displacements.
+    field : str
+        Displacement component to visualize: "ux", "uy", or "utotal".
+    colorscale : str
+        Plotly colorscale name.
+    showscale : bool
+        Whether to show the colorbar.
+    colorbar_title : str | None
+        Custom colorbar title.
+    show_original : bool
+        If True, show original mesh as semi-transparent with edges.
+    original_color : str
+        Color for original mesh.
+    title : str
+        Plot title.
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Interactive Plotly figure.
+
+    Examples
+    --------
+    Minimal Working Example for a triangle:
+    >>> import numpy as np
+    >>> nodes_tri = np.array([[0.0, 0.0],
+    ...                       [1.0, 0.0],
+    ...                       [0.5, 1.0]])
+    >>> elements_tri = np.array([[1, 2, 3]])
+    >>> Ed_tri = np.array([[0.0, 0.0, 0.01, 0.0, 0.0, 0.02]])
+    >>> fig = plot_deformed_elements_plotly(nodes_tri, elements_tri, Ed_tri,
+    ...                                     scale=100, field="utotal",
+    ...                                     title="Triangle Example")
+    >>> fig.show()
+
+    Minimal Working Example for a quadrilateral:
+    >>> nodes_quad = np.array([[0.0, 0.0],
+    ...                        [1.0, 0.0],
+    ...                        [1.0, 1.0],
+    ...                        [0.0, 1.0]])
+    >>> elements_quad = np.array([[1, 2, 3, 4]])
+    >>> Ed_quad = np.array([[0.0, 0.0, 0.02, 0.0, 0.02, 0.02, 0.0, 0.02]])
+    >>> fig = plot_deformed_elements_plotly(nodes_quad, elements_quad, Ed_quad,
+    ...                                     scale=50, field="utotal",
+    ...                                     title="Quadrilateral Example")
+    >>> fig.show()
+    """
+    nodes = np.asarray(nodes, float)
+    elements = np.asarray(elements, int)
+    Ed = np.asarray(Ed, float)
+
+    k = elements.shape[1]
+    if k not in (3, 4):
+        raise ValueError("Only triangles (k=3) or quads (k=4) supported.")
+    if Ed.shape != (elements.shape[0], 2*k):
+        raise ValueError(f"Ed must be (M,{2*k}) for k={k}.")
+
+    e0 = elements - 1
+    cycle = [0,1,2,0] if k == 3 else [0,1,2,3,0]
+
+    # Prepare Mesh3d data
+    X, Y, Z = [], [], []
+    I, J, K = [], [], []
+    intensity = []
+    hover_text = []
+
+    # Original mesh polygons and edges
+    orig_X, orig_Y, orig_Z = [], [], []
+    orig_I, orig_J, orig_K = [], [], []
+    orig_edge_x, orig_edge_y, orig_edge_z = [], [], []
+
+    # Deformed edges
+    edge_x, edge_y, edge_z = [], [], []
+
+    for el_idx, conn in enumerate(e0):
+        pts_org = nodes[conn]
+        disp = Ed[el_idx].reshape(k, 2)
+        pts_def = pts_org + scale * disp
+
+        # Original mesh solid and edges
+        if show_original:
+            if k == 3:
+                tris_orig = [(0,1,2)]
+            else:
+                # Automatic triangulation for original mesh
+                d02 = np.linalg.norm(pts_org[0] - pts_org[2])
+                d13 = np.linalg.norm(pts_org[1] - pts_org[3])
+                tris_orig = [(0,1,2),(0,2,3)] if d02 <= d13 else [(0,1,3),(1,2,3)]
+
+            for a,b,c in tris_orig:
+                base = len(orig_X)
+                for idx in (a,b,c):
+                    orig_X.append(pts_org[idx,0])
+                    orig_Y.append(pts_org[idx,1])
+                    orig_Z.append(0.0)
+                orig_I.append(base)
+                orig_J.append(base+1)
+                orig_K.append(base+2)
+
+            for a,b in zip(cycle[:-1], cycle[1:]):
+                orig_edge_x += [pts_org[a,0], pts_org[b,0], None]
+                orig_edge_y += [pts_org[a,1], pts_org[b,1], None]
+                orig_edge_z += [0,0,None]
+
+        # Nodal scalar
+        if field == "ux":
+            nodal_vals = disp[:,0]
+            cb_title = "u_x"
+        elif field == "uy":
+            nodal_vals = disp[:,1]
+            cb_title = "u_y"
+        else:
+            nodal_vals = np.linalg.norm(disp, axis=1)
+            cb_title = "Total displacement"
+
+        # Automatic triangulation for deformed mesh
+        if k == 3:
+            tris = [(0,1,2)]
+        else:
+            d02 = np.linalg.norm(pts_def[0] - pts_def[2])
+            d13 = np.linalg.norm(pts_def[1] - pts_def[3])
+            tris = [(0,1,2),(0,2,3)] if d02 <= d13 else [(0,1,3),(1,2,3)]
+
+        for a,b,c in tris:
+            base = len(X)
+            for idx in (a,b,c):
+                X.append(pts_def[idx,0])
+                Y.append(pts_def[idx,1])
+                Z.append(0.0)
+                intensity.append(nodal_vals[idx])
+                hover_text.append(f"Value: {nodal_vals[idx]:.4g}")
+            I.append(base)
+            J.append(base+1)
+            K.append(base+2)
+
+        # Edges for deformed mesh
+        for a,b in zip(cycle[:-1], cycle[1:]):
+            edge_x += [pts_def[a,0], pts_def[b,0], None]
+            edge_y += [pts_def[a,1], pts_def[b,1], None]
+            edge_z += [0,0,None]
+
+    # Convert arrays
+    X,Y,Z = np.array(X),np.array(Y),np.array(Z)
+    intensity = np.array(intensity)
+    cmin,cmax = intensity.min(), intensity.max()
+    if np.isclose(cmin,cmax): cmax = cmin+1e-6
+
+    fig = go.Figure()
+
+    # Original mesh (optional)
+    if show_original:
+        fig.add_trace(go.Mesh3d(
+            x=orig_X, y=orig_Y, z=orig_Z,
+            i=orig_I, j=orig_J, k=orig_K,
+            color=original_color,
+            opacity=0.4,
+            hoverinfo="skip",  # disable hover info
+            name="Original"
+        ))
+        fig.add_trace(go.Scatter3d(
+            x=orig_edge_x, y=orig_edge_y, z=orig_edge_z,
+            mode="lines",
+            line=dict(color="gray", width=2),
+            hoverinfo="skip",
+            showlegend=False
+        ))
+
+    # Deformed mesh with color interpolation
+    fig.add_trace(go.Mesh3d(
+        x=X, y=Y, z=Z,
+        i=I, j=J, k=K,
+        intensity=intensity, intensitymode="vertex",
+        colorscale=colorscale, cmin=cmin, cmax=cmax,
+        showscale=showscale,
+        colorbar=dict(title=colorbar_title or cb_title),
+        flatshading=False,
+        text=hover_text,
+        hoverinfo="text",  # only show value
+        name="Deformed"
+    ))
+
+    # Add edges for deformed mesh (no legend)
+    fig.add_trace(go.Scatter3d(
+        x=edge_x, y=edge_y, z=edge_z,
+        mode="lines",
+        line=dict(color="black", width=2),
+        hoverinfo="skip",
+        showlegend=False
+    ))
+
+    # Lock view to XY-plane and enable pan only
+    fig.update_layout(
+        title=f"{title} (Scale factor = {scale:g})",
+        scene=dict(
+            xaxis=dict(title="X", showgrid=False, zeroline=False, tickangle=0, showspikes=False),  # horizontal text
+            yaxis=dict(title="Y", showgrid=False, zeroline=False, tickangle=0, showspikes=False),
+            zaxis=dict(visible=False),
+            aspectmode="data",
+            camera=dict(
+                eye=dict(x=0, y=0, z=2),      # top-down
+                up=dict(x=0, y=1, z=0),       # Y-axis up
+                center=dict(x=0, y=0, z=0),
+                projection=dict(type="orthographic")
+            ),
+            dragmode="pan"
+        ),
+        dragmode="pan",
+        template="plotly_white",
+        margin=dict(l=10,r=10,t=40,b=10)
+    )
+    return fig
+
+
+
+
+def plot_deformed_mesh(
+    nodes: np.ndarray,
+    elements: np.ndarray,
+    Ed: np.ndarray,
+    scale: float = 1.0,
+    field: str = "utotal",           # "ux", "uy", or "utotal"
+    colorscale: str = "Jet",
+    showscale: bool = True,
+    colorbar_title: str | None = None,
+    show_original: bool = True,
+    original_color: str = "lightgray",
+    title: str = "Deformed Mesh Animation",
+    cycles: int = 3,                # default 3 full oscillation cycles
+    duration: float = 2.0           # default 2 seconds total animation time
+) -> go.Figure:
+    """
+    Plot an animated deformed mesh using Plotly with a fixed view.
+    - Starts at maximum deformation (peak of sine wave).
+    - Deformed mesh edges are a separate legend item (togglable).
+    - Default animation runs `cycles` oscillation cycles in `duration` seconds.
+    - Maintains fixed axes and camera for a stable view.
+    Supports 3-node triangles and 4-node quads.
+    """
+    # Convert inputs to numpy arrays
+    nodes = np.array(nodes, float)
+    elements = np.array(elements, int)
+    Ed = np.array(Ed, float)
+    M, k = elements.shape
+    if k not in (3, 4):
+        raise ValueError("Only 3-node triangles or 4-node quadrilaterals are supported.")
+    if Ed.shape != (M, 2*k):
+        raise ValueError(f"Ed must be shape (M, {2*k}) for k={k} elements.")
+    
+    e0 = elements - 1            # zero-based indexing for connectivity
+    edge_cycle = [0,1,2,0] if k == 3 else [0,1,2,3,0]
+    
+    # Compute global min and max for x and y across all deformations (±scale) to fix axis ranges
+    all_x, all_y = [], []
+    for elem_idx, conn in enumerate(e0):
+        pts = nodes[conn]
+        disp = Ed[elem_idx].reshape(k, 2)
+        pts_max = pts + scale * disp   # coordinates at factor = +1
+        pts_min = pts - scale * disp   # coordinates at factor = -1
+        all_x.extend(pts_max[:,0]); all_x.extend(pts_min[:,0])
+        all_y.extend(pts_max[:,1]); all_y.extend(pts_min[:,1])
+    xmin, xmax = min(all_x), max(all_x)
+    ymin, ymax = min(all_y), max(all_y)
+    
+    # Determine color field global range (cmin, cmax) based on actual displacement values
+    disp_x = Ed[:, 0::2]  # shape (M, k)
+    disp_y = Ed[:, 1::2]  # shape (M, k)
+    if field == "ux":
+        all_vals = disp_x.flatten()
+        max_val = np.max(np.abs(all_vals))
+        cmin_global, cmax_global = -max_val, max_val
+        field_label = "u_x"
+    elif field == "uy":
+        all_vals = disp_y.flatten()
+        max_val = np.max(np.abs(all_vals))
+        cmin_global, cmax_global = -max_val, max_val
+        field_label = "u_y"
+    else:  # utotal
+        all_mags = np.linalg.norm(np.stack([disp_x, disp_y], axis=-1), axis=-1)
+        max_val = np.max(all_mags)
+        cmin_global, cmax_global = 0.0, max_val
+        field_label = "|u|"
+    if np.isclose(cmin_global, cmax_global):
+        cmax_global = cmin_global + 1e-6  # avoid zero range
+    
+    # Initial plot data at maximum deformation (sin phase = 90°, factor = 1)
+    data_traces = []
+    # Original undeformed mesh (surface only, no separate edges)
+    if show_original:
+        orig_x, orig_y, orig_z = [], [], []
+        orig_i, orig_j, orig_k = [], [], []
+        for elem_idx, conn in enumerate(e0):
+            pts = nodes[conn]
+            # Triangulate original element (for quads, split along shorter diagonal)
+            if k == 3:
+                tris = [(0,1,2)]
+            else:
+                d02 = np.linalg.norm(pts[0] - pts[2])
+                d13 = np.linalg.norm(pts[1] - pts[3])
+                tris = [(0,1,2),(0,2,3)] if d02 <= d13 else [(0,1,3),(1,2,3)]
+            for (a,b,c) in tris:
+                base = len(orig_x)
+                orig_x += [pts[a,0], pts[b,0], pts[c,0]]
+                orig_y += [pts[a,1], pts[b,1], pts[c,1]]
+                orig_z += [0.0, 0.0, 0.0]
+                orig_i.append(base); orig_j.append(base+1); orig_k.append(base+2)
+        data_traces.append(go.Mesh3d(
+            x=orig_x, y=orig_y, z=orig_z,
+            i=orig_i, j=orig_j, k=orig_k,
+            color=original_color, opacity=0.4,
+            name="Original", showlegend=True,
+            hoverinfo="skip"
+        ))
+    # Deformed mesh (colored surface) at factor = 1
+    def_x, def_y, def_z = [], [], []
+    def_i, def_j, def_k = [], [], []
+    def_intensity, def_text = [], []
+    edge_x, edge_y, edge_z = [], [], []
+    for elem_idx, conn in enumerate(e0):
+        pts = nodes[conn]
+        disp = Ed[elem_idx].reshape(k, 2)
+        pts_def = pts + 1.0 * scale * disp  # full deformation
+        # Field values (full displacement) at factor=1
+        if field == "ux":
+            nodal_vals = disp[:,0]
+        elif field == "uy":
+            nodal_vals = disp[:,1]
+        else:
+            nodal_vals = np.linalg.norm(disp, axis=1)
+        # Triangulate deformed element for plotting
+        if k == 3:
+            tris = [(0,1,2)]
+        else:
+            d02_def = np.linalg.norm(pts_def[0] - pts_def[2])
+            d13_def = np.linalg.norm(pts_def[1] - pts_def[3])
+            tris = [(0,1,2),(0,2,3)] if d02_def <= d13_def else [(0,1,3),(1,2,3)]
+        for (a,b,c) in tris:
+            base = len(def_x)
+            def_x += [pts_def[a,0], pts_def[b,0], pts_def[c,0]]
+            def_y += [pts_def[a,1], pts_def[b,1], pts_def[c,1]]
+            def_z += [0.0, 0.0, 0.0]
+            def_intensity += [nodal_vals[a], nodal_vals[b], nodal_vals[c]]
+            def_text += [f"{field_label}: {nodal_vals[a]:.4g}",
+                         f"{field_label}: {nodal_vals[b]:.4g}",
+                         f"{field_label}: {nodal_vals[c]:.4g}"]
+            def_i.append(base); def_j.append(base+1); def_k.append(base+2)
+        # Edges of this deformed element
+        for (a,b) in zip(edge_cycle[:-1], edge_cycle[1:]):
+            edge_x += [pts_def[a,0], pts_def[b,0], None]
+            edge_y += [pts_def[a,1], pts_def[b,1], None]
+            edge_z += [0.0, 0.0, None]
+    data_traces.append(go.Mesh3d(
+        x=def_x, y=def_y, z=def_z,
+        i=def_i, j=def_j, k=def_k,
+        intensity=def_intensity, intensitymode="vertex",
+        colorscale=colorscale, cmin=cmin_global, cmax=cmax_global,
+        showscale=showscale,
+        colorbar=dict(title=colorbar_title or field_label),
+        text=def_text,
+        hoverinfo="text",
+        name="Deformed", showlegend=True
+    ))
+    data_traces.append(go.Scatter3d(
+        x=edge_x, y=edge_y, z=edge_z,
+        mode="lines", line=dict(color="black", width=2),
+        name="Deformed Edges", showlegend=True,   # ensure edges are a legend item
+        hoverinfo="x+y+z+name"
+    ))
+    
+    # Determine indices of deformed surface and edge traces for updates
+    mesh_trace_index = 1 if show_original else 0
+    edge_trace_index = 2 if show_original else 1
+    
+    # Create animation frames for the given number of cycles
+    frames = []
+    frames_per_cycle = 60
+    total_frames = cycles * frames_per_cycle
+    phase_offset = 0.5 * math.pi  # start at sin(π/2)=1 (peak)
+    for f in range(1, total_frames + 1):
+        theta = phase_offset + (2 * math.pi * cycles) * (f / total_frames)
+        factor = math.sin(theta)
+        frame_x, frame_y, frame_z = [], [], []
+        frame_i, frame_j, frame_k = [], [], []
+        frame_intensity, frame_text = [], []
+        frame_edge_x, frame_edge_y, frame_edge_z = [], [], []
+        for elem_idx, conn in enumerate(e0):
+            pts = nodes[conn]
+            disp = Ed[elem_idx].reshape(k, 2)
+            pts_def = pts + factor * scale * disp
+            if field == "ux":
+                nodal_vals = disp[:,0] * factor
+            elif field == "uy":
+                nodal_vals = disp[:,1] * factor
+            else:
+                nodal_vals = np.linalg.norm(disp, axis=1) * abs(factor)
+            # Triangulate element in this deformed state
+            if k == 3:
+                tris = [(0,1,2)]
+            else:
+                d02_def = np.linalg.norm(pts_def[0] - pts_def[2])
+                d13_def = np.linalg.norm(pts_def[1] - pts_def[3])
+                tris = [(0,1,2),(0,2,3)] if d02_def <= d13_def else [(0,1,3),(1,2,3)]
+            for (a,b,c) in tris:
+                base = len(frame_x)
+                frame_x += [pts_def[a,0], pts_def[b,0], pts_def[c,0]]
+                frame_y += [pts_def[a,1], pts_def[b,1], pts_def[c,1]]
+                frame_z += [0.0, 0.0, 0.0]
+                frame_intensity += [nodal_vals[a], nodal_vals[b], nodal_vals[c]]
+                frame_text += [f"{field_label}: {nodal_vals[a]:.4g}",
+                               f"{field_label}: {nodal_vals[b]:.4g}",
+                               f"{field_label}: {nodal_vals[c]:.4g}"]
+                frame_i.append(base); frame_j.append(base+1); frame_k.append(base+2)
+            # Edges for this frame
+            for (a,b) in zip(edge_cycle[:-1], edge_cycle[1:]):
+                frame_edge_x += [pts_def[a,0], pts_def[b,0], None]
+                frame_edge_y += [pts_def[a,1], pts_def[b,1], None]
+                frame_edge_z += [0.0, 0.0, None]
+        frames.append(go.Frame(
+            data=[
+                go.Mesh3d(
+                    x=frame_x, y=frame_y, z=frame_z,
+                    i=frame_i, j=frame_j, k=frame_k,
+                    intensity=frame_intensity, intensitymode="vertex",
+                    colorscale=colorscale,
+                    cmin=cmin_global, cmax=cmax_global,
+                    showscale=showscale, colorbar=dict(title=colorbar_title or field_label),
+                    text=frame_text,
+                    hoverinfo="text"
+                ),
+                go.Scatter3d(
+                    x=frame_edge_x, y=frame_edge_y, z=frame_edge_z,
+                    mode="lines", line=dict(color="black", width=2),
+                    # No showlegend here (inherit from initial), hover info same as initial
+                    hoverinfo="x+y+z+name"
+                )
+            ],
+            traces=[mesh_trace_index, edge_trace_index],
+            name=f"frame{f}"
+        ))
+    # Build figure and update layout for fixed view
+    fig = go.Figure(data=data_traces, frames=frames)
+    xrange = xmax - xmin
+    yrange = ymax - ymin
+    max_range = max(xrange, yrange) or 1e-6
+    aspect_x = xrange / max_range
+    aspect_y = yrange / max_range
+    aspect_z = 0.001  # tiny z to keep scene flat
+    frame_duration = int(round((duration * 1000) / total_frames))
+    fig.update_layout(
+        title=f"{title} (Scale={scale})",
+        scene=dict(
+            xaxis=dict(title="X", range=[xmin, xmax], autorange=False, showgrid=False, zeroline=False),
+            yaxis=dict(title="Y", range=[ymin, ymax], autorange=False, showgrid=False, zeroline=False),
+            zaxis=dict(visible=False),
+            aspectmode="manual",
+            aspectratio=dict(x=aspect_x, y=aspect_y, z=aspect_z),
+            camera=dict(eye=dict(x=0, y=0, z=2),
+                        up=dict(x=0, y=1, z=0),
+                        center=dict(x=0, y=0, z=0),
+                        projection=dict(type="orthographic"))
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom", y=-0.2,
+            xanchor="center", x=0.5
+        ),
+        margin=dict(l=10, r=10, t=40, b=70),
+        template="plotly_white",
+        dragmode="pan",
+        updatemenus=[{
+            "type": "buttons", "showactive": False,
+            "buttons": [
+                {"label": "▶ Play", "method": "animate",
+                 "args": [None, {"frame": {"duration": frame_duration, "redraw": True}, "fromcurrent": True}]},
+                {"label": "❚❚ Pause", "method": "animate",
+                 "args": [[None], {"frame": {"duration": 0, "redraw": True}, "mode": "immediate"}]}
+            ]
+        }]
+    )
+    return fig
+
+
+def plot_element_values(
+    nodes: np.ndarray,
+    elements: np.ndarray,
+    Ed: np.ndarray,
+    element_values: np.ndarray,      # (M,), one scalar per element (e.g., stress)
+    title: str,
+    scale: float = 1.0,
+    colorscale: str = "jet",
+    showscale: bool = True,
+    colorbar_title: Optional[str] = "",
+    show_original: bool = True,
+    original_color: str = "lightgray",
+    original_opacity: float = 0.35,
+    edges_visible: bool = True,      
+    edges_color: str = "black",
+    edges_width: int = 2,
+) -> go.Figure:
+    """
+    Plot the deformed mesh with a constant color per element. Use this to vizualise scalar fields like a stress component. 
+    Works for triangles and quads.
+
+    Parameters
+    ----------
+    nodes : (N, 2) float
+        Nodal coordinates.
+    elements : (M, k) int
+        1-based connectivity with k=3 (tri) or k=4 (quad).
+    Ed : (M, 2*k) float
+        Element nodal displacements [ux0, uy0, ..., ux(k-1), uy(k-1)] per element.
+    element_values : (M,) float
+        Scalar per element (e.g., stress, plastic strain) used for coloring.
+    scale : float
+        Displacement scale factor for visualization.
+    colorscale : str
+        Plotly colorscale name.
+    showscale : bool
+        Whether to show the colorbar.
+    colorbar_title : str or None
+        Colorbar title.
+    show_original : bool
+        Show undeformed mesh (semi-transparent background). Not added to legend.
+    original_color : str
+        Color for original fill.
+    original_opacity : float
+        Opacity for original fill.
+    edges_visible : bool
+        Initial visibility of the *deformed* element edges (legend toggles them on/off).
+    edges_color : str
+        Color for deformed edges.
+    edges_width : int
+        Line width for deformed edges.
+    title : str
+        Plot title.
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Interactive Plotly figure.
+    """
+    nodes = np.asarray(nodes, dtype=float)
+    elements = np.asarray(elements, dtype=int)
+    Ed = np.asarray(Ed, dtype=float)
+    element_values = np.asarray(element_values, dtype=float)
+
+    M, k = elements.shape
+    if k not in (3, 4):
+        raise ValueError("Only triangles (k=3) or quads (k=4) are supported.")
+    if Ed.shape != (M, 2 * k):
+        raise ValueError(f"Ed must be (M, {2*k}) for k={k}. Got {Ed.shape}.")
+    if element_values.shape != (M,):
+        raise ValueError(f"element_values must be shape (M,), got {element_values.shape}.")
+
+    # 0-based connectivity
+    e0 = elements - 1
+    cycle = [0, 1, 2, 0] if k == 3 else [0, 1, 2, 3, 0]
+
+    # Deformed mesh triangles (faces)
+    X, Y, Z = [], [], []
+    I, J, K = [], [], []
+    intensity = []
+    hover_text = []
+
+    # Original background (optional)
+    orig_X, orig_Y, orig_Z = [], [], []
+    orig_I, orig_J, orig_K = [], [], []
+
+    # Deformed edges for legend
+    edge_x, edge_y, edge_z = [], [], []
+
+    for el_idx, conn in enumerate(e0):
+        pts_org = nodes[conn]              # (k, 2)
+        disp = Ed[el_idx].reshape(k, 2)    # (k, 2)
+        pts_def = pts_org + scale * disp   # (k, 2)
+        val = float(element_values[el_idx])
+
+        # --- Original background (fill only; no legend) ---
+        if show_original:
+            if k == 3:
+                tris_o = [(0, 1, 2)]
+            else:
+                d02 = np.linalg.norm(pts_org[0] - pts_org[2])
+                d13 = np.linalg.norm(pts_org[1] - pts_org[3])
+                tris_o = [(0, 1, 2), (0, 2, 3)] if d02 <= d13 else [(0, 1, 3), (1, 2, 3)]
+            for a, b, c in tris_o:
+                base = len(orig_X)
+                for idx in (a, b, c):
+                    orig_X.append(pts_org[idx, 0])
+                    orig_Y.append(pts_org[idx, 1])
+                    orig_Z.append(0.0)
+                orig_I.append(base)
+                orig_J.append(base + 1)
+                orig_K.append(base + 2)
+
+        # --- Deformed faces (constant per-element color) ---
+        if k == 3:
+            tris_d = [(0, 1, 2)]
+        else:
+            d02 = np.linalg.norm(pts_def[0] - pts_def[2])
+            d13 = np.linalg.norm(pts_def[1] - pts_def[3])
+            tris_d = [(0, 1, 2), (0, 2, 3)] if d02 <= d13 else [(0, 1, 3), (1, 2, 3)]
+
+        for a, b, c in tris_d:
+            base = len(X)
+            for idx in (a, b, c):
+                X.append(pts_def[idx, 0])
+                Y.append(pts_def[idx, 1])
+                Z.append(0.0)
+                # same value on all three vertices of element triangles -> flat color
+                intensity.append(val)
+                hover_text.append(f"Element {el_idx+1}, value = {val:.4g}")
+            I.append(base)
+            J.append(base + 1)
+            K.append(base + 2)
+
+        # --- Deformed edges (single trace, togglable in legend) ---
+        for a, b in zip(cycle[:-1], cycle[1:]):
+            edge_x += [pts_def[a, 0], pts_def[b, 0], None]
+            edge_y += [pts_def[a, 1], pts_def[b, 1], None]
+            edge_z += [0.0, 0.0, None]
+
+    # Arrays for faces
+    X = np.array(X); Y = np.array(Y); Z = np.array(Z)
+    intensity = np.array(intensity)
+    cmin, cmax = intensity.min(), intensity.max()
+    if np.isclose(cmin, cmax):
+        cmax = cmin + 1e-12  # avoid zero color range
+
+    fig = go.Figure()
+
+    # --- Original background fill (always visible if enabled; not in legend) ---
+    if show_original:
+        fig.add_trace(go.Mesh3d(
+            x=orig_X, y=orig_Y, z=orig_Z,
+            i=orig_I, j=orig_J, k=orig_K,
+            color=original_color,
+            opacity=original_opacity,
+            flatshading=True,
+            hoverinfo="skip",
+            name="Original (background)",
+            showlegend=False,
+        ))
+
+    # --- Deformed faces (elements) ---
+    fig.add_trace(go.Mesh3d(
+        x=X, y=Y, z=Z,
+        i=I, j=J, k=K,
+        intensity=intensity,
+        intensitymode="vertex",
+        colorscale=colorscale,
+        cmin=cmin, cmax=cmax,
+        showscale=showscale,
+        colorbar=dict(title=colorbar_title or "Value"),
+        flatshading=True,      # keep faces visually uniform
+        text=hover_text,
+        hoverinfo="text",
+        name="Elements",
+        showlegend=False,      # elements always visible; not a legend item
+    ))
+
+    # --- Deformed element edges — legend item for toggling ---
+    fig.add_trace(go.Scatter3d(
+        x=edge_x, y=edge_y, z=edge_z,
+        mode="lines",
+        line=dict(color=edges_color, width=edges_width),
+        hoverinfo="skip",
+        name="Element edges",       # <-- legend label
+        showlegend=True,            # <-- appears in legend
+        visible=True if edges_visible else "legendonly",
+    ))
+
+    # --- View / layout ---
+    fig.update_layout(
+        title=f"{title} (Scale factor = {scale:g})",
+        scene=dict(
+            xaxis=dict(title="X", showgrid=False, zeroline=False, tickangle=0, showspikes=False),
+            yaxis=dict(title="Y", showgrid=False, zeroline=False, tickangle=0, showspikes=False),
+            zaxis=dict(visible=False),
+            aspectmode="data",
+            camera=dict(
+                eye=dict(x=0, y=0, z=2),
+                up=dict(x=0, y=1, z=0),
+                center=dict(x=0, y=0, z=0),
+                projection=dict(type="orthographic"),
+            ),
+        ),
+        template="plotly_white",
+        margin=dict(l=10, r=10, t=40, b=10),
+        dragmode="pan",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1.0,
+        ),
+    )
+    return fig
+
+# ------------------------------------------------------------------
+# Edof builder
+# ------------------------------------------------------------------
+def build_edof(elements: np.ndarray, dofs_per_node: int = 2) -> np.ndarray:
+    """
+    Build Edof matrix (all DoFs per element row-wise), node-major order.
+
+    For 1-based node indices and d=2:
+        DoFs for node n = [2n-1, 2n].
+
+    Parameters
+    ----------
+    elements : (M, k) int
+        Element connectivity (1-based).
+    dofs_per_node : int, default 2
+        Number of DoFs per node.
+
+    Returns
+    -------
+    Edof : (M, k*d) int
+        DoF connectivity row-wise per element.
+    """
+    if dofs_per_node <= 0:
+        raise ValueError("dofs_per_node must be positive.")
+
+    elems = elements.astype(np.int64, copy=False)
+    M, k = elems.shape
+    d = dofs_per_node
+    Edof = np.empty((M, k * d), dtype=np.int64)
+
+    for a in range(d):
+        Edof[:, a::d] = (elems - 1) * d + (a + 1)
+
+    return Edof
+
+
+
+# ------------------------------------------------------------------
+# Mesh and Mesh generator
+# ------------------------------------------------------------------
+
+class Mesh:
+    """
+    A simple container for finite element mesh data.
+
+    Attributes
+    ----------
+    nodes : ndarray
+        Array of node coordinates, shape (n_nodes, 2) or (n_nodes, 3).
+    elements : ndarray
+        Array of element connectivity, shape (n_elements, n_nodes_per_element).
+    edges : dict
+        Dictionary of edge node indices, e.g., {"left": [...], "right": [...], ...}.
+    """
+
+    def __init__(self, nodes, elements, edges, dofs_per_node):
+        self.nodes = nodes
+        self.elements = elements
+        self.edges = edges
+        self.edofs = build_edof(elements, dofs_per_node=dofs_per_node)
+        self.num_dofs = nodes.shape[0] * dofs_per_node
+
+    def __repr__(self):
+        return (
+            f"<Mesh>\n"
+            f"  Nodes:    {self.nodes.shape[0]} (dim = {self.nodes.shape[1]})\n"
+            f"  # Dofs:   {self.num_dofs}\n"
+            f"  Elements: {self.elements.shape[0]} (nodes/elem = {self.elements.shape[1]})\n"
+            f"  Edges:    {self.edges}\n"
+            # f"  Edges:    {', '.join(self.edges.keys())}\n"
+        )
+    
+    def plot(self, title="Mesh", show_node_ids=False, show_element_ids=False):
+        fig = plot_mesh(
+            nodes=self.nodes, 
+            elements=self.elements, 
+            edges=self.edges, 
+            title=title,
+            show_node_ids=show_node_ids, 
+            show_element_ids=show_element_ids
+        )
+        return fig
+
+
+class MeshGenerator:
+
+    @staticmethod
+    def semistructured_rectangle_mesh_quads(
+        width: float,
+        height: float,
+        nx: int,
+        ny: int,
+        element_type: ElementType = "quad",
+        origin: Tuple[float, float] = (0.0, 0.0),
+        # tri_pattern: Literal["\\", "/", "alternating"] = "\\",  # accepted for signature parity; ignored here
+        dofs_per_node: int = 2,
+        skew_frac_default = 0.05
+    ) -> Mesh:
+        """
+        Semi-structured rectangular Q4 mesh:
+        - Straight horizontal grid lines (y = const).
+        - 'Vertical' grid lines smoothly inclined via a parabolic top x-shift.
+        - Perfect rectangles when CA2_SEMISTRUCT_SKEW_FRAC == 0.0 (no cutoff; shift term becomes zero).
+
+        Parameters
+        ----------
+        width, height : float
+            Rectangle size in x and y directions.
+        nx, ny : int
+            Number of elements along x and y. Nodes: (nx+1) by (ny+1).
+        element_type : {"quad", "tri"}, default "quad"
+            Only "quad" is supported in this generator; "tri" raises ValueError.
+        origin : (float, float), default (0.0, 0.0)
+            Lower-left corner coordinates (x0, y0).
+        tri_pattern : {"\\", "/", "alternating"}, default "\\"
+            Accepted for API compatibility; ignored for quads.
+        dofs_per_node : int, default 2
+            Degrees of freedom per node.
+
+        Returns
+        -------
+        Mesh
+            - nodes   : (N, 2) float array [x, y], N = (nx+1)*(ny+1).
+            - elements: (Ne, 4) int array, 1-based Q4 connectivity (LL, LR, UR, UL).
+            - edges   : dict of 1-based int arrays {"bottom","top","left","right"}.
+        """
+        if nx <= 0 or ny <= 0:
+            raise ValueError("nx and ny must be positive integers.")
+        if element_type != "quad":
+            raise ValueError("This semi-structured generator currently supports only 'quad' elements.")
+
+        x0, y0 = origin
+        npx, npy = nx + 1, ny + 1
+        N = npx * npy
+        nodes = np.empty((N, 2), dtype=float)
+
+        # --- Helper: enforce strictly increasing sequence to avoid crossings ---
+        def _enforce_monotone_ascending(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+            x_mono = x.copy()
+            for i in range(1, x_mono.size):
+                if x_mono[i] <= x_mono[i - 1]:
+                    x_mono[i] = x_mono[i - 1] + eps
+            # Ensure exact right corner if any drift occurred
+            if x_mono[-1] != x[-1]:
+                drift = x_mono[-1] - x[-1]
+                if drift != 0.0:
+                    n = x_mono.size
+                    corr = np.linspace(0.0, drift, n)
+                    x_mono -= corr
+                    for i in range(1, n):
+                        if x_mono[i] <= x_mono[i - 1]:
+                            x_mono[i] = x_mono[i - 1] + eps
+                    x_mono[-1] = x[-1]
+            return x_mono
+
+        # --- Bottom x (uniform) ---
+        xb = np.linspace(x0, x0 + width, npx)
+
+        # --- Top x with smooth skew (zero amplitude -> structured automatically) ---
+        t = np.linspace(0.0, 1.0, npx)
+        skew = float(skew_frac_default)
+        # Smooth, zero-at-ends parabola: peak = skew * width at mid-span
+        shift = (4.0 * skew * width) * t * (1.0 - t)
+        xt = (x0 + width * t) + shift
+
+        # Enforce exact corners
+        xt[0], xt[-1] = x0, x0 + width
+
+        # Only enforce monotonicity when there is actual skew (to avoid micro-tilt at zero)
+        if not np.allclose(shift, 0.0):
+            xt = _enforce_monotone_ascending(xt)
+
+        # --- Straight horizontal layers; linear x interpolation between xb and xt ---
+        ylev = np.linspace(y0, y0 + height, npy)
+        for j, y in enumerate(ylev):
+            # Lambda varies smoothly with y; when skew==0, xt==xb -> xcol==xb -> perfect verticals
+            lam = (y - y0) / height if height > 0.0 else 0.0
+            xcol = (1.0 - lam) * xb + lam * xt
+            base = j * npx
+            nodes[base : base + npx, 0] = xcol
+            nodes[base : base + npx, 1] = y
+
+        # Node index (0-based) at column i and row j (j=0 at bottom)
+        def nid(i: int, j: int) -> int:
+            return j * npx + i
+
+        # --- Edge nodes (0-based initially) ---
+        bottom = np.array([nid(i, 0) for i in range(npx)], dtype=np.int64)
+        top    = np.array([nid(i, ny) for i in range(npx)], dtype=np.int64)
+        left   = np.array([nid(0, j) for j in range(npy)], dtype=np.int64)
+        right  = np.array([nid(nx, j) for j in range(npy)], dtype=np.int64)
+
+        # --- Q4 connectivity (0-based) ---
+        Ne = nx * ny
+        elements0 = np.empty((Ne, 4), dtype=np.int64)
+        e = 0
+        for j in range(ny):
+            for i in range(nx):
+                n00 = nid(i, j)         # lower-left
+                n10 = nid(i + 1, j)     # lower-right
+                n11 = nid(i + 1, j + 1) # upper-right
+                n01 = nid(i, j + 1)     # upper-left
+                elements0[e, :] = (n00, n10, n11, n01)
+                e += 1
+
+        # --- Convert to 1-based indexing to match structured_rectangle_mesh ---
+        elements = elements0 + 1
+        bottom  += 1
+        top     += 1
+        left    += 1
+        right   += 1
+
+        edges = {
+            "bottom": bottom,
+            "top": top,
+            "left": left,
+            "right": right,
+        }
+        return Mesh(nodes, elements, edges, dofs_per_node)
+
+ 
+    @staticmethod
+    def structured_rectangle_mesh(
+        width: float,
+        height: float,
+        nx: int,
+        ny: int,
+        element_type: ElementType = "tri",
+        origin: Tuple[float, float] = (0.0, 0.0),
+        tri_pattern: Literal["\\", "/", "alternating"] = "\\",
+        dofs_per_node: int =2
+    ) -> Dict[str, np.ndarray]:
+        """
+        Create a structured rectangular mesh using either triangles or quads.
+
+        Parameters
+        ----------
+        width : float
+            Rectangle width in x-direction.
+        height : float
+            Rectangle height in y-direction.
+        nx : int
+            Number of elements along x.
+        ny : int
+            Number of elements along y.
+        element_type : {"quad", "tri"}, default "quad"
+            Element type. "tri" creates two triangles per cell.
+        origin : (float, float), default (0, 0)
+            Lower-left corner coordinates.
+        tri_pattern : {"\\", "/", "alternating"}, default "alternating"
+            Diagonal pattern for triangulation.
+
+        Returns
+        -------
+        dict with keys:
+            - "nodes": (N, 2) float64, node coordinates [x, y].
+            - "elements": (M, k) int64, connectivity matrix:
+                * k=4 for quads (order: lower-left, lower-right, upper-right, upper-left).
+                * k=3 for triangles (counter-clockwise).
+            - "edges": dict of arrays:
+                * "bottom", "top", "left", "right" (1-based indices).
+            - "spacing": (dx, dy) cell sizes.
+        """
+        if nx <= 0 or ny <= 0:
+            raise ValueError("nx and ny must be positive integers.")
+
+        x0, y0 = origin
+        dx = width / nx
+        dy = height / ny
+
+        # --- Nodes ---
+        xs = np.linspace(x0, x0 + width, nx + 1)
+        ys = np.linspace(y0, y0 + height, ny + 1)
+        X, Y = np.meshgrid(xs, ys, indexing="xy")  # shape: (ny+1, nx+1)
+        nodes = np.column_stack([X.ravel(order="C"), Y.ravel(order="C")])  # (N, 2)
+
+        def nid(i: int, j: int) -> int:
+            """Node index (0-based) for column i and row j (j=0 at bottom)."""
+            return j * (nx + 1) + i
+
+        # --- Edge nodes (0-based initially) ---
+        bottom = np.array([nid(i, 0) for i in range(nx + 1)], dtype=np.int64)
+        top = np.array([nid(i, ny) for i in range(nx + 1)], dtype=np.int64)
+        left = np.array([nid(0, j) for j in range(ny + 1)], dtype=np.int64)
+        right = np.array([nid(nx, j) for j in range(ny + 1)], dtype=np.int64)
+
+        # --- Elements (0-based) ---
+        quads: List[List[int]] = []
+        for j in range(ny):
+            for i in range(nx):
+                n00 = nid(i, j)         # lower-left
+                n10 = nid(i + 1, j)     # lower-right
+                n11 = nid(i + 1, j + 1) # upper-right
+                n01 = nid(i, j + 1)     # upper-left
+                quads.append([n00, n10, n11, n01])
+
+        if element_type == "quad":
+            elements = np.array(quads, dtype=np.int64)
+        elif element_type == "tri":
+            tris: List[List[int]] = []
+            for j in range(ny):
+                for i in range(nx):
+                    idx = j * nx + i
+                    n00, n10, n11, n01 = quads[idx]
+                    if tri_pattern == "alternating":
+                        if (i + j) % 2 == 0:
+                            tris.append([n00, n10, n11])
+                            tris.append([n00, n11, n01])
+                        else:
+                            tris.append([n00, n10, n01])
+                            tris.append([n10, n11, n01])
+                    elif tri_pattern == "\\":
+                        tris.append([n00, n10, n11])
+                        tris.append([n00, n11, n01])
+                    elif tri_pattern == "/":
+                        tris.append([n00, n10, n01])
+                        tris.append([n10, n11, n01])
+                    else:
+                        raise ValueError("Invalid tri_pattern.")
+            elements = np.array(tris, dtype=np.int64)
+        else:
+            raise ValueError("element_type must be 'quad' or 'tri'.")
+
+        # --- Convert to 1-based indexing ---
+        elements += 1
+        bottom += 1; top += 1; left += 1; right += 1
+
+        edges = {
+            "bottom": bottom,
+            "top": top,
+            "left": left,
+            "right": right,
+        }
+        return Mesh(nodes, elements, edges, dofs_per_node)
+
+
+def spy(matrix: np.ndarray, marker_size: int = 8, title: str = "Spy Plot") -> go.Figure:
+    """
+    Create an interactive spy plot for a sparse matrix using Plotly.
+
+    Nonzero entries are shown as markers, similar to Matplotlib's `plt.spy()`.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        The input matrix (2D array) to visualize.
+    marker_size : int, optional
+        Size of the markers representing nonzero entries. Default is 8.
+    title : str, optional
+        Title of the plot. Default is "Spy Plot".
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+        Interactive Plotly figure showing nonzero entries.
+
+    Notes
+    -----
+    - Hover info displays the matrix indices and values.
+    - The y-axis is reversed to match matrix orientation (row 0 at top).
+    - Maintains equal aspect ratio for rows and columns.
+    - Tight margins for a clean look.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> A = np.array([[1, 0, 0, 2],
+    ...               [0, 3, 0, 0],
+    ...               [4, 0, 5, 0],
+    ...               [0, 0, 0, 6]])
+    >>> fig = plot_spy(A, marker_size=10, title="Sparse Matrix Spy Plot")
+    >>> fig.show()
+    """
+    # Find nonzero entries
+    rows, cols = np.nonzero(matrix)
+
+    # Prepare hover text
+    hover_text = [f"A[{r},{c}] = {matrix[r, c]}" for r, c in zip(rows, cols)]
+
+    # Create scatter plot for nonzero entries
+    fig = go.Figure(data=go.Scatter(
+        x=cols, y=rows,
+        mode='markers',
+        marker=dict(size=marker_size, color='black'),
+        text=hover_text,
+        hoverinfo="text"
+    ))
+
+    # Layout adjustments with tight margins
+    fig.update_layout(
+        title=title,
+        xaxis=dict(title="Column", scaleanchor="y", scaleratio=1),
+        yaxis=dict(title="Row", autorange="reversed"),  # row 0 at top
+        template="plotly_white",
+        dragmode="pan",
+        margin=dict(l=5, r=5, t=30, b=5)  # tight margins
+    )
+
+    return fig
+
+# Continuum elements:
+def cst_element(nodes: np.ndarray, D: np.ndarray, t: float, body_load=None):
+    """
+    Compute stiffness matrix and optional body load vector for a CST element
+    (3-node constant strain triangle).
+
+    Parameters
+    ----------
+    nodes : (3, 2) ndarray
+        Node coordinates [[x1,y1],[x2,y2],[x3,y3]].
+    D : (3, 3) ndarray
+        Constitutive matrix.
+    t : float
+        Thickness.
+    body_load : array-like of length 2, optional
+        Body force components [bx, by].
+
+    Returns
+    -------
+    Ke : (6, 6) ndarray
+        Element stiffness matrix.
+    fe : (6,) ndarray
+        Element load vector.
+    """
+    nodes = np.asarray(nodes, dtype=float)
+    if nodes.shape != (3, 2):
+        raise ValueError("nodes must be (3,2).")
+    D = np.asarray(D, dtype=float)
+    if D.shape != (3, 3):
+        raise ValueError("D must be (3,3).")
+    if t <= 0:
+        raise ValueError("Thickness must be positive.")
+
+    x1, y1 = nodes[0]
+    x2, y2 = nodes[1]
+    x3, y3 = nodes[2]
+
+    # Area
+    A = 0.5 * ((x2 - x1)*(y3 - y1) - (x3 - x1)*(y2 - y1))
+    if A <= 0:
+        raise ValueError("Triangle area must be positive.")
+
+    # Derivatives of shape functions
+    b = np.array([y2 - y3, y3 - y1, y1 - y2])
+    c = np.array([x3 - x2, x1 - x3, x2 - x1])
+    dN_dx = b / (2*A)
+    dN_dy = c / (2*A)
+
+    # B-matrix (3x6)
+    B = np.zeros((3, 6))
+    for i in range(3):
+        B[0, 2*i]     = dN_dx[i]
+        B[1, 2*i+1]   = dN_dy[i]
+        B[2, 2*i]     = dN_dy[i]
+        B[2, 2*i+1]   = dN_dx[i]
+
+    # Stiffness matrix
+    Ke = B.T @ D @ B * A * t
+
+    # Body load vector
+    fe = np.zeros(6)
+    if body_load is not None:
+        bx, by = body_load
+        for i in range(3):
+            fe[2*i]   = bx * A * t / 3
+            fe[2*i+1] = by * A * t / 3
+
+    return Ke, fe
+
+
+def cst_element_M(nodes: np.ndarray, rho: float, t: float):
+    """
+    Compute mass matrix for a CST (3-node constant strain triangle) element.
+    """
+    x1, y1 = nodes[0]
+    x2, y2 = nodes[1]
+    x3, y3 = nodes[2]
+
+    # Area
+    A = 0.5 * ((x2 - x1)*(y3 - y1) - (x3 - x1)*(y2 - y1))
+    return rho*A*t/12*np.array([
+        [2, 0, 1, 0, 1, 0],
+        [0, 2, 0, 1, 0, 1],
+        [1, 0, 2, 0, 1, 0],
+        [0, 1, 0, 2, 0, 1],
+        [1, 0, 1, 0, 2, 0],
+        [0, 1, 0, 1, 0, 2]
+    ])
+
+def cst_element_stress_strain(nodes: np.ndarray, D: np.ndarray, ae: np.ndarray):
+    """
+    Compute stress and strain for a CST (3-node constant strain triangle) element.
+
+    Parameters
+    ----------
+    nodes : (3, 2) ndarray
+        Node coordinates [[x1,y1],[x2,y2],[x3,y3]].
+    D : (3, 3) ndarray
+        Constitutive matrix.
+    ae : (6,) ndarray
+        Nodal displacement vector [u1,v1,u2,v2,u3,v3].
+
+    Returns
+    -------
+    stress : (3,) ndarray
+        Stress vector [σ_xx, σ_yy, σ_xy].
+    strain : (3,) ndarray
+        Strain vector [ε_xx, ε_yy, γ_xy].
+    """
+    nodes = np.asarray(nodes, dtype=float)
+    if nodes.shape != (3, 2):
+        raise ValueError("nodes must be (3,2).")
+    D = np.asarray(D, dtype=float)
+    if D.shape != (3, 3):
+        raise ValueError("D must be (3,3).")
+    ae = np.asarray(ae, dtype=float)
+    if ae.shape != (6,):
+        raise ValueError("displacements must be length 6.")
+
+    x1, y1 = nodes[0]
+    x2, y2 = nodes[1]
+    x3, y3 = nodes[2]
+
+    # Area
+    A = 0.5 * ((x2 - x1)*(y3 - y1) - (x3 - x1)*(y2 - y1))
+    if A <= 0:
+        raise ValueError("Triangle area must be positive.")
+
+    # Derivatives of shape functions
+    b = np.array([y2 - y3, y3 - y1, y1 - y2])
+    c = np.array([x3 - x2, x1 - x3, x2 - x1])
+    dN_dx = b / (2*A)
+    dN_dy = c / (2*A)
+
+    # B-matrix (3x6)
+    B = np.zeros((3, 6))
+    for i in range(3):
+        B[0, 2*i]     = dN_dx[i]
+        B[1, 2*i+1]   = dN_dy[i]
+        B[2, 2*i]     = dN_dy[i]
+        B[2, 2*i+1]   = dN_dx[i]
+
+    # Compute strain and stress
+    strain = B @ ae
+    stress = D @ strain
+
+    return stress, strain
+
+
+def hooke_2d_plane_stress(E: float, nu: float) -> np.ndarray:
+    """
+    Isotropic Hooke matrix for 2D plane stress (Voigt: [ϵ_xx, ϵ_yy, γ_xy]).
+    """
+    f = E / (1.0 - nu**2)
+    return f * np.array([
+        [1.0,  nu,   0.0],
+        [ nu, 1.0,   0.0],
+        [0.0, 0.0, (1.0 - nu)/2.0]
+    ], dtype=float)
+
+
+def hooke_2d_plane_strain(E: float, nu: float) -> np.ndarray:
+    """
+    Isotropic Hooke matrix for 2D plane strain (Voigt: [ϵ_xx, ϵ_yy, γ_xy]).
+    """
+    f = E / ((1.0 + nu) * (1.0 - 2.0*nu))
+    return f * np.array([
+        [1.0 - nu,     nu,            0.0],
+        [    nu,   1.0 - nu,          0.0],
+        [   0.0,       0.0,  (1.0 - 2.0*nu)/2.0]
+    ], dtype=float)
+
+def hooke_3d(E: float, nu: float) -> np.ndarray:
+    """
+    Isotropic Hooke matrix for full 3D elasticity (Voigt form),
+    using engineering shear strains:
+      stress  = [σx,  σy,  σz,  τyz,  τxz,  τxy]^T
+      strain  = [εx,  εy,  εz,  γyz,  γxz,  γxy]^T
+
+    D is 6x6 and satisfies:  [stress] = D [strain]
+    """
+    f = E / ((1.0 + nu) * (1.0 - 2.0*nu))       # common factor
+    a = (1.0 - nu)                              # normal-diagonal block (before scaling)
+    b = nu                                      # normal off-diagonals
+    s = (1.0 - 2.0*nu) / 2.0                    # shear diagonal (=> G after scaling)
+
+    return f * np.array([
+        [a,  b,  b,  0.0, 0.0, 0.0],
+        [b,  a,  b,  0.0, 0.0, 0.0],
+        [b,  b,  a,  0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0,  s,   0.0, 0.0],
+        [0.0, 0.0, 0.0,  0.0, s,   0.0],
+        [0.0, 0.0, 0.0,  0.0, 0.0, s  ]
+    ], dtype=float)
+
+
+def gauss_integration_rule(ngp: int) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Return Gauss–Legendre integration points and weights for [-1, 1].
+
+    Parameters
+    ----------
+    ngp : int
+        Number of Gauss points per direction (supported: 1, 2, or 3).
+
+    Returns
+    -------
+    coords : np.ndarray
+        Array of Gauss point coordinates in [-1, 1].
+    weights : np.ndarray
+        Array of corresponding Gauss weights.
+
+    Raises
+    ------
+    NotImplementedError
+        If ngp is not 1, 2, or 3.
+
+    Examples
+    --------
+    >>> gauss_integration_rule(2)
+    (array([-0.57735027,  0.57735027]), array([1., 1.]))
+    """
+    return  np.polynomial.legendre.leggauss(ngp)
+
+
+def extract_block(K: np.ndarray, free_dofs: List[int]) -> np.ndarray:
+    """
+    Extract a square submatrix (block) from a symmetric matrix `K` using the specified degrees of freedom.
+
+    Parameters
+    ----------
+    K : np.ndarray
+        The full symmetric matrix (e.g., stiffness matrix).
+    free_dofs : List[int]
+        A list of degrees of freedom (1-based indexing) to extract. These will be used for both rows and columns.
+
+    Returns
+    -------
+    np.ndarray
+        The extracted square submatrix corresponding to the specified degrees of freedom.
+
+    Example
+    -------
+    >>> K = np.array([[10, 2, 3],
+    ...               [2, 20, 5],
+    ...               [3, 5, 30]])
+    >>> free_dofs = [1, 3]
+    >>> extract_block(K, free_dofs)
+    array([[10,  3],
+           [ 3, 30]])
+    """
+    idx = np.array(free_dofs, dtype=int) - 1  # Convert to 0-based indexing
+    return K[np.ix_(idx, idx)]
