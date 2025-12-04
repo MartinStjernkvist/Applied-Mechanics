@@ -99,9 +99,7 @@ rho = 7800 # kg/m^3
 g = 9.81 # m/s^2
 b = [0, -rho * g] # N
 
-
-
-
+# Analytical: simply supported beam with uniform load
 L = W * 2 
 A = t * H
 I = (t * (H**3)) / 12
@@ -111,17 +109,6 @@ M_max = (w * (L**2)) / 8
 c = H / 2
 sigma_analytic = (M_max * c) / I
 
-# # Analytical: simply supported beam with uniform load q = rho*g*A
-# q = rho * g * (H * t)
-# I = t * H**3 / 12
-# # L here is the FULL length (W_full)
-# delta_analytic = -(5 * q * (W * 2)**4) / (384 * E * I)
-
-# # Max Stress (My/I): M_max = qL^2/8
-# M_max = q * (W * 2)**2 / 8
-# sigma_analytic = M_max * (H/2) / I
-
-
 def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
 
     mesh = MeshGenerator.structured_rectangle_mesh(
@@ -129,8 +116,6 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
         height=H,
         nx=nelx,
         ny=nely
-        # dofs_per_node = 2
-        # element_type = "tri"
     )
 
     nodes = mesh.nodes
@@ -152,7 +137,6 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     D = hooke_2d_plane_stress(E, nu)
     # displayvar('D', D)
     
-    # Assembly of K and f
     ndofs = nodes.shape[0] * 2
     K = np.zeros((ndofs, ndofs))
     f = np.zeros(ndofs)
@@ -162,7 +146,6 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
         dofs = Edof[el, :]
         assem(K, Ke, dofs)
         assem(f, fe, dofs)
-    
     # displayvar('K', K, accuracy=3)
     # displayvar('f', f, accuracy=3)
     
@@ -218,10 +201,6 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
         el_stresses[el, :] = σe
     # displayvar('σ', el_stresses, accuracy=3)
     
-    right_norm_stresses = []
-    
-    # for n in right_nodes:
-    #     right_norm_stresses.append(el_stresses[n, :])
     right_elements = [el for el in range(len(elements)) 
                   if sum(n in right_nodes for n in elements[el, :]) >= 2]
 
@@ -230,11 +209,11 @@ def task1(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     print(f'maximum normal stress at right edge: {right_max_norm_stress:.3e} Pa')
     
     print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection:.3e} m vs {delta_analytic:.3e} m \n Stress: {right_max_norm_stress:.3e} Pa vs {sigma_analytic:.3e} Pa')
+    fraction_displacement = avg_deflection / delta_analytic
 
-    return avg_deflection, right_max_norm_stress
+    return avg_deflection, right_max_norm_stress, ndofs, fraction_displacement
 
 task1(element_type='cst', nelx=40, nely=8, plot_n_print=True)
-# task1(element_type='cst', nelx=250, nely=50, plot_n_print=False)
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -249,26 +228,33 @@ print(nely_list)
 
 avg_deflection_list = []
 max_norm_stress_list = []
-num_of_nodes_list = []
+ndofs_list = []
+fraction_displacement_list = []
 for i in range(len(nelx_list)):
-    avg_deflection, right_max_norm_stress = task1(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement = task1(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
     avg_deflection_list.append(avg_deflection)
     max_norm_stress_list.append(right_max_norm_stress)
-    num_of_nodes_list.append(int(nelx_list[i] * nely_list[i]))
-    print(num_of_nodes_list)
-    print(np.shape(avg_deflection_list))
+    ndofs_list.append(ndofs)
+    fraction_displacement_list.append(fraction_displacement)
 
     plt.figure()
-    plt.plot(num_of_nodes_list, avg_deflection_list, 'X-')
+    plt.plot(ndofs_list, avg_deflection_list, 'X-')
     plt.axhline(delta_analytic, color='orange', linestyle='--', alpha=0.5)
-    plt.xlabel('Number of elements')
+    plt.xlabel('Number of DOFs')
     plt.ylabel('Average deflection (m)')
     plt.show()
     
     plt.figure()
-    plt.plot(num_of_nodes_list, max_norm_stress_list, 'X-', color='red')
+    plt.plot(ndofs_list, fraction_displacement_list, 'o-', color='black')
+    plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
+    plt.xlabel('Number of DOFs')
+    plt.ylabel('Displacement fraction: Numerical / Analytical')
+    plt.show()
+    
+    plt.figure()
+    plt.plot(ndofs_list, max_norm_stress_list, 'X-', color='red')
     plt.axhline(sigma_analytic, color='orange', linestyle='--', alpha=0.5)
-    plt.xlabel('Number of elements')
+    plt.xlabel('Number of DOFs')
     plt.ylabel('Maximum normal stress (Pa)')
     plt.show()
 #%%
