@@ -57,6 +57,12 @@ plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
+def sfig(fig_name):
+    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
+    print('figure name: ', fig_name)
+
 def figg(fig_name):
     fig_output_file = script_dir / "fig" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -134,6 +140,7 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     if plot_n_print == True:
         fig = mesh.plot('mesh')
         fig = plot_mesh(nodes, elements, edge_nodes)
+        sfig('Mesh.png')
         fig.show()
         # displayvar('right edge nodes', edge_nodes['right'])
         # display(Edof)
@@ -201,6 +208,7 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     ed = extract_dofs(a, Edof)
     if plot_n_print == True:
         fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='utotal')
+        sfig('Deformed mesh.png')
         fig.show()
     else:
         pass
@@ -260,6 +268,7 @@ for i in range(len(nelx_list)):
     plt.axhline(delta_analytic, color='orange', linestyle='--', alpha=0.5)
     plt.xlabel('Number of DOFs')
     plt.ylabel('Average deflection (m)')
+    sfig('Average deflection vs Number of DOFs.png')
     plt.show()
     
     plt.figure()
@@ -267,6 +276,7 @@ for i in range(len(nelx_list)):
     plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
     plt.xlabel('Number of DOFs')
     plt.ylabel('Displacement fraction: Numerical / Analytical')
+    sfig('Displacement fraction vs Number of DOFs.png')
     plt.show()
     
     plt.figure()
@@ -274,6 +284,7 @@ for i in range(len(nelx_list)):
     plt.axhline(sigma_analytic, color='orange', linestyle='--', alpha=0.5)
     plt.xlabel('Number of DOFs')
     plt.ylabel('Maximum normal stress (Pa)')
+    sfig('Maximum normal stress vs Number of DOFs.png')
     plt.show()
 #%%
 

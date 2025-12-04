@@ -153,11 +153,11 @@ for el in range(num_el):
     Ke = bar2e(Ex[el, :], Ey[el, :], E = E, A=A)  # Element stiffness matrix
     dofs = Edof[el, :]   # DOFs for the element
     assem(K, Ke, dofs)
-displayvar("K", K)
+displayvar("K", K, accuracy=3)
 
 # External forces
 f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
-displayvar("f", f)
+displayvar("f", f, accuracy=3)
 
 # Boundary conditions
 bc_dofs = np.array([1, 3, 4]) # DOFs fixed: 1, 3, 4
@@ -165,7 +165,7 @@ bc_vals = np.array([0.0, 0.0, 0.0])
 
 # Solve the system of equations
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
-displayvar("a", a)
+displayvar("a", a, accuracy=3)
 displayvar("r", np.round(r))
 
 # Vertical deflection p
@@ -270,7 +270,7 @@ fig.show()
 # Radius and area moment of inertia for cross-sectional area
 radius = np.sqrt(A / np.pi)
 I = np.pi * radius**4 / 4 
-displayvar("I", I)
+displayvar("I", I, accuracy=3)
 
 # Topology matrix (connectivity)
 Edof = np.array([
@@ -309,7 +309,7 @@ for el in range(num_el):
 
 # External forces
 f[14-1] = -P  # Add a vertical force at node 5 (= dof 14)
-displayvar("f", f)
+displayvar("f", f, accuracy=3)
 
 # Boundary conditions
 # From Task 1: DOFs fixed: 1, 3, 4 
@@ -320,11 +320,11 @@ bc_vals = [0.0, 0.0, 0.0]
 # # Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
-displayvar("a", a, 2)
+displayvar("a", a, accuracy=3)
 displayvar("r", np.round(r), 2)
 
 # Vertical deflection p
-displayvar("p_P", a[14-1]) 
+displayvar("p_P", a[14-1], accuracy=3) 
 
 #---------------------------------------------------------------------------------------------------
 # 2c)
@@ -346,8 +346,8 @@ for el in range(num_el):
     M[el, :] = data["M"]
     N[el, :] = data["N"]
 
-displayvar("M", M) 
-displayvar("N", N) 
+displayvar("M", M, accuracy=3) 
+displayvar("N", N, accuracy=3) 
 
 sigma_top = np.zeros((num_el, 2))
 sigma_bottom = np.zeros((num_el, 2))
@@ -358,8 +358,8 @@ for i in range(7):
         sigma_top[i, j] = M[i, j] * radius / I + N[i, j] / A
         sigma_bottom[i, j] = M[i, j] * (-radius) / I + N[i, j] / A
         
-displayvar("stress top", sigma_top) 
-displayvar("stress bottom", sigma_bottom) 
+displayvar("stress top", sigma_top, accuracy=3) 
+displayvar("stress bottom", sigma_bottom, accuracy=3) 
 
 print('max tensile stress: ', max(np.max(sigma_top), np.max(sigma_bottom)))
 print('max compressive stress: ', min(np.min(sigma_top), np.min(sigma_bottom)))
@@ -393,11 +393,11 @@ for el in range(num_el):
 # Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
-displayvar("a", a, 2)
-displayvar("r", np.round(r), 2)
+displayvar("a", a, accuracy=3)
+displayvar("r", np.round(r), accuracy=3)
 
 # Vertical deflection p
-displayvar("p_q", a[14-1]) 
+displayvar("p_q", a[14-1], accuracy=3) 
 
 #%%
 ####################################################################################################
