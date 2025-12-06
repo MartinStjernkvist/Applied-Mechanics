@@ -232,10 +232,12 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     right_max_norm_stress = np.max(np.abs(right_edge_stresses[:, 0]))
     print(f'maximum normal stress at right edge: {right_max_norm_stress:.3e} Pa')
     
+    print(f'\n number of DOFs: {ndofs}')
     print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection:.3e} m vs {delta_analytic:.3e} m \n Stress: {right_max_norm_stress:.3e} Pa vs {sigma_analytic:.3e} Pa')
     fraction_displacement = avg_deflection / delta_analytic
+    fraction_stress = right_max_norm_stress / sigma_analytic
 
-    return avg_deflection, right_max_norm_stress, ndofs, fraction_displacement
+    return avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress
 
 task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 
@@ -245,7 +247,7 @@ task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 1 - Convergence')
 
-nelx_list = np.arange(50, 250, 25)
+nelx_list = np.arange(50, 300, 25)
 nely_list = [int(i * (H / W)) for i in nelx_list]
 print(nelx_list)
 print(nely_list)
@@ -254,12 +256,21 @@ avg_deflection_list = []
 max_norm_stress_list = []
 ndofs_list = []
 fraction_displacement_list = []
+fraction_stress_list = []
 for i in range(len(nelx_list)):
-    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
     avg_deflection_list.append(avg_deflection)
     max_norm_stress_list.append(right_max_norm_stress)
     ndofs_list.append(ndofs)
     fraction_displacement_list.append(fraction_displacement)
+    fraction_stress_list.append(fraction_stress)
+    
+    if i != 0:
+        if 1 - fraction_displacement_list[i] / fraction_displacement_list[i-1] <= 0.01:
+            print(f'Deflection convergence for NDOF = {ndofs[i]}')
+        
+        if 1 - fraction_stress_list[i] / fraction_stress_list[i-1] <= 0.01:
+            print(f'Deflection convergence for NDOF = {ndofs[i]}')
 
     plt.figure()
     plt.plot(ndofs_list, avg_deflection_list, 'X-')
@@ -284,7 +295,14 @@ for i in range(len(nelx_list)):
     plt.ylabel('Maximum normal stress (Pa)')
     sfig('Maximum normal stress vs Number of DOFs.png')
     plt.show()
-#%%
+    
+    plt.figure()
+    plt.plot(ndofs_list, fraction_stress_list, 'o-', color='black')
+    plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
+    plt.xlabel('Number of DOFs')
+    plt.ylabel('Stress fraction: Numerical / Analytical')
+    sfig('Stress fraction vs Number of DOFs.png')
+    plt.show()
 
 #%%
 ####################################################################################################
