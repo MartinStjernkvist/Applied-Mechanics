@@ -247,7 +247,10 @@ task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 1 - Convergence')
 
-nelx_list = np.arange(50, 300, 25)
+nelx_list = []
+for i in range(5):
+    nelx_list.append(int(300 / np.sqrt(2)**(4 - i)))
+    
 nely_list = [int(i * (H / W)) for i in nelx_list]
 print(nelx_list)
 print(nely_list)
@@ -266,11 +269,17 @@ for i in range(len(nelx_list)):
     fraction_stress_list.append(fraction_stress)
     
     if i != 0:
-        if 1 - fraction_displacement_list[i] / fraction_displacement_list[i-1] <= 0.01:
-            print(f'Deflection convergence for NDOF = {ndofs[i]}')
+        rel_change_displacement = (fraction_displacement_list[i] - fraction_displacement_list[i-1]) / fraction_displacement_list[i]
+        rel_change_stress = (fraction_stress_list[i] - fraction_stress_list[i-1]) / fraction_stress_list[i]
+
+        print(f'relative change in displacement: {rel_change_displacement} %')
+        print(f'relative change in stress: {rel_change_stress} %')
         
-        if 1 - fraction_stress_list[i] / fraction_stress_list[i-1] <= 0.01:
-            print(f'Deflection convergence for NDOF = {ndofs[i]}')
+        if rel_change_displacement <= 0.01:
+            print(f'Deflection convergence for NDOF = {ndofs}')
+        
+        if rel_change_stress <= 0.01:
+            print(f'Stress convergence for NDOF = {ndofs}')
 
     plt.figure()
     plt.plot(ndofs_list, avg_deflection_list, 'X-')

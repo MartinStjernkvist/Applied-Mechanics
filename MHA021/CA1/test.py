@@ -2,6 +2,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+nelx_list = []
+for i in range(5):
+    nelx_list.append(int(300 / np.sqrt(2)**(4 - i)))
+print(nelx_list)
+
 # Input parameters
 I_y = 30.3e-6  # m^4
 E = 210e9  # Pa
