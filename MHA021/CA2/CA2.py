@@ -189,8 +189,6 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
             break
             
     if support_node:
-        # bc_dofs.append(2 * (support_node - 1) + 1) # u_x
-        # bc_vals.append(0)
         bc_dofs.append(2 * (support_node - 1) + 2) # u_y
         bc_vals.append(0)
     else:

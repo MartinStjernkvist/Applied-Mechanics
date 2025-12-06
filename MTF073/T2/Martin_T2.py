@@ -56,7 +56,7 @@ if unsteady:
     # For unsteady:
     """# ADD CODE HERE: PLAY WITH THESE ONCE YOUR CODE IS WORKING"""
     deltaT = 1   # ADD CODE HERE
-    endTime = 50 # ADD CODE HERE
+    endTime = 400 # ADD CODE HERE
     
     # Note that a frame is saved every "saveInterval" time step if
     # unsteady = True and createAnimatedPlots = True! Don't overload
@@ -286,8 +286,10 @@ cF.createDefaultPlots(
 # Create time evolution plots
 # No arrays are changed    
 if unsteady:
+    # cF.createTimeEvolutionPlots(
+    #                             probeX, probeY, probeValues, caseID, grid_type)
     cF.createTimeEvolutionPlots(
-                                probeX, probeY, probeValues, caseID, grid_type)
+                                    probeX, probeY, probeValues, deltaT, caseID, grid_type)
 
 # Create animated plots:
 # No arrays are changed    

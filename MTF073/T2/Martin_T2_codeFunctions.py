@@ -780,16 +780,35 @@ def createDefaultPlots(
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_residualConvergence.png')    
     plt.show()
 
+# def createTimeEvolutionPlots(
+#                              probeX, probeY, probeValues, caseID, grid_type):
+#     # Convert list of arrays to a 2D array: shape (n_steps, n_probes)
+#     data = np.vstack(probeValues)  # rows = time steps, columns = probe points
+#     n_steps, n_probes = data.shape
+#     # Plot evolution for each probe point
+#     plt.figure()
+#     for i in range(n_probes):
+#         plt.plot(range(1, n_steps+1), data[:, i], label=f'Probe {i+1} ({probeX[i]}, {probeY[i]})')
+#     plt.xlabel('Time Step')
+#     plt.ylabel('Interpolated Value')
+#     plt.title('Evolution of Probe Values Over Time')
+#     plt.legend()
+#     plt.grid(True)
+#     plt.tight_layout()
+#     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_timeEvolution.png')
+#     plt.show()
+
 def createTimeEvolutionPlots(
-                             probeX, probeY, probeValues, caseID, grid_type):
+                             probeX, probeY, probeValues, deltaT, caseID, grid_type):
     # Convert list of arrays to a 2D array: shape (n_steps, n_probes)
     data = np.vstack(probeValues)  # rows = time steps, columns = probe points
     n_steps, n_probes = data.shape
     # Plot evolution for each probe point
     plt.figure()
     for i in range(n_probes):
-        plt.plot(range(1, n_steps+1), data[:, i], label=f'Probe {i+1} ({probeX[i]}, {probeY[i]})')
-    plt.xlabel('Time Step')
+        plt.plot([x * deltaT for x in range(1, n_steps + 1)], data[:, i],
+                 label=f'Probe {i+1} ({probeX[i]}, {probeY[i]})')
+    plt.xlabel('Time [s]')
     plt.ylabel('Interpolated Value')
     plt.title('Evolution of Probe Values Over Time')
     plt.legend()
@@ -797,7 +816,7 @@ def createTimeEvolutionPlots(
     plt.tight_layout()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_timeEvolution.png')
     plt.show()
-      
+    
 def createAnimatedPlots(
                        nodeX, nodeY, savedT):
     # Create animated plot
