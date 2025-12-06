@@ -157,109 +157,59 @@ def createNonEquidistantMesh(pointX, pointY,
     #     s=(2*(j+1)-mJ-1)/(mJ-1)
     #     pointY[:,j]=(1+np.tanh(growing_rate*s)/tangens_growing_rate)*0.5*H
         
-    ###############
-    # # Example MESH REFINED
-    ###############
-    # REGION WHERE k = 0.01:
-    #   0.7 < x < 1.1
-    #   0.3 < y < 0.4
-
-    # x1, x2 = 0.7, 1.1
-    # y1, y2 = 0.3, 0.4
-
-    # nx = mI - 1
-    # ny = mJ - 1
-
-    # # X: 0 → x1 → x2 → L
-    # frac_left_x = 0.2
-    # frac_mid_x = 0.6
-    # frac_right_x = 0.2
-
-    # nx_left = max(1, int(round(frac_left_x * nx)))
-    # nx_mid = max(2, int(round(frac_mid_x * nx)))
-    # nx_right = nx - nx_left - nx_mid
-    # if nx_right < 1:
-    #     nx_right = 1
-    #     nx_mid = nx - nx_left - nx_right
-
-    # x_coords = np.zeros(mI)
-    # x_coords[0] = 0.0
-
-    # # 0 → x1
-    # if nx_left > 0:
-    #     dx_left = (x1 - 0.0) / nx_left
-    #     for i in range(1, nx_left + 1):
-    #         x_coords[i] = x_coords[i - 1] + dx_left
-
-    # # x1 → x2
-    # if nx_mid > 0:
-    #     dx_mid = (x2 - x1) / nx_mid
-    #     for i in range(nx_left + 1, nx_left + nx_mid + 1):
-    #         x_coords[i] = x_coords[i - 1] + dx_mid
-
-    # # x2 → L
-    # if nx_right > 0:
-    #     dx_right = (L - x2) / nx_right
-    #     for i in range(nx_left + nx_mid + 1, mI):
-    #         x_coords[i] = x_coords[i - 1] + dx_right
-
-    #     # Y: 0 → y1 → y2 → H
-
-    #     frac_bot_y = 0.2
-    #     frac_mid_y = 0.6
-    #     frac_top_y = 0.2
-
-    #     ny_bot = max(1, int(round(frac_bot_y * ny)))
-    #     ny_mid = max(2, int(round(frac_mid_y * ny)))
-    #     ny_top = ny - ny_bot - ny_mid
-    #     if ny_top < 1:
-    #         ny_top = 1
-    #         ny_mid = ny - ny_bot - ny_top
-
-    #     y_coords = np.zeros(mJ)
-    #     y_coords[0] = 0.0
-
-    #     # 0 → y1
-    #     if ny_bot > 0:
-    #         dy_bot = (y1 - 0.0) / ny_bot
-    #         for j in range(1, ny_bot + 1):
-    #             y_coords[j] = y_coords[j - 1] + dy_bot
-
-    #     # y1 → y2
-    #     if ny_mid > 0:
-    #         dy_mid = (y2 - y1) / ny_mid
-    #         for j in range(ny_bot + 1, ny_bot + ny_mid + 1):
-    #             y_coords[j] = y_coords[j - 1] + dy_mid
-
-    #     # y2 → H
-    #     if ny_top > 0:
-    #         dy_top = (H - y2) / ny_top
-    #         for j in range(ny_bot + ny_mid + 1, mJ):
-    #             y_coords[j] = y_coords[j - 1] + dy_top
-
-
-    #     for i in range(mI):
-    #         pointX[i, :] = x_coords[i]
-    #     for j in range(mJ):
-    #         pointY[:, j] = y_coords[j]
-    
     ###########
     # MODIFIED Example 1
     ###########
+    xi_list = []
+    x_list = []
+    y_list = []
+    x_refinement_list = []
+    y_refinement_list = []
+    refinement_list = []
     # Use a non-linear function that starts at 0 and ends at L or H
     # The shape of the function determines the distribution of points
     # We here use the cos function for two-sided clustering
-    # for i in range(0, mI):
-    #     for j in range(0, mJ):
-    #         pointX[i,j] = -L*(np.cos(math.pi*(i/(mI-1)))-1)/2
-    #         pointY[i,j] = -H*(np.cos(math.pi*(j/(mJ-1)))-1)/2
     for i in range(0, mI):
         for j in range(0, mJ):
             xi = i / (mI - 1)
-            pointX[i,j] = -L * (np.cos(math.pi * xi) - 1) / 2
-        
             eta = j / (mJ - 1)
-            pointY[i,j] = H * (1 - np.cos((math.pi / 2) * eta))
+            
+            # pointX[i,j] = -L*(np.cos(math.pi*(i/(mI-1)))-1)/2
+            # pointY[i,j] = -H*(np.cos(math.pi*(j/(mJ-1)))-1)/2
+            
+            pointX[i,j] = -L * (np.cos(math.pi * xi) - 1) / 2
+            # pointY[i,j] = H * (1 - np.cos((math.pi / 2) * eta))
+            pointY[i,j] = -H * (np.cos(math.pi * eta) - 1) / 2
+            
+            pointRefinement = -(np.cos(math.pi * xi) - 1) / 2
+            
+            xi_list.append(xi)
+            x_list.append(xi * L)
+            y_list.append(eta * H)
+            x_refinement_list.append(pointX[i,j])
+            y_refinement_list.append(pointY[i,j])
+            refinement_list.append(pointRefinement)
+            
+    plt.figure()
+    plt.scatter(x_list, x_refinement_list, color='green')
+    plt.xlabel('x values')
+    plt.ylabel('refinement curve')
+    plt.savefig('Figures/x_refinement.png')
+    plt.show()
+    
+    plt.figure()
+    plt.scatter(y_list, y_refinement_list, color='red')
+    plt.xlabel('y values')
+    plt.ylabel('refinement curve')
+    plt.savefig('Figures/y_refinement.png')
+    plt.show()
+    
+    plt.figure()
+    plt.scatter(xi_list, refinement_list, color='purple')
+    plt.xlabel('normalized coordinate values for x & y')
+    plt.ylabel('refinement curve')
+    plt.savefig('Figures/refinement.png')
+    plt.show()
 
     return pointX, pointY
 
