@@ -50,7 +50,7 @@ k       = 1      # Thermal conductivity
 Cp      = 500    # Specific heat
 gamma = k/Cp   # Calculated diffusion coefficient
 
-unsteady = True # True or False
+unsteady = False # True or False
 
 if unsteady:
     # For unsteady:
@@ -302,4 +302,9 @@ if unsteady and createAnimatedPlots:
 # No arrays should be changed!
 cF.createAdditionalPlots(
                          )
+
+probeX = np.array([0.1, 0.9, 0.1, 0.9])
+probeY = np.array([0.1, 0.1, 0.9, 0.9])
+steady_state_values = cF.probe(nodeX, nodeY, T,probeX, probeY)
+print(steady_state_values)
 #%%
