@@ -816,6 +816,7 @@ def createTimeEvolutionPlots(
     plt.tight_layout()
     plt.savefig('Figures/Case_'+str(caseID)+'_'+grid_type+'_timeEvolution.png')
     plt.show()
+    print(f'temperature values at probes: {data[-1, :]}')
     
 def createAnimatedPlots(
                        nodeX, nodeY, savedT):

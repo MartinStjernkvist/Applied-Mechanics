@@ -50,13 +50,13 @@ k       = 1      # Thermal conductivity
 Cp      = 500    # Specific heat
 gamma = k/Cp   # Calculated diffusion coefficient
 
-unsteady = False # True or False
+unsteady = True # True or False
 
 if unsteady:
     # For unsteady:
     """# ADD CODE HERE: PLAY WITH THESE ONCE YOUR CODE IS WORKING"""
     deltaT = 1   # ADD CODE HERE
-    endTime = 400 # ADD CODE HERE
+    endTime = 800 # ADD CODE HERE
     
     # Note that a frame is saved every "saveInterval" time step if
     # unsteady = True and createAnimatedPlots = True! Don't overload
