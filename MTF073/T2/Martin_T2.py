@@ -305,6 +305,8 @@ cF.createAdditionalPlots(
 
 probeX = np.array([0.1, 0.9, 0.1, 0.9])
 probeY = np.array([0.1, 0.1, 0.9, 0.9])
+probeX*=L
+probeY*=H
 steady_state_values = cF.probe(nodeX, nodeY, T,probeX, probeY)
 print(steady_state_values)
 #%%
