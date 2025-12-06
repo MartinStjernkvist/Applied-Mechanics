@@ -148,14 +148,14 @@ def createNonEquidistantMesh(pointX, pointY,
     ###############
     # Example 2
     ###############
-    growing_rate = 1.2 # growing rate for non-equidistant mesh
-    tangens_growing_rate=np.tanh(growing_rate)
-    for i in range(0,mI):
-        s=(i)/(mI-1)
-        pointX[i,:]=(np.tanh(growing_rate*s)/tangens_growing_rate)*L
-    for j in range(0,mJ):
-        s=(2*(j+1)-mJ-1)/(mJ-1)
-        pointY[:,j]=(1+np.tanh(growing_rate*s)/tangens_growing_rate)*0.5*H
+    # growing_rate = 1.2 # growing rate for non-equidistant mesh
+    # tangens_growing_rate=np.tanh(growing_rate)
+    # for i in range(0,mI):
+    #     s=(i)/(mI-1)
+    #     pointX[i,:]=(np.tanh(growing_rate*s)/tangens_growing_rate)*L
+    # for j in range(0,mJ):
+    #     s=(2*(j+1)-mJ-1)/(mJ-1)
+    #     pointY[:,j]=(1+np.tanh(growing_rate*s)/tangens_growing_rate)*0.5*H
         
     ###############
     # # Example MESH REFINED
@@ -243,6 +243,25 @@ def createNonEquidistantMesh(pointX, pointY,
     #     for j in range(mJ):
     #         pointY[:, j] = y_coords[j]
     
+    ###########
+    # MODIFIED Example 1
+    ###########
+    # Use a non-linear function that starts at 0 and ends at L or H
+    # The shape of the function determines the distribution of points
+    # We here use the cos function for two-sided clustering
+    # for i in range(0, mI):
+    #     for j in range(0, mJ):
+    #         pointX[i,j] = -L*(np.cos(math.pi*(i/(mI-1)))-1)/2
+    #         pointY[i,j] = -H*(np.cos(math.pi*(j/(mJ-1)))-1)/2
+    for i in range(0, mI):
+        for j in range(0, mJ):
+            xi = i / (mI - 1)
+            pointX[i,j] = -L * (np.cos(math.pi * xi) - 1) / 2
+        
+            eta = j / (mJ - 1)
+            pointY[i,j] = H * (1 - np.cos((math.pi / 2) * eta))
+
+    return pointX, pointY
 
 def calcNodePositions(nodeX, nodeY,
                       nI, nJ, pointX, pointY):
