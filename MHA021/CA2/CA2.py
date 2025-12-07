@@ -101,16 +101,6 @@ sigma_analytic = (M_max * c) / I
 
 def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
 
-    # Analytical: simply supported beam with uniform load
-    L = W * 2
-    A = t * H
-    I = (t * (H**3)) / 12
-    w = rho * A * g 
-    delta_analytic = -(5 * w * (L**4)) / (384 * E * I)
-    M_max = (w * (L**2)) / 8
-    c = H / 2
-    sigma_analytic = (M_max * c) / I
-
     if element_type == 'cst':
         mesh = MeshGenerator.structured_rectangle_mesh(
             width=W,
@@ -138,15 +128,12 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
         fig = plot_mesh(nodes, elements, edge_nodes)
         sfig('Mesh.png')
         fig.show()
-        # displayvar('right edge nodes', edge_nodes['right'])
-        # display(Edof)
     else:
         pass
     
     edof_map = build_edof(elements, dofs_per_node=2)
 
     D = hooke_2d_plane_stress(E, nu)
-    # displayvar('D', D)
     
     ndofs = nodes.shape[0] * 2
     K = np.zeros((ndofs, ndofs))
@@ -162,8 +149,6 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
         dofs = Edof[el, :]
         assem(K, Ke, dofs)
         assem(f, fe, dofs)
-    # displayvar('K', K, accuracy=3)
-    # displayvar('f', f, accuracy=3)
     
     bc_dofs = []
     bc_vals = []
@@ -190,13 +175,10 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
         print("support node not found")
         
     a, r = solve_eq(K, f, bc_dofs, bc_vals)
-    # displayvar('a', a, accuracy=3)
-    # displayvar('r', r, accuracy=3)
     
     right_dofs_y = [2 * (n - 1) + 2 for n in right_nodes]
     uy_right = a[np.array(right_dofs_y) - 1]
     uy_avg = np.mean(uy_right)
-    # displayvar('u_{right, avg}', avg_deflection, accuracy=3)
     
     ed = extract_dofs(a, Edof)
     if plot_n_print == True:
@@ -221,22 +203,41 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
             
         el_stress[el, :] = σe
         el_strain[el, :] = ϵe
-    # displayvar('σ', el_stresses, accuracy=3)
-    
+        
     el_right_edge = [el for el in range(len(elements)) 
                   if sum(n in right_nodes for n in elements[el, :]) >= 2]
 
-    right_edge_stress = el_stress[el_right_edge, :] # stresses at right edge
-    sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0])) # maximum normal stress
+    right_edge_stress = el_stress[el_right_edge, :]
+    sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0]))
+    
+    # displayvar('D', D)
+    # displayvar('K', K, accuracy=3)
+    # displayvar('f', f, accuracy=3)
+    # displayvar('a', a, accuracy=3)
+    # displayvar('r', r, accuracy=3)
+    # displayvar('u_{right, avg}', avg_deflection, accuracy=3)
+    # displayvar('σ', el_stresses, accuracy=3)
         
-    # print(f'\n number of DOFs: {ndofs}')
-    # print(f'\nComparison with analytical solution:')
-    # print(f'Deflection: {uy_avg:.3e} m vs {delta_analytic:.3e} m')
-    # print(f'Stress: {sigmaxx_max:.3e} Pa vs {sigma_analytic:.3e} Pa')
+    print(f'\n number of DOFs: {ndofs}')
+    print(f'Deflection: {uy_avg:.3e} m')
+    print(f'Stress: {sigmaxx_max:.3e} Pa')
+    
+    # Analytical: simply supported beam with uniform load
+    L = W * 2
+    A = t * H
+    I = (t * (H**3)) / 12
+    w = rho * A * g 
+    delta_analytic = -(5 * w * (L**4)) / (384 * E * I)
+    M_max = (w * (L**2)) / 8
+    c = H / 2
+    sigma_analytic = (M_max * c) / I
     
     # Displacement and stress fractions
     f_uy = uy_avg / delta_analytic
     f_sigmaxx = sigmaxx_max / sigma_analytic
+    print(f'\nComparison with analytical solution:')
+    print(f'Deflection fraction (result / analytical): {f_uy:.2e}')
+    print(f'Stress fraction (result / analytical): {f_sigmaxx:.2e}')
 
     return uy_avg, sigmaxx_max, ndofs, f_uy, f_sigmaxx, nodes, elements, el_centers, el_stress, el_strain
 
@@ -258,18 +259,17 @@ new_subtask('Task 1 - Convergence')
 nelx_list = []
 for i in range(5):
     nelx_list.append(int(300 / np.sqrt(2)**(4 - i)))
-    
 nely_list = [int(i * (H / W)) for i in nelx_list]
-print(nelx_list)
-print(nely_list)
 
 uy_avg_list = []
 sigmaxx_max_list = []
 ndofs_list = []
 f_uy_list = []
 f_sigmaxx_list = []
+
 for i in range(len(nelx_list)):
     uy_avg, sigmaxx_max, ndofs, f_uy, f_sigmaxx, nodes, elements, el_centers, el_stress, el_strain = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    
     uy_avg_list.append(uy_avg)
     sigmaxx_max_list.append(sigmaxx_max)
     ndofs_list.append(ndofs)
@@ -280,14 +280,14 @@ for i in range(len(nelx_list)):
         rel_change_uy = (f_uy_list[i] - f_uy_list[i -1 ]) / f_uy_list[i]
         rel_change_sigmaxx = (f_sigmaxx_list[i] - f_sigmaxx_list[i - 1]) / f_sigmaxx_list[i]
 
-        print(f'relative change in displacement: {rel_change_uy} %')
-        print(f'relative change in stress: {rel_change_sigmaxx} %')
+        print(f'relative change in displacement: {rel_change_uy:.2e} %')
+        print(f'relative change in stress: {rel_change_sigmaxx:.2e} %')
         
         if rel_change_uy <= 0.01:
-            print(f'Deflection convergence for NDOF = {ndofs}')
+            print(f'Deflection convergence for NDOF = {ndofs:.2e}')
         
         if rel_change_sigmaxx <= 0.01:
-            print(f'Stress convergence for NDOF = {ndofs}')
+            print(f'Stress convergence for NDOF = {ndofs:.2e}')
 
 plt.figure()
 plt.plot(ndofs_list, uy_avg_list, 'X-')
@@ -616,8 +616,8 @@ for r in ratios:
     f_sigmaxx_list.append(f_sigmaxx)
     
     if r in [1, 4, 16]:
-        shear_strain = el_strain[:, 2]
-        plot_single_contour(el_centers, shear_strain, 'Shear strain $\gamma_{xy} $' + f'(ratio ={r})', 'Shear strain_' + str(r), cmap='jet')
+        shear_strain = el_strain[:, 1]
+        plot_single_contour(el_centers, shear_strain, 'Vertical strain $\epsilon_{yy}$' + f'\nratio ={r}', 'Shear strain_' + str(r), cmap='jet')
 
 plt.figure()
 plt.plot(ratios, f_uy_list, 'o-', label='displacement', alpha=0.75)
