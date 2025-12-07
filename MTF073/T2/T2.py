@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 # Close all plots when running entire code:
 plt.close('all')
 # All functions of the code (some to be implemented by you):
-import Martin_T2_codeFunctions as cF
+import T2_codeFunctions as cF
 
 #===================== Inputs =====================
 

@@ -115,7 +115,17 @@ M_max = (w * (L**2)) / 8
 c = H / 2
 sigma_analytic = (M_max * c) / I
 
-def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
+def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
+
+    # Analytical: simply supported beam with uniform load
+    L = W * 2
+    A = t * H
+    I = (t * (H**3)) / 12
+    w = rho * A * g 
+    delta_analytic = -(5 * w * (L**4)) / (384 * E * I)
+    M_max = (w * (L**2)) / 8
+    c = H / 2
+    sigma_analytic = (M_max * c) / I
 
     if element_type == 'cst':
         mesh = MeshGenerator.structured_rectangle_mesh(
@@ -136,6 +146,8 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     elements = mesh.elements
     edge_nodes = mesh.edges
     Edof = mesh.edofs
+    
+    el_centers = np.mean(nodes[elements[:, :] - 1], axis=1)
 
     if plot_n_print == True:
         fig = mesh.plot('mesh')
@@ -175,8 +187,7 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     # Symmetry condition (right edge)
     right_nodes = edge_nodes['right']
     for n in right_nodes:
-        dof_x = 2 * (n - 1) + 1
-        bc_dofs.append(dof_x)
+        bc_dofs.append(2 * (n - 1) + 1)
         bc_vals.append(0)
 
     # Support condition (left bottom node)
@@ -205,13 +216,15 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
     
     ed = extract_dofs(a, Edof)
     if plot_n_print == True:
-        fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='utotal')
+        fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='uy')
         sfig('Deformed mesh.png')
         fig.show()
     else:
         pass
     
     el_stresses = np.zeros((len(elements), 3))
+    el_strains = np.zeros((len(elements), 3))
+
     for el in range(len(elements)):
         nodes[elements[el, :] - 1]
         dofs = Edof[el, :]
@@ -223,6 +236,7 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
             σe, ϵe = bilinear_element_stress_strain(nodes[elements[el, :] - 1], D, ae)
             
         el_stresses[el, :] = σe
+        el_strains[el, :] = ϵe
     # displayvar('σ', el_stresses, accuracy=3)
     
     right_elements = [el for el in range(len(elements)) 
@@ -230,14 +244,14 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False):
 
     right_edge_stresses = el_stresses[right_elements, :]
     right_max_norm_stress = np.max(np.abs(right_edge_stresses[:, 0]))
-    print(f'maximum normal stress at right edge: {right_max_norm_stress:.3e} Pa')
-    
+        
     print(f'\n number of DOFs: {ndofs}')
     print(f'\nComparison with analytical solution: \n Deflection: {avg_deflection:.3e} m vs {delta_analytic:.3e} m \n Stress: {right_max_norm_stress:.3e} Pa vs {sigma_analytic:.3e} Pa')
+    
     fraction_displacement = avg_deflection / delta_analytic
     fraction_stress = right_max_norm_stress / sigma_analytic
 
-    return avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress
+    return avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress, nodes, elements, el_centers, el_stresses, el_strains
 
 task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 
@@ -261,7 +275,7 @@ ndofs_list = []
 fraction_displacement_list = []
 fraction_stress_list = []
 for i in range(len(nelx_list)):
-    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
+    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress, nodes, elements, el_centers, el_stresses, el_strains = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
     avg_deflection_list.append(avg_deflection)
     max_norm_stress_list.append(right_max_norm_stress)
     ndofs_list.append(ndofs)
@@ -269,8 +283,8 @@ for i in range(len(nelx_list)):
     fraction_stress_list.append(fraction_stress)
     
     if i != 0:
-        rel_change_displacement = (fraction_displacement_list[i] - fraction_displacement_list[i-1]) / fraction_displacement_list[i]
-        rel_change_stress = (fraction_stress_list[i] - fraction_stress_list[i-1]) / fraction_stress_list[i]
+        rel_change_displacement = (fraction_displacement_list[i] - fraction_displacement_list[i -1 ]) / fraction_displacement_list[i]
+        rel_change_stress = (fraction_stress_list[i] - fraction_stress_list[i - 1]) / fraction_stress_list[i]
 
         print(f'relative change in displacement: {rel_change_displacement} %')
         print(f'relative change in stress: {rel_change_stress} %')
@@ -552,4 +566,69 @@ print(f" fe is correct: {np.allclose(fe, fe_ref)}")
 #---------------------------------------------------------------------------------------------------
 
 task12(element_type='quad', nelx=40, nely=8, plot_n_print=True)
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# d)
+#---------------------------------------------------------------------------------------------------
+
+avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress, nodes, elements, el_centers, el_stresses, el_strains = task12(element_type='quad', nelx=40, nely=8, plot_n_print=False)
+
+import matplotlib.tri as tri
+
+def plot_single_contour(el_centers, field_data, field_name, file_name, cmap='jet'):
+    fig, ax = plt.subplots()
+    
+    triang = tri.Triangulation(el_centers[:, 0], el_centers[:, 1])
+    contour = ax.tricontourf(triang, field_data, levels=20, cmap=cmap)
+    ax.tricontour(triang, field_data, levels=20, colors='k', linewidths=0.5, alpha=0.3)
+    
+    cbar = plt.colorbar(contour, ax=ax)
+    cbar.set_label(field_name)
+    
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    ax.set_title(f'Contour: {field_name}')
+    ax.set_aspect('equal')
+    
+    plt.tight_layout()
+    plt.savefig('figures/' + file_name + '.png')
+    return fig
+
+shear_strain = el_strains[:, 2]
+plot_single_contour(el_centers, shear_strain, 'Shear strain $\gamma_{xy}$', 'Shear strain', cmap='jet')
+
+vertical_strain = el_strains[:, 1]
+plot_single_contour(el_centers, vertical_strain, 'Vertical strain $\gamma_{yy}$', 'Vertical strain', cmap='jet')
+
+normal_stress = el_stresses[:, 0]
+plot_single_contour(el_centers, normal_stress, 'Normal stress $\sigma_{xx}$','Normal stress', cmap='jet')
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# e)
+#---------------------------------------------------------------------------------------------------
+
+print('\nEvaluation of Euler-Bernoulli breakdown')
+ratios = np.arange(1, 15, 0.5)
+fraction_displacement_list = []
+fraction_stress_list = []
+for r in ratios:
+    W_val = (r * 0.4) / 2.0
+    avg_deflection, right_max_norm_stress, ndofs, fraction_displacement, fraction_stress, nodes, elements, el_centers, el_stresses, el_strains = task12(element_type='quad', nelx=int(W_val/0.02), nely=20, plot_n_print=False, W=W_val)
+    print(f'\nratio = {r}: displacement fraction: {fraction_displacement:.2e} stress fraction: {fraction_stress:.2e}')
+    
+    fraction_displacement_list.append(fraction_displacement)
+    fraction_stress_list.append(fraction_stress)
+
+#%%
+plt.figure()
+plt.plot(ratios, fraction_displacement_list, 'o-', label='fraction displacement')
+plt.plot(ratios, fraction_stress_list, 'o-', label='fraction stress', color='red')
+plt.axhline(y=1, color='black', linestyle='-')
+plt.xlabel('ratio L/H')
+plt.ylabel('fraction')
+plt.legend()
+plt.show()
+
 #%%
