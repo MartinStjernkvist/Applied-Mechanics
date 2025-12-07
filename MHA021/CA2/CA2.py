@@ -229,16 +229,23 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
     right_edge_stress = el_stress[el_right_edge, :] # stresses at right edge
     sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0])) # maximum normal stress
         
-    print(f'\n number of DOFs: {ndofs}')
-    print(f'\nComparison with analytical solution:')
-    print(f'Deflection: {uy_avg:.3e} m vs {delta_analytic:.3e} m')
-    print(f'Stress: {sigmaxx_max:.3e} Pa vs {sigma_analytic:.3e} Pa')
+    # print(f'\n number of DOFs: {ndofs}')
+    # print(f'\nComparison with analytical solution:')
+    # print(f'Deflection: {uy_avg:.3e} m vs {delta_analytic:.3e} m')
+    # print(f'Stress: {sigmaxx_max:.3e} Pa vs {sigma_analytic:.3e} Pa')
     
     # Displacement and stress fractions
     f_uy = uy_avg / delta_analytic
     f_sigmaxx = sigmaxx_max / sigma_analytic
 
     return uy_avg, sigmaxx_max, ndofs, f_uy, f_sigmaxx, nodes, elements, el_centers, el_stress, el_strain
+
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Run analysis
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 1 - Run analysis')
 
 task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 
@@ -282,37 +289,37 @@ for i in range(len(nelx_list)):
         if rel_change_sigmaxx <= 0.01:
             print(f'Stress convergence for NDOF = {ndofs}')
 
-    plt.figure()
-    plt.plot(ndofs_list, uy_avg_list, 'X-')
-    plt.axhline(delta_analytic, color='orange', linestyle='--', alpha=0.5)
-    plt.xlabel('Number of DOFs')
-    plt.ylabel('Average deflection (m)')
-    sfig('Average deflection vs Number of DOFs.png')
-    plt.show()
-    
-    plt.figure()
-    plt.plot(ndofs_list, f_uy_list, 'o-', color='black')
-    plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
-    plt.xlabel('Number of DOFs')
-    plt.ylabel('Displacement fraction: Numerical / Analytical')
-    sfig('Displacement fraction vs Number of DOFs.png')
-    plt.show()
-    
-    plt.figure()
-    plt.plot(ndofs_list, sigmaxx_max_list, 'X-', color='red')
-    plt.axhline(sigma_analytic, color='orange', linestyle='--', alpha=0.5)
-    plt.xlabel('Number of DOFs')
-    plt.ylabel('Maximum normal stress (Pa)')
-    sfig('Maximum normal stress vs Number of DOFs.png')
-    plt.show()
-    
-    plt.figure()
-    plt.plot(ndofs_list, f_sigmaxx_list, 'o-', color='black')
-    plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
-    plt.xlabel('Number of DOFs')
-    plt.ylabel('Stress fraction: Numerical / Analytical')
-    sfig('Stress fraction vs Number of DOFs.png')
-    plt.show()
+plt.figure()
+plt.plot(ndofs_list, uy_avg_list, 'X-')
+plt.axhline(delta_analytic, color='orange', linestyle='--', alpha=0.5)
+plt.xlabel('Number of DOFs')
+plt.ylabel('Average deflection (m)')
+sfig('Average deflection vs Number of DOFs.png')
+plt.show()
+
+plt.figure()
+plt.plot(ndofs_list, f_uy_list, 'o-', color='black')
+plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
+plt.xlabel('Number of DOFs')
+plt.ylabel('Displacement fraction: Numerical / Analytical')
+sfig('Displacement fraction vs Number of DOFs.png')
+plt.show()
+
+plt.figure()
+plt.plot(ndofs_list, sigmaxx_max_list, 'X-', color='red')
+plt.axhline(sigma_analytic, color='orange', linestyle='--', alpha=0.5)
+plt.xlabel('Number of DOFs')
+plt.ylabel('Maximum normal stress (Pa)')
+sfig('Maximum normal stress vs Number of DOFs.png')
+plt.show()
+
+plt.figure()
+plt.plot(ndofs_list, f_sigmaxx_list, 'o-', color='black')
+plt.axhline(1, color='orange', linestyle='--', alpha=0.5)
+plt.xlabel('Number of DOFs')
+plt.ylabel('Stress fraction: Numerical / Analytical')
+sfig('Stress fraction vs Number of DOFs.png')
+plt.show()
 
 #%%
 ####################################################################################################
@@ -333,7 +340,7 @@ new_task('Task 2')
 #---------------------------------------------------------------------------------------------------
 # Starting point
 #---------------------------------------------------------------------------------------------------
-new_subtask('Starting point')
+new_subtask('Task 2 - Starting point')
 
 # These functions need to be finalized by you
 
@@ -492,10 +499,11 @@ def bilinear_element_stress_strain(nodes: np.ndarray, D: np.ndarray, ae: np.ndar
     σe = D @ ϵe
     return σe, ϵe
 
+#%%
 #---------------------------------------------------------------------------------------------------
 # Verification
 #---------------------------------------------------------------------------------------------------
-new_subtask('Verification')
+new_subtask('Task 2 - Verification')
 
 nodes = np.array([[0.1, 0.0],
                 [1.0, 0.0],
@@ -521,10 +529,6 @@ print(f" N is correct: {np.allclose(N, N_ref)}")
 print(f" B is correct: {np.allclose(B, B_ref)}")
 print(f" detJ is correct: {np.allclose([detJ], [detJ_ref])}")
 
-
-#---------------------------------------------------------------------------------------------------
-# 
-#---------------------------------------------------------------------------------------------------
 # Check Ke and fe for number of Gauss points = 2x2 = 4
 D = np.array([
     [ 1, .1,   0],
@@ -548,16 +552,19 @@ print(f" Ke is correct: {np.allclose(Ke, Ke_ref)}")
 print(f" fe is correct: {np.allclose(fe, fe_ref)}")
 
 
+#%%
 #---------------------------------------------------------------------------------------------------
-# Run the analysis
+# Run analysis
 #---------------------------------------------------------------------------------------------------
+new_subtask('Task 2 - Run analysis')
 
 task12(element_type='quad', nelx=40, nely=8, plot_n_print=True)
 
 #%%
 #---------------------------------------------------------------------------------------------------
-# d)
+# Plot stress and strain (d)
 #---------------------------------------------------------------------------------------------------
+new_subtask('Task 2 - Plot stress and strain (d)')
 
 uy_avg, sigmaxx_max, ndofs, f_uy, f_sigmaxx, nodes, elements, el_centers, el_stress, el_strain = task12(element_type='quad', nelx=40, nely=8, plot_n_print=False)
 
@@ -578,7 +585,6 @@ def plot_single_contour(el_centers, field_data, field_name, file_name, cmap='jet
     plt.title(f'{field_name}')
     plt.gca().set_aspect('equal')
     
-    plt.tight_layout()
     plt.savefig('figures/' + file_name + '.png')
     plt.show()
 
@@ -593,9 +599,9 @@ plot_single_contour(el_centers, normal_stress, 'Normal stress $\sigma_{xx}$','No
 
 #%%
 #---------------------------------------------------------------------------------------------------
-# e)
+# Euler-Bernoulli breakdown (e)
 #---------------------------------------------------------------------------------------------------
-
+new_subtask('Euler-Bernoulli breakdown (e)')
 
 ratios = np.arange(1, 17, 0.5)
 f_uy_list = []
@@ -623,5 +629,4 @@ plt.legend()
 plt.tight_layout()
 plt.savefig('figures/Euler Bernoulli breakdown')
 plt.show()
-
 #%%
