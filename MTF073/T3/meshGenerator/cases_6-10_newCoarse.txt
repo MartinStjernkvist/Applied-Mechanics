@@ -1,0 +1,7 @@
+X Segments:
+X1: start=0.0, end=3, cells=35, ratio=1.2, mode=both
+
+Y Segments:
+Y1: start=0.0, end=0.03101719, cells=4, ratio=1.2, mode=both
+Y2: start=, end=1.946202, cells=37, ratio=1.2, mode=both
+Y3: start=, end=2, cells=7, ratio=1.2, mode=both
