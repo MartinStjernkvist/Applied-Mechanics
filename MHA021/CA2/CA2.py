@@ -615,6 +615,9 @@ for r in ratios:
     f_uy_list.append(f_uy)
     f_sigmaxx_list.append(f_sigmaxx)
     
+    if f_uy >= 1.05:
+        print('More than 5% difference')
+    
     if r in [1, 4, 16]:
         shear_strain = el_strain[:, 1]
         plot_single_contour(el_centers, shear_strain, 'Vertical strain $\epsilon_{yy}$' + f'\nratio ={r}', 'Shear strain_' + str(r), cmap='jet')
