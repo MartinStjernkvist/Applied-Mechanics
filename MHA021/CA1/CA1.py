@@ -10,7 +10,6 @@ if parent_dir not in sys.path:
     
 from mha021 import *
 
-from colorama import Fore
 import numpy as np
 import matplotlib.pyplot as plt
 
