@@ -27,12 +27,16 @@ import codeFunctions as cF
 #===================== Inputs =====================
 
 # Geometric and mesh inputs
+num = 4
 
 L = 1.5 # Length of the domain in X direction
 H = 0.5 # Length of the domain in Y direction
-mI = 20 # Number of mesh points X direction.
-mJ = 20 # Number of mesh points Y direction.
+mI = num # Number of mesh points X direction.
+mJ = num # Number of mesh points Y direction.
 mesh_type = 'non-equidistant' # Set 'non-equidistant' or 'equidistant'
+
+filename = 'non' + str(num)
+# filename = str(num)
 
 # Case-specific input
 
@@ -164,7 +168,7 @@ for explCorrIter in range(nExplCorrIter):
     # Calculate and print normalized residuals
     cF.calcNormalizedResiduals(res, glob_imbal_plot,
                                nI, nJ, explCorrIter, T,
-                               aP, aE, aW, aN, aS, Su, Sp, F_data, T_data)
+                               aP, aE, aW, aN, aS, Su, Sp, F_data, T_data, file_name=filename)
     
     # Stop iterations if converged
     if res[-1] < resTol:

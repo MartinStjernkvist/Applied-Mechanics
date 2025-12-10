@@ -521,7 +521,7 @@ def correctBoundaries(T,
 
 def calcNormalizedResiduals(res, glob_imbal_plot,
                             nI, nJ, explCorrIter, T, \
-                            aP, aE, aW, aN, aS, Su, Sp, F_data=1, T_data=1):
+                            aP, aE, aW, aN, aS, Su, Sp, F_data=1, T_data=1, file_name="blank"):
     # Calculate and print normalized residuals, and sane 
     # Only change arrays in first row of argument list!
     # Normalize as shown in lecture notes, using:
@@ -615,11 +615,16 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
     glob_imbal_plot.append(glob_imbal)
     
-    i_selected = int(nI / 2)
-    j_selected = 1
+    i_selected = nI-2
+    j_selected = int(nJ / 2)
     T_value = T[i_selected, j_selected]
     T_data.append(T_value)
-
+    
+    resLength = np.arange(0,len(res),1)
+    
+    np.savez(file_name + '.npz', 
+         reslen = resLength, 
+         T_data=T_data)
     
 def createDefaultPlots(
                        nI, nJ, pointX, pointY, nodeX, nodeY,
@@ -832,5 +837,89 @@ def createAdditionalPlots(nI, nJ, pointX, pointY, nodeX, nodeY,
     plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_results.png')
     plt.show()
     
+    # # Compare convergence for different equidistant meshes
+    # with np.load('4x4.npz') as data:
+    #     resLength_4x4, T_data_4x4 = data['reslen'], data['T_data']
+    
+    # with np.load('8x8.npz') as data:
+    #     resLength_8x8, T_data_8x8 = data['reslen'], data['T_data']
+    
+    # with np.load('16x16.npz') as data:
+    #     resLength_16x16, T_data_16x16 = data['reslen'], data['T_data']
+    
+    # plt.figure()
+    # plt.title('Temperature vs iterations')
+    # plt.xlabel('Iterations')
+    # plt.ylabel('T')
+    
+    # plt.plot(resLength_4x4, T_data_4x4, label = "equidistant, 4x4")
+    # plt.plot(resLength_8x8, T_data_8x8, label = "equidistant, 8x8")
+    # plt.plot(resLength_16x16, T_data_16x16, label = "equidistant, 16x16")
+    
+    # plt.grid()
+    # plt.legend()
+    # plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_equidistant.png')
+    # plt.show()
+    
+    # # Comparison equidistant vs non-equidistant, iterations
+    # plt.figure()
+    # plt.title('Temperature vs iterations')
+    # plt.xlabel('Iterations')
+    # plt.ylabel('T')
+    # resLength = np.arange(0,len(res),1)
+    # plt.plot(resLength, T_data)
+    # plt.grid()
+    # # plt.yscale('log')
+    # plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_results.png')
+    # plt.show()
+        
+    # with np.load('32x32.npz') as data:
+    #     resLength_32x32, T_data_32x32 = data['reslen'], data['T_data']
+    
+    # with np.load('noneq.npz') as data:
+    #     resLength_noneq, T_data_noneq = data['reslen'], data['T_data']
+    
+    # plt.figure()
+    # plt.title('Temperature vs iterations')
+    # plt.xlabel('Iterations')
+    # plt.ylabel('T')
+    
+    # plt.plot(resLength_32x32, T_data_32x32, label = "equidistant, 32x32")
+    # plt.plot(resLength_noneq, T_data_noneq, label = "non-equidistant")
+    
+    # plt.grid()
+    # plt.legend()
+    # plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_comparison.png')
+    # plt.show()
+    
+    # Comparison equidistant vs non-equidistant, refinement
+    plt.figure()
+    plt.title('Temperature vs meshgrid')
+    plt.xlabel('Mesh sizing (both directions)')
+    plt.ylabel('T')
+    
+    mesh_list = []
+    T_data, T_data_noneq = [], []
+    
+    for i in range(5):
+        mesh = 4 * 2**i
+        with np.load(str(mesh) + '.npz') as data:
+            mesh_list.append(mesh)
+            T = data['T_data']
+            T_data.append(float(T[-1]))
+    
+    for i in range(5):
+        mesh = 4 * 2**i
+        with np.load('non' + str(mesh) + '.npz') as data:
+            T = data['T_data']
+            T_data_noneq.append(float(T[-1]))
+    
+    plt.plot(mesh_list, T_data,'o-', label = "equidistant")
+    plt.plot(mesh_list, T_data_noneq, 'o-', label = "non-equidistant")
+    
+    plt.grid()
+    plt.legend()
+    plt.savefig('Figures/Case_'+str(caseID)+'_TemperatureConvergence_comparison_meshing.png')
+    plt.show()
     
 #%%
