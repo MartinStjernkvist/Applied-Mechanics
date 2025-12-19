@@ -27,13 +27,13 @@ import codeFunctions as cF
 #===================== Inputs =====================
 
 # Geometric and mesh inputs
-num = 4
+num = 16
 
 L = 1.5 # Length of the domain in X direction
 H = 0.5 # Length of the domain in Y direction
 mI = num # Number of mesh points X direction.
 mJ = num # Number of mesh points Y direction.
-mesh_type = 'non-equidistant' # Set 'non-equidistant' or 'equidistant'
+mesh_type = 'equidistant' # Set 'non-equidistant' or 'equidistant'
 
 filename = 'non' + str(num)
 # filename = str(num)

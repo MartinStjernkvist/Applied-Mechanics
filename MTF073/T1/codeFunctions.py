@@ -615,8 +615,10 @@ def calcNormalizedResiduals(res, glob_imbal_plot,
     glob_imbal = abs((Din - Dout + Sin - Sout)/(Din + Sin))
     glob_imbal_plot.append(glob_imbal)
     
-    i_selected = nI-2
-    j_selected = int(nJ / 2)
+    # i_selected = nI-2
+    # j_selected = int(nJ / 2)
+    i_selected = int(nI / 2)
+    j_selected = 1
     T_value = T[i_selected, j_selected]
     T_data.append(T_value)
     
