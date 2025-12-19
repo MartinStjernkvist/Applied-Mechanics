@@ -369,6 +369,7 @@ a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
 # Plot temperature field
 Ed = extract_dofs(a, mesh.edofs)
+print('Ed shape and values:\n', np.shape(Ed), Ed)
 fig = plot_scalar_field(mesh.nodes, mesh.elements, Ed, title=fr'Tempterature ($^\circ$C)')
 fig.show()
 
@@ -393,8 +394,20 @@ plot_vector_field(mesh.nodes, mesh.elements, q, title='Heat flux')
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 2 - f) Convective heat inflow')
 
+Q = 0
 
+for edge in range(num_edges_w):
+    
+    node_i = conv_nodes_w[edge] - 1
+    node_j = conv_nodes_w[edge + 1] - 1
+    
+    Te_i = a[node_i]
+    Te_j = a[node_j]
+    print(Te_i, Te_j)
+    
+    Q += alpha_w * mesh_size * t * ((Te_i + Te_j) / 2 - T_w)
 
+print(f'Total heat flux: {Q}')
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -402,3 +415,73 @@ new_subtask('Task 2 - f) Convective heat inflow')
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 2 - g) Required water temperature')
 
+def FEA(T_w_var):
+    # Initiate stiffness and load matrices
+    K = np.zeros((num_dofs, num_dofs))
+    f = np.zeros((num_dofs, 1))
+
+    for el in range(num_el):
+        el_nodes = mesh.nodes[mesh.elements[el] - 1]
+        Ke, fe = flow2t_Ke_fe(el_nodes, D=D, t=t, Q=0)
+        el_dofs = mesh.edofs[el, :]
+        assem(K, Ke, el_dofs)
+        assem(f, fe, el_dofs)
+
+    for edge in range(num_edges_w):
+        edge_nodes = conv_nodes_w[edge:edge + 2] - 1
+        nodes = mesh.nodes[edge_nodes, :]
+        Kec, fec = convection_Ke_fe(nodes, alpha=alpha_w, t=t, Tamb=T_w_var)
+        dofs = edge_nodes + 1
+        assem(K, Kec, dofs)
+        assem(f, fec, dofs)
+
+    for edge in range(num_edges_air):
+        edge_nodes = conv_nodes_air[edge:edge + 2] - 1
+        nodes = mesh.nodes[edge_nodes, :]
+        Kec, fec = convection_Ke_fe(nodes, alpha=alpha_air, t=t, Tamb=T_air)
+        dofs = edge_nodes + 1
+        assem(K, Kec, dofs)
+        assem(f, fec, dofs)
+
+    # Essential boundary conditions
+    bottom_dofs = mesh.edges['bottom']
+
+    bc_dofs = bottom_dofs
+    bc_vals = np.ones_like(bc_dofs) * T_b
+
+    # Solve system
+    a, r = solve_eq(K, f, bc_dofs, bc_vals)
+    
+    return a
+
+# Idea: start with T_w_var = 30, and large T_step values
+# Once a general value for T_w is found, optimize the T_w_var start value and step values
+
+T_sum = 0
+T_mean = 0
+T_w_var = 46.45 # starting value, optimized
+
+while T_mean <=30:
+    
+    print(f'T_w = {T_w_var}')
+    a = FEA(T_w_var)
+    
+    for edge in range(num_edges_air):
+    
+        node_i = conv_nodes_air[edge] - 1
+        node_j = conv_nodes_air[edge + 1] - 1
+        
+        Te_i = a[node_i]
+        Te_j = a[node_j]
+        # print(Te_i, Te_j)
+        
+        T_sum += (Te_i + Te_j) / 2
+        
+    T_mean = T_sum / num_edges_air
+    print(f'\nMean temperature: {T_mean:.3f}')
+    
+    T_step = 0.001
+    T_w_var += T_step # temperature step, optimized
+    T_sum = 0
+
+#%%
