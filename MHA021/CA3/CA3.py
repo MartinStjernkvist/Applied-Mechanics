@@ -262,7 +262,7 @@ width = L_h
 height = L_t + L_b + 2 * R
 radius = R
 vertical_offset = L_b
-mesh_size=0.005
+mesh_size=0.003
 
 mesh = generate_floor_mesh(width, height, radius, vertical_offset, mesh_size)
 
@@ -369,9 +369,33 @@ a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
 # Plot temperature field
 Ed = extract_dofs(a, mesh.edofs)
-print('Ed shape and values:\n', np.shape(Ed), Ed)
+# print('Ed shape and values:\n', np.shape(Ed), Ed)
 fig = plot_scalar_field(mesh.nodes, mesh.elements, Ed, title=fr'Tempterature ($^\circ$C)')
 fig.show()
+
+T_sum = 0
+# Manual check for convergence of mean temperature of convection boundary for air
+for edge in range(num_edges_air):
+    
+    node_i = conv_nodes_air[edge] - 1
+    node_j = conv_nodes_air[edge + 1] - 1
+    
+    Te_i = a[node_i]
+    Te_j = a[node_j]
+    
+    T_sum += (Te_i + Te_j) / 2
+    
+T_mean = T_sum / num_edges_air
+print(f'\nNumber of DOFs: {num_dofs}')
+print(f'Mean temperature: {T_mean:.3f}')
+
+# Manual comparison between values when changing mesh_size
+T_mean_before = 22.560 # 4mm mesh_size, 1199 DOFs
+T_mean_after = 22.561 # 3mm mesh_size, 2168 DOFs
+change = np.abs((T_mean_after - T_mean_before) / T_mean_after)
+print(fr'\nChange: {change * 100:.4f} %')
+# Roughly doubled the number of DOFs
+# The change in mean temperature is way below arbitrary convergence criteria of 1% -> converged
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -403,11 +427,11 @@ for edge in range(num_edges_w):
     
     Te_i = a[node_i]
     Te_j = a[node_j]
-    print(Te_i, Te_j)
+    # print(Te_i, Te_j)
     
     Q += alpha_w * mesh_size * t * ((Te_i + Te_j) / 2 - T_w)
 
-print(f'Total heat flux: {Q}')
+print(f'\nTotal heat flux: {Q}')
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -483,5 +507,4 @@ while T_mean <=30:
     T_step = 0.001
     T_w_var += T_step # temperature step, optimized
     T_sum = 0
-
 #%%
