@@ -252,7 +252,19 @@ def generate_floor_mesh(width=10.0, height=5.0, radius=1.0, vertical_offset=0.0,
 #---------------------------------------------------------------------------------------------------
 new_subtask('Starting point - Mesh generation & visualization')
 
-mesh = generate_floor_mesh(width=10.0, height=5.0, radius=1.0, vertical_offset=2.0, mesh_size=0.5)
+# Following are given in unit m
+R = 10 * 10**(-3)
+L_t = 35 * 10**(-3)
+L_b = 95 * 10**(-3)
+L_h = 100 * 10**(-3)
+
+width = L_h
+height = L_t + L_b + 2 * R
+radius = R
+vertical_offset = L_b
+mesh_size=0.005
+
+mesh = generate_floor_mesh(width, height, radius, vertical_offset, mesh_size)
 
 fig = plot_mesh(mesh.nodes, mesh.elements, mesh.edges)
 fig.show()
@@ -318,38 +330,39 @@ for el in range(num_el):
     assem(f, fe, el_dofs)
 
 # Convection: water
-conv_nodes_w = mesh.edges('circle')
+conv_nodes_w = mesh.edges['circle']
 num_edges_w = len(conv_nodes_w) - 1
 
 for edge in range(num_edges_w):
     edge_nodes = conv_nodes_w[edge:edge + 2] - 1
     nodes = mesh.nodes[edge_nodes, :]
-    displayvar("nodes", nodes)
-    Kec, fec = convection_Ke_fe(nodes, alpha=alpha_w, t=t, T0=T_w)
+    # displayvar("nodes", nodes)
+    Kec, fec = convection_Ke_fe(nodes, alpha=alpha_w, t=t, Tamb=T_w)
     dofs = edge_nodes + 1
-    displayvar("edge dofs", dofs)
+    # displayvar("edge dofs", dofs)
     assem(K, Kec, dofs)
     assem(f, fec, dofs)
 
 
 # Convection: air
-conv_nodes_air = mesh.edges('top')
+conv_nodes_air = mesh.edges['top']
 num_edges_air = len(conv_nodes_air) - 1
 
 for edge in range(num_edges_air):
     edge_nodes = conv_nodes_air[edge:edge + 2] - 1
     nodes = mesh.nodes[edge_nodes, :]
-    displayvar("nodes", nodes)
-    Kec, fec = convection_Ke_fe(nodes, alpha=alpha_air, t=t, T0=T_air)
+    # displayvar("nodes", nodes)
+    Kec, fec = convection_Ke_fe(nodes, alpha=alpha_air, t=t, Tamb=T_air)
     dofs = edge_nodes + 1
-    displayvar("edge dofs", dofs)
+    # displayvar("edge dofs", dofs)
     assem(K, Kec, dofs)
     assem(f, fec, dofs)
 
-# Boundary conditions
+# Essential boundary conditions
 bottom_dofs = mesh.edges['bottom']
-bc_dofs = 
-bc_vals = 
+
+bc_dofs = bottom_dofs
+bc_vals = np.ones_like(bc_dofs) * T_b
 
 # Solve system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
