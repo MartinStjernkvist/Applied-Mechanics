@@ -6,6 +6,16 @@ import matplotlib.pyplot as plt
 import sympy as sp
 import math
 import pandas as pd
+import gmsh
+
+import sys
+import os
+# Add parent directory to sys.path
+parent_dir = os.path.abspath(os.path.join(os.getcwd(),'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+    
+from mha021 import *
 
 from IPython.display import display, Math
 from mpl_toolkits.mplot3d import axes3d
@@ -18,18 +28,17 @@ from scipy.optimize import fsolve
 from matplotlib import rcParams
 import matplotlib.ticker as ticker
 
-import calfem.core as cfc
-import calfem.vis_mpl as cfv
-import calfem.mesh as cfm
-import calfem.utils as cfu
-
 from scipy.sparse import coo_matrix, csr_matrix
 import matplotlib.cm as cm
 
 from pathlib import Path
 
-def new_prob(string):
-    print_string = '\n' + '=' * 80 + '\n' + 'Assignment ' + str(string) + '\n' + '=' * 80 + '\n'
+def new_task(string):
+    print_string = '\n' + '=' * 80 + '\n' + '=' * 80 + '\n' + 'Task ' + str(string) + '\n' + '=' * 80 + '\n' + '=' * 80 + '\n'
+    return print(print_string)
+
+def new_subtask(string):
+    print_string = '\n' + '-' * 80 + '\n' + 'Subtask ' + str(string) + '\n' + '-' * 80 + '\n'
     return print(print_string)
 
 SMALL_SIZE = 10
@@ -49,21 +58,11 @@ plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
-def fig(fig_name):
-    fig_output_file = script_dir / "fig" / fig_name
+def sfig(fig_name):
+    fig_output_file = script_dir / "figures" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
-    plt.legend()
-    plt.grid(True, alpha = 0.3)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
-    plt.show()
     print('figure name: ', fig_name)
-    
-def printt(**kwargs):
-    for name, value in kwargs.items():
-        print('\n')
-        print(f"\033[94m{name}\033[0m:")
-        print(f"\033[92m{value}\033[0m")
-        print('\n')
         
 #%%
 ####################################################################################################
@@ -72,10 +71,215 @@ def printt(**kwargs):
 
 
 
-# ...
+# Task 1
 
 
 
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
+new_task('Task 1')
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# (a)
+#---------------------------------------------------------------------------------------------------
+new_subtask('(b)')
+
+
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Task 2 - Starting point
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_task('Task 2 - Starting point')
+# # CA3 - Task 2
+# This is the starting point for CA3 Task 2. Below is the mesh generator you should use and how to call it. Remember that it relies on the package gmsh that you need to install (not included per default in Anaconda). See task description of guidance on this.
+
+# You will additionally need to use the folowing functions for task 2 found in mha021.py
+# ```
+# plot_scalar_field
+# plot_vector_field
+# flow2t_Ke_fe
+# flow2t_qe
+# convection_Ke_fe
+# ```
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Starting point - Mesh code
+#---------------------------------------------------------------------------------------------------
+new_subtask('Starting point - Mesh code')
+
+def generate_floor_mesh(width=10.0, height=5.0, radius=1.0, vertical_offset=0.0, mesh_size=0.5):
+    """
+    Generate a 2D triangular mesh of a rectangle with a circular cutout on the left edge.
+
+    Parameters:
+        width (float): Rectangle width.
+        height (float): Rectangle height.
+        radius (float): Radius of the circular cutout.
+        vertical_offset (float): Vertical offset of the circle's center from the rectangle's center.
+        mesh_size (float): Target mesh element size.
+
+    Returns:
+        nodes (np.ndarray): Node coordinates (N x 2).
+        elements (np.ndarray): Triangle connectivity (M x 3) with 1-based node indices.
+        node_groups (dict): Dictionary of ordered node indices (1-based) for each boundary ('left', 'right', 'top', 'bottom', 'circle').
+    """
+    gmsh.initialize()
+    gmsh.model.add("Rect_with_left_cutout")
+
+    # Geometry: Rectangle and circular disk on left edge
+    rect = gmsh.model.occ.addRectangle(0, 0, 0, width, height)
+    cx = 0.0
+    cy = vertical_offset
+    circle = gmsh.model.occ.addDisk(cx, cy, 0, radius, radius)
+
+    # Subtract circle from rectangle to create hole
+    out = gmsh.model.occ.cut([(2, rect)], [(2, circle)], removeObject=True, removeTool=True)
+    surface_tag = out[0][0][1]  # Tag of resulting surface
+    gmsh.model.occ.synchronize()
+
+    # Set mesh size on all points
+    gmsh.model.mesh.setSize(gmsh.model.getEntities(0), mesh_size)
+
+    # Identify boundary curves of the surface
+    boundary_curves = gmsh.model.getBoundary([(2, surface_tag)], oriented=False)
+    edge_tags = [tag for dim, tag in boundary_curves if dim == 1]
+
+    left_edges = []
+    right_edges = []
+    top_edges = []
+    bottom_edges = []
+    circle_edges = []
+
+    tol = 1e-8
+    for edge in edge_tags:
+        # Get coordinates of the endpoints of the edge
+        end_pts = gmsh.model.getBoundary([(1, edge)], oriented=False)
+        pt_tags = [tag for dim, tag in end_pts if dim == 0]
+        if len(pt_tags) != 2:
+            continue  # skip if not a normal line segment
+        # Coordinates of endpoints
+        x1_min, y1_min, _, x1_max, y1_max, _ = gmsh.model.getBoundingBox(0, pt_tags[0])
+        x2_min, y2_min, _, x2_max, y2_max, _ = gmsh.model.getBoundingBox(0, pt_tags[1])
+        x1, y1 = 0.5 * (x1_min + x1_max), 0.5 * (y1_min + y1_max)
+        x2, y2 = 0.5 * (x2_min + x2_max), 0.5 * (y2_min + y2_max)
+        # Classify edge by orientation and position
+        if abs(x1 - x2) < tol:
+            # Vertical edge
+            if abs(x1) < tol:  # near x = 0 (left side)
+                com_x, com_y, _ = gmsh.model.occ.getCenterOfMass(1, edge)
+                if abs(com_x) < tol:
+                    left_edges.append(edge)   # straight left segment
+                else:
+                    circle_edges.append(edge) # arc segment on left
+            elif abs(x1 - width) < tol:
+                right_edges.append(edge)
+        elif abs(y1 - y2) < tol:
+            # Horizontal edge
+            if abs(y1) < tol:
+                com_x, com_y, _ = gmsh.model.occ.getCenterOfMass(1, edge)
+                if abs(com_y) < tol:
+                    bottom_edges.append(edge)  # straight bottom segment
+                else:
+                    circle_edges.append(edge)  # arc segment on bottom (if any)
+            elif abs(y1 - height) < tol:
+                top_edges.append(edge)
+        else:
+            # Non-axis-aligned edge (likely a circular arc)
+            circle_edges.append(edge)
+
+    # Create physical groups for boundary edges
+    left_phys   = gmsh.model.addPhysicalGroup(1, left_edges)   if left_edges   else None
+    right_phys  = gmsh.model.addPhysicalGroup(1, right_edges)  if right_edges  else None
+    top_phys    = gmsh.model.addPhysicalGroup(1, top_edges)    if top_edges    else None
+    bottom_phys = gmsh.model.addPhysicalGroup(1, bottom_edges) if bottom_edges else None
+    circle_phys = gmsh.model.addPhysicalGroup(1, circle_edges) if circle_edges else None
+
+    gmsh.model.mesh.generate(2)  # Generate 2D mesh (triangles)
+
+    # Node coordinates
+    node_tags, node_coords, _ = gmsh.model.mesh.getNodes()
+    node_tags = np.array(node_tags, dtype=int)
+    coords = np.array(node_coords).reshape(-1, 3)[:, :2]  # Nx2 array of x, y coordinates
+    tag_to_index = {tag: idx for idx, tag in enumerate(node_tags)}
+
+    # Triangle connectivity (3 nodes per triangle, 1-based indexing)
+    elements_list = []
+    elem_types, _, elem_node_tags = gmsh.model.mesh.getElements(2)
+    for etype, nodes in zip(elem_types, elem_node_tags):
+        if etype == 2:  # 3-node triangle
+            nodes = np.array(nodes, dtype=int)
+            for i in range(0, len(nodes), 3):
+                n1 = tag_to_index[nodes[i]]
+                n2 = tag_to_index[nodes[i+1]]
+                n3 = tag_to_index[nodes[i+2]]
+                elements_list.append([n1, n2, n3])
+    elements = np.array(elements_list, dtype=int) + 1
+
+    # Helper to get sorted 1-based node indices for a physical group
+    def get_sorted_nodes(phys_group, sort_by='x'):
+        if phys_group is None:
+            return np.array([], dtype=int)
+        tags, coords_array = gmsh.model.mesh.getNodesForPhysicalGroup(1, phys_group)
+        tags = np.array(tags, dtype=int)
+        if tags.size == 0:
+            return np.array([], dtype=int)
+        # Get node indices and sort by coordinate
+        idx = [tag_to_index[t] for t in tags]
+        if sort_by == 'x':
+            idx.sort(key=lambda i: coords[i, 0])
+        elif sort_by == 'y':
+            idx.sort(key=lambda i: coords[i, 1])
+        return np.array([i + 1 for i in idx], dtype=int)
+
+    # Ordered node groups (1-based indices for each boundary)
+    node_groups = {
+        'left':   get_sorted_nodes(left_phys,   sort_by='y'),
+        'right':  get_sorted_nodes(right_phys,  sort_by='y'),
+        'top':    get_sorted_nodes(top_phys,    sort_by='x'),
+        'bottom': get_sorted_nodes(bottom_phys, sort_by='x'),
+        'circle': get_sorted_nodes(circle_phys, sort_by='y')
+    }
+
+    gmsh.finalize()
+    # return coords, elements, node_groups
+    return Mesh(coords, elements, node_groups, dofs_per_node=1)
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Starting point - Mesh generation & visualization
+#---------------------------------------------------------------------------------------------------
+new_subtask('Starting point - Mesh generation & visualization')
+
+mesh = generate_floor_mesh(width=10.0, height=5.0, radius=1.0, vertical_offset=2.0, mesh_size=0.5)
+
+fig = plot_mesh(mesh.nodes, mesh.elements, mesh.edges)
+fig.show()
+
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Task 2 - Continuation
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_task('Task 2 - Continuation')
