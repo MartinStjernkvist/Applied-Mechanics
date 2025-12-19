@@ -102,17 +102,6 @@ new_subtask('(b)')
 ####################################################################################################
 ####################################################################################################
 new_task('Task 2 - Starting point')
-# # CA3 - Task 2
-# This is the starting point for CA3 Task 2. Below is the mesh generator you should use and how to call it. Remember that it relies on the package gmsh that you need to install (not included per default in Anaconda). See task description of guidance on this.
-
-# You will additionally need to use the folowing functions for task 2 found in mha021.py
-# ```
-# plot_scalar_field
-# plot_vector_field
-# flow2t_Ke_fe
-# flow2t_qe
-# convection_Ke_fe
-# ```
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -283,3 +272,120 @@ fig.show()
 ####################################################################################################
 ####################################################################################################
 new_task('Task 2 - Continuation')
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 2 - d) Solve system of equations
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 2 - d) Solve system of equations')
+
+# You will additionally need to use the folowing functions
+# plot_scalar_field
+# plot_vector_field
+# flow2t_Ke_fe
+# flow2t_qe
+# convection_Ke_fe
+
+alpha_w = 1000 # W / (m^2 C)
+T_air = 20 # C
+alpha_air = 5 # W / (m^2 C)
+T_b = 10 # C
+k = 0.75 # W / (m C)
+t = 1 # m
+
+T_w = 30 # C
+
+# Constitutive matrix
+D = k * np.array([
+    [1, 0],
+    [0, 1]
+])
+
+# System matrices
+num_nodes = mesh.nodes.shape[0]
+num_el = mesh.elements.shape[0]
+num_dofs = num_nodes
+
+# Initiate stiffness and load matrices
+K = np.zeros((num_dofs, num_dofs))
+f = np.zeros((num_dofs, 1))
+
+for el in range(num_el):
+    el_nodes = mesh.nodes[mesh.elements[el] - 1]
+    Ke, fe = flow2t_Ke_fe(el_nodes, D=D, t=t, Q=0)
+    el_dofs = mesh.edofs[el, :]
+    assem(K, Ke, el_dofs)
+    assem(f, fe, el_dofs)
+
+# Convection: water
+conv_nodes_w = mesh.edges('circle')
+num_edges_w = len(conv_nodes_w) - 1
+
+for edge in range(num_edges_w):
+    edge_nodes = conv_nodes_w[edge:edge + 2] - 1
+    nodes = mesh.nodes[edge_nodes, :]
+    displayvar("nodes", nodes)
+    Kec, fec = convection_Ke_fe(nodes, alpha=alpha_w, t=t, T0=T_w)
+    dofs = edge_nodes + 1
+    displayvar("edge dofs", dofs)
+    assem(K, Kec, dofs)
+    assem(f, fec, dofs)
+
+
+# Convection: air
+conv_nodes_air = mesh.edges('top')
+num_edges_air = len(conv_nodes_air) - 1
+
+for edge in range(num_edges_air):
+    edge_nodes = conv_nodes_air[edge:edge + 2] - 1
+    nodes = mesh.nodes[edge_nodes, :]
+    displayvar("nodes", nodes)
+    Kec, fec = convection_Ke_fe(nodes, alpha=alpha_air, t=t, T0=T_air)
+    dofs = edge_nodes + 1
+    displayvar("edge dofs", dofs)
+    assem(K, Kec, dofs)
+    assem(f, fec, dofs)
+
+# Boundary conditions
+bottom_dofs = mesh.edges['bottom']
+bc_dofs = 
+bc_vals = 
+
+# Solve system
+a, r = solve_eq(K, f, bc_dofs, bc_vals)
+
+# Plot temperature field
+Ed = extract_dofs(a, mesh.edofs)
+fig = plot_scalar_field(mesh.nodes, mesh.elements, Ed, title=fr'Tempterature ($^\circ$C)')
+fig.show()
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 2 - e) Heat flux vectors + visualization
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 2 - e) Compute heat flux vectors + visualization')
+
+q = np.zeros((num_el, 2))
+
+for el in range(num_el):
+    el_nodes = mesh.nodes[mesh.elements[el] - 1]
+    qe = flow2t_qe(el_nodes, D, Ed[el, :])
+    q[el, :] = qe
+
+plot_vector_field(mesh.nodes, mesh.elements, q, title='Heat flux')
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 2 - f) Convective heat inflow
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 2 - f) Convective heat inflow')
+
+
+
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 2 - g) Required water temperature
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 2 - g) Required water temperature')
+
