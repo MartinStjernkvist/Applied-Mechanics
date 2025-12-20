@@ -63,7 +63,8 @@ def sfig(fig_name):
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     print('figure name: ', fig_name)
-        
+
+
 #%%
 ####################################################################################################
 ####################################################################################################
@@ -71,7 +72,197 @@ def sfig(fig_name):
 
 
 
-# Task 1
+# Task 1 - Copy from CA2
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+new_task('Task 1 - Copy from CA2')
+
+def compute_Ne_Be_detJ(nodes, ξ, η):
+    
+    # Shape functions
+    # Order: (-1,-1), (1,-1), (1,1), (-1,1) -> Counter-clockwise
+    Ne = 0.25 * np.array([
+        (1 - ξ) * (1 - η),
+        (1 + ξ) * (1 - η),
+        (1 + ξ) * (1 + η),
+        (1 - ξ) * (1 + η)
+    ])
+    
+    # dN_dξ
+    dN_dxi = 0.25 * np.array([
+        -(1 - η),
+         (1 - η),
+         (1 + η),
+        -(1 + η)
+    ])
+    
+    # dN_dη
+    dN_deta = 0.25 * np.array([
+        -(1 - ξ),
+        -(1 + ξ),
+         (1 + ξ),
+         (1 - ξ)
+    ])
+
+    # Derivatives of shape functions
+    dNe = np.vstack((dN_dxi, dN_deta))
+
+    # Jacobian matrix
+    J = dNe @ nodes
+
+    detJ = np.linalg.det(J)
+    
+    minDetJ = 1e-16
+    if detJ < minDetJ:
+        raise ValueError(f"Bad element geometry: detJ = {detJ}") # may happen if the nodes are not counter-clockwize 
+    Jinv = np.linalg.inv(J)
+    
+    # Derivatives of shape functions w.r.t global coordinates x, y
+    dNedxy = Jinv @ dNe
+
+    # N matrix 
+    N = np.zeros((2, 8))
+    N[0, 0::2] = Ne
+    N[1, 1::2] = Ne
+
+    # B-matrix
+    Be = np.zeros((3, 8))
+    for i in range(4):
+        dNdx = dNedxy[0, i]
+        dNdy = dNedxy[1, i]
+        
+        # Column indices for u_i and v_i
+        idx_u = 2 * i
+        idx_v = 2 * i + 1
+        
+        Be[0, idx_u] = dNdx
+        Be[1, idx_v] = dNdy
+        Be[2, idx_u] = dNdy
+        Be[2, idx_v] = dNdx
+
+    return N, Be, detJ
+
+# Define inputs
+W = 5 # m
+H = 0.4 # m
+t = 0.01 # m
+E = 210e9 # Pa
+nu = 0.3
+rho = 7800 # kg/m^3
+g = 9.81 # m/s^2
+b = [0, -rho * g] # N
+
+def task12(nelx=50, nely=10, plot_n_print=False, W=5):
+
+    mesh = MeshGenerator.structured_rectangle_mesh(
+        width=W,
+        height=H,
+        nx=nelx,
+        ny=nely
+    )
+
+    nodes = mesh.nodes
+    elements = mesh.elements
+    edge_nodes = mesh.edges
+    Edof = mesh.edofs
+    
+    el_centers = np.mean(nodes[elements[:, :] - 1], axis=1)
+
+    if plot_n_print == True:
+        fig = mesh.plot('mesh')
+        fig = plot_mesh(nodes, elements, edge_nodes)
+        fig.show()
+    else:
+        pass
+    
+    edof_map = build_edof(elements, dofs_per_node=2)
+
+    D = hooke_2d_plane_stress(E, nu)
+    
+    ndofs = nodes.shape[0] * 2
+    K = np.zeros((ndofs, ndofs))
+    f = np.zeros(ndofs)
+    
+    for el in range(len(elements)):
+        
+        Ke, fe = cst_element(nodes[elements[el, :] - 1], D, t, b)
+            
+        dofs = Edof[el, :]
+        assem(K, Ke, dofs)
+        assem(f, fe, dofs)
+    
+    bc_dofs = []
+    bc_vals = []
+    
+    # Symmetry condition (right edge)
+    right_nodes = edge_nodes['right']
+    for n in right_nodes:
+        bc_dofs.append(2 * (n - 1) + 1)
+        bc_vals.append(0)
+
+    # Support condition (left bottom node)
+    left_nodes = edge_nodes['left']
+    min_y = np.min(nodes[left_nodes - 1, 1])
+    support_node = None
+    for n in left_nodes:
+        if np.isclose(nodes[n - 1, 1], min_y):
+            support_node = n
+            break
+            
+    if support_node:
+        bc_dofs.append(2 * (support_node - 1) + 2) # u_y
+        bc_vals.append(0)
+    else:
+        print("support node not found")
+        
+    a, r = solve_eq(K, f, bc_dofs, bc_vals)
+    
+    right_dofs_y = [2 * (n - 1) + 2 for n in right_nodes]
+    uy_right = a[np.array(right_dofs_y) - 1]
+    uy_avg = np.mean(uy_right)
+    
+    ed = extract_dofs(a, Edof)
+    if plot_n_print == True:
+        fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='uy')
+        fig.show()
+    else:
+        pass
+    
+    el_stress = np.zeros((len(elements), 3))
+    el_strain = np.zeros((len(elements), 3))
+
+    for el in range(len(elements)):
+        nodes[elements[el, :] - 1]
+        dofs = Edof[el, :]
+        ae = a[dofs - 1]
+        
+        σe, ϵe = cst_element_stress_strain(nodes[elements[el, :] - 1], D, ae)
+        
+        el_stress[el, :] = σe
+        el_strain[el, :] = ϵe
+        
+    el_right_edge = [el for el in range(len(elements)) 
+                  if sum(n in right_nodes for n in elements[el, :]) >= 2]
+
+    right_edge_stress = el_stress[el_right_edge, :]
+    sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0]))
+
+    return uy_avg, sigmaxx_max, ndofs, nodes, elements, el_centers, el_stress, el_strain
+
+task12(nelx=40, nely=8, plot_n_print=True)
+
+#%%
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+
+
+# Task 1 - Continuation
 
 
 
@@ -84,7 +275,10 @@ new_task('Task 1')
 #---------------------------------------------------------------------------------------------------
 # (a)
 #---------------------------------------------------------------------------------------------------
-new_subtask('(b)')
+new_subtask('a)')
+
+
+
 
 
 #%%
@@ -370,7 +564,7 @@ a, r = solve_eq(K, f, bc_dofs, bc_vals)
 # Plot temperature field
 Ed = extract_dofs(a, mesh.edofs)
 # print('Ed shape and values:\n', np.shape(Ed), Ed)
-fig = plot_scalar_field(mesh.nodes, mesh.elements, Ed, title=fr'Tempterature ($^\circ$C)')
+fig = plot_scalar_field(mesh.nodes, mesh.elements, Ed, title=fr'Tempterature')
 fig.show()
 
 T_sum = 0
