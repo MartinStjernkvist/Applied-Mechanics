@@ -209,14 +209,6 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
 
     right_edge_stress = el_stress[el_right_edge, :]
     sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0]))
-    
-    # displayvar('D', D)
-    # displayvar('K', K, accuracy=3)
-    # displayvar('f', f, accuracy=3)
-    # displayvar('a', a, accuracy=3)
-    # displayvar('r', r, accuracy=3)
-    # displayvar('u_{right, avg}', avg_deflection, accuracy=3)
-    # displayvar('σ', el_stresses, accuracy=3)
         
     print(f'\n number of DOFs: {ndofs}')
     print(f'Deflection: {uy_avg:.3e} m')
@@ -235,9 +227,9 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
     # Displacement and stress fractions
     f_uy = uy_avg / delta_analytic
     f_sigmaxx = sigmaxx_max / sigma_analytic
-    print(f'\nComparison with analytical solution:')
-    print(f'Deflection fraction (result / analytical): {f_uy:.2e}')
-    print(f'Stress fraction (result / analytical): {f_sigmaxx:.2e}')
+    # print(f'\nComparison with analytical solution:')
+    # print(f'Deflection fraction (result / analytical): {f_uy:.2e}')
+    # print(f'Stress fraction (result / analytical): {f_sigmaxx:.2e}')
 
     return uy_avg, sigmaxx_max, ndofs, f_uy, f_sigmaxx, nodes, elements, el_centers, el_stress, el_strain
 
@@ -248,7 +240,9 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 1 - Run analysis')
 
-task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
+# task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
+
+task12(element_type='cst', nelx=212, nely=16, plot_n_print=True)
 
 #%%
 #---------------------------------------------------------------------------------------------------
@@ -280,14 +274,16 @@ for i in range(len(nelx_list)):
         rel_change_uy = (f_uy_list[i] - f_uy_list[i -1 ]) / f_uy_list[i]
         rel_change_sigmaxx = (f_sigmaxx_list[i] - f_sigmaxx_list[i - 1]) / f_sigmaxx_list[i]
 
-        print(f'relative change in displacement: {rel_change_uy:.2e} %')
-        print(f'relative change in stress: {rel_change_sigmaxx:.2e} %')
+        print(f'relative change in displacement: {rel_change_uy*100:.2f} %')
+        print(f'relative change in stress: {rel_change_sigmaxx*100:.2f} %')
         
-        if rel_change_uy <= 0.01:
-            print(f'Deflection convergence for NDOF = {ndofs:.2e}')
+        if rel_change_uy <= 0.02:
+            print(f'Deflection convergence for NDOF = {ndofs:.2f}')
+            print(f'nelx, nely: {nelx_list[i], nely_list[i]}')
         
-        if rel_change_sigmaxx <= 0.01:
-            print(f'Stress convergence for NDOF = {ndofs:.2e}')
+        if rel_change_sigmaxx <= 0.02:
+            print(f'Stress convergence for NDOF = {ndofs:.2f}')
+            print(f'nelx, nely: {nelx_list[i], nely_list[i]}')
 
 plt.figure()
 plt.plot(ndofs_list, uy_avg_list, 'X-')
