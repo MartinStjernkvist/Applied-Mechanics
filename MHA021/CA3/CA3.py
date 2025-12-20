@@ -187,13 +187,22 @@ def task12(nelx=50, nely=10, plot_n_print=False, W=5):
     K = np.zeros((ndofs, ndofs))
     f = np.zeros(ndofs)
     
+    # Mass matrix
+    M = np.zeros_like(K)
+    
     for el in range(len(elements)):
         
         Ke, fe = cst_element(nodes[elements[el, :] - 1], D, t, b)
+        
+        # Element mass matrix
+        Me = cst_element_M(nodes[elements[el, :] - 1], rho, t)
             
         dofs = Edof[el, :]
         assem(K, Ke, dofs)
         assem(f, fe, dofs)
+        
+        # Assemble mass matrix
+        assem(M, Me, dofs)
     
     bc_dofs = []
     bc_vals = []
@@ -220,6 +229,20 @@ def task12(nelx=50, nely=10, plot_n_print=False, W=5):
         print("support node not found")
         
     a, r = solve_eq(K, f, bc_dofs, bc_vals)
+    
+    # Reduce matrices
+    all_dofs = np.arange(1, ndofs + 1, 1, dtype=int)
+    free_dofs = np.setdiff1d(all_dofs, bc_dofs)
+    K_red = extract_block(K, free_dofs)
+    M_red = extract_block(M, free_dofs)
+    
+    # Solve for eigenmodes and frequencies
+    omega2, phi_red = eigh(K_red, M_red)
+    f = np.sqrt(omega2)/(2*np.pi)
+    
+    # phi_j
+    phi_j = np.zeros(ndofs)
+    phi_j[free_dofs - 1] = phi_red[:, 0]
     
     right_dofs_y = [2 * (n - 1) + 2 for n in right_nodes]
     uy_right = a[np.array(right_dofs_y) - 1]
@@ -250,32 +273,34 @@ def task12(nelx=50, nely=10, plot_n_print=False, W=5):
 
     right_edge_stress = el_stress[el_right_edge, :]
     sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0]))
+    
+    return phi_j, f
 
-    return uy_avg, sigmaxx_max, ndofs, nodes, elements, el_centers, el_stress, el_strain
-
-task12(nelx=40, nely=8, plot_n_print=True)
-
-#%%
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-# Task 1 - Continuation
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-new_task('Task 1')
+phi_j, f = task12(nelx=40, nely=8, plot_n_print=False)
 
 #%%
 #---------------------------------------------------------------------------------------------------
-# (a)
+# Task 1 - a) Display variables
 #---------------------------------------------------------------------------------------------------
-new_subtask('a)')
+new_subtask('Task 1 - a) Display variables')
+
+phi_j_sorted = np.sort(phi_j)
+phi_1, phi_2, phi_3 = phi_j_sorted[0], phi_j_sorted[1], phi_j_sorted[2]
+
+# print(phi_1, phi_2, phi_3)
+
+f_sorted = np.sort(f)
+f_1, f_2, f_3 = f_sorted[0], f_sorted[1], f_sorted[2]
+
+print(f'f1: {f_1:.2f} Hz')
+print(f'f2: {f_2:.2f} Hz')
+print(f'f3: {f_3:.2f} Hz')
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 1 - b)
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 1 - b)')
 
 
 
