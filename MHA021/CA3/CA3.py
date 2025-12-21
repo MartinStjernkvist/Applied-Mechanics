@@ -72,14 +72,14 @@ def sfig(fig_name):
 
 
 
-# Task 1 - Copy from CA2
+# Task 1 - Copy from CA2, with modification
 
 
 
 ####################################################################################################
 ####################################################################################################
 ####################################################################################################
-new_task('Task 1 - Copy from CA2')
+new_task('Task 1 - Copy from CA2, with modification')
 
 def compute_Ne_Be_detJ(nodes, ξ, η):
     
@@ -156,7 +156,7 @@ rho = 7800 # kg/m^3
 g = 9.81 # m/s^2
 b = [0, -rho * g] # N
 
-def task12(nelx=50, nely=10, plot_n_print=False, W=5):
+def task12(E, rho, nelx=50, nely=10, plot_n_print=False, W=5):
 
     mesh = MeshGenerator.structured_rectangle_mesh(
         width=W,
@@ -274,37 +274,113 @@ def task12(nelx=50, nely=10, plot_n_print=False, W=5):
     right_edge_stress = el_stress[el_right_edge, :]
     sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0]))
     
-    return phi_j, f
-
-phi_j, f = task12(nelx=40, nely=8, plot_n_print=False)
+    return f, phi_red, ndofs, free_dofs, nodes, elements, Edof
 
 #%%
 #---------------------------------------------------------------------------------------------------
-# Task 1 - a) Display variables
+# Task 1 - a) Lowest natural frequencies
 #---------------------------------------------------------------------------------------------------
-new_subtask('Task 1 - a) Display variables')
+new_subtask('Task 1 - a) Lowest natural frequencies')
 
-phi_j_sorted = np.sort(phi_j)
-phi_1, phi_2, phi_3 = phi_j_sorted[0], phi_j_sorted[1], phi_j_sorted[2]
+f, phi_red, ndofs, free_dofs, nodes, elements, Edof = task12(E, rho, nelx=212, nely=16, plot_n_print=False)
 
-# print(phi_1, phi_2, phi_3)
-
-f_sorted = np.sort(f)
-f_1, f_2, f_3 = f_sorted[0], f_sorted[1], f_sorted[2]
-
+indices = np.argsort(f)[:3]
+f_1, f_2, f_3 = f[indices[0]], f[indices[1]], f[indices[2]]
+print('Steel:')
 print(f'f1: {f_1:.2f} Hz')
 print(f'f2: {f_2:.2f} Hz')
 print(f'f3: {f_3:.2f} Hz')
 
+print(f'omega1: {f_1 * 2 * np.pi:.2f} rad/s')
+print(f'omega2: {f_2 * 2 * np.pi:.2f} rad/s')
+print(f'omega3: {f_3 * 2 * np.pi:.2f} rad/s')
+
 #%%
 #---------------------------------------------------------------------------------------------------
-# Task 1 - b)
+# Task 1 - a) Plot modes
 #---------------------------------------------------------------------------------------------------
-new_subtask('Task 1 - b)')
+new_subtask('Task 1 - a) Plot modes')
+
+for i in range(len(indices)):
+    phi_j = np.zeros((ndofs))
+
+    mode = indices[i]
+
+    phi_j[free_dofs - 1] = phi_red[:, mode]
+    ed = extract_dofs(phi_j, Edof)
+
+    fig = plot_deformed_mesh(nodes, elements, ed, scale=1, field='uy')
+    fig.show()
+    print(f'Mode phi_{i+1}')
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 1 - a) Convergence validation
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 1 - a) Convergence validation')
+
+# Reduce number of DOFs by half
+nelx = int(212 * (1 / np.sqrt(2)))
+nely = int(16* (1 / np.sqrt(2)))
+
+f, _, _, _, _, _, _ = task12(E, rho, nelx, nely, plot_n_print=False)
+f_sorted = np.sort(f)
+f_1_prev, f_2_prev, f_3_prev = f_sorted[0], f_sorted[1], f_sorted[2]
+
+f1_change = (f_1 - f_1_prev) / f_1_prev * 100
+f2_change = (f_2 - f_2_prev) / f_2_prev * 100
+f3_change = (f_3 - f_3_prev) / f_3_prev * 100
+
+print('Change in reducing DOFs by half:')
+print(f'Change in f1: {f1_change:.2f} %')
+print(f'Change in f2: {f2_change:.2f} %')
+print(f'Change in f3: {f3_change:.2f} %')
+# All below 2% -> converged results
+
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 1 - b) LLM verification
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 1 - b) LLM verification')
+
+L = 2 * W       # Total Length
+
+# Analytical Solution (Euler-Bernoulli)
+n_modes = np.array([1, 2, 3, 4, 5])
+f_analytical = (np.pi * n_modes**2 * H / (2 * L**2)) * np.sqrt(E / (12 * rho))
+
+print(f"Analytical Frequencies (Hz):", f_analytical)
 
 
+#%%
+#---------------------------------------------------------------------------------------------------
+# Task 1 - c) Different materials
+#---------------------------------------------------------------------------------------------------
+new_subtask('Task 1 - c) Different materials')
 
+E_aluminium = 69 * 10**(9)
+rho_aluminium = 2.7 * 10**(3)
+E, rho = E_aluminium, rho_aluminium
 
+f, _, _, _, _, _, _ = task12(E, rho, nelx=212, nely=16, plot_n_print=False)
+f_sorted = np.sort(f)
+f_1, f_2, f_3 = f_sorted[0], f_sorted[1], f_sorted[2]
+print('Aluminium:')
+print(f'f1: {f_1:.2f} Hz')
+print(f'f2: {f_2:.2f} Hz')
+print(f'f3: {f_3:.2f} Hz')
+
+E_copper = 117 * 10**(9)
+rho_copper = 8.96 * 10**(3)
+E, rho = E_copper, rho_copper
+
+f, _, _, _, _, _, _ = task12(E, rho, nelx=212, nely=16, plot_n_print=False)
+f_sorted = np.sort(f)
+f_1, f_2, f_3 = f_sorted[0], f_sorted[1], f_sorted[2]
+print('\nCopper:')
+print(f'f1: {f_1:.2f} Hz')
+print(f'f2: {f_2:.2f} Hz')
+print(f'f3: {f_3:.2f} Hz')
 
 #%%
 ####################################################################################################

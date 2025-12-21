@@ -126,7 +126,6 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
     if plot_n_print == True:
         fig = mesh.plot('mesh')
         fig = plot_mesh(nodes, elements, edge_nodes)
-        sfig('Mesh.png')
         fig.show()
     else:
         pass
@@ -183,7 +182,6 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
     ed = extract_dofs(a, Edof)
     if plot_n_print == True:
         fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='uy')
-        sfig('Deformed mesh.png')
         fig.show()
     else:
         pass
@@ -242,7 +240,7 @@ new_subtask('Task 1 - Run analysis')
 
 # task12(element_type='cst', nelx=40, nely=8, plot_n_print=True)
 
-task12(element_type='cst', nelx=212, nely=16, plot_n_print=True)
+task12(element_type='cst', nelx=212, nely=16, plot_n_print=False)
 
 #%%
 #---------------------------------------------------------------------------------------------------
