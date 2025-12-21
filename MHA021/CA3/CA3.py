@@ -776,6 +776,35 @@ def FEA(T_w_var):
 # Idea: start with T_w_var = 30, and large T_step values
 # Once a general value for T_w is found, optimize the T_w_var start value and step values
 
+# Rough steps
+T_sum = 0
+T_mean = 0
+T_w_var = 30 # starting value, optimized
+
+while T_mean <=30:
+    
+    print(f'T_w = {T_w_var}')
+    a = FEA(T_w_var)
+    
+    for edge in range(num_edges_air):
+    
+        node_i = conv_nodes_air[edge] - 1
+        node_j = conv_nodes_air[edge + 1] - 1
+        
+        Te_i = a[node_i]
+        Te_j = a[node_j]
+        # print(Te_i, Te_j)
+        
+        T_sum += (Te_i + Te_j) / 2
+        
+    T_mean = T_sum / num_edges_air
+    print(f'\nMean temperature: {T_mean:.3f}')
+    
+    T_step = 0.5
+    T_w_var += T_step # temperature step, optimized
+    T_sum = 0
+
+# Refined steps
 T_sum = 0
 T_mean = 0
 T_w_var = 46.45 # starting value, optimized
