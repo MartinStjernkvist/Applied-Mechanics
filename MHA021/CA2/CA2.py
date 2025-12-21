@@ -581,6 +581,9 @@ def plot_single_contour(el_centers, field_data, field_name, file_name, cmap='jet
     
     plt.savefig('figures/' + file_name + '.png')
     plt.show()
+    
+horizontal_strain = el_strain[:, 0]
+plot_single_contour(el_centers, horizontal_strain, 'Horizontal strain $\epsilon_{xx}$', 'Horizontal strain', cmap='jet')
 
 shear_strain = el_strain[:, 2]
 plot_single_contour(el_centers, shear_strain, 'Shear strain $\gamma_{xy}$', 'Shear strain', cmap='jet')
@@ -590,6 +593,21 @@ plot_single_contour(el_centers, vertical_strain, 'Vertical strain $\epsilon_{yy}
 
 normal_stress = el_stress[:, 0]
 plot_single_contour(el_centers, normal_stress, 'Normal stress $\sigma_{xx}$','Normal stress', cmap='jet')
+
+print(np.shape(horizontal_strain))
+print(np.shape(vertical_strain))
+print(np.shape(shear_strain))
+
+# Plot fractions
+fraction_horizontal_shear = []
+for i in range(len(horizontal_strain)):
+    fraction_horizontal_shear.append(shear_strain[i] / horizontal_strain[i])
+plot_single_contour(el_centers, fraction_horizontal_shear, 'Fraction shear / horizontal strain','Fraction shear horizontal', cmap='jet')
+
+fraction_horizontal_vertical = []
+for i in range(len(horizontal_strain)):
+    fraction_horizontal_vertical.append(vertical_strain[i] / horizontal_strain[i])
+plot_single_contour(el_centers, fraction_horizontal_vertical, 'Fraction vertical / horizontal strain','Fraction vertical horizontal', cmap='jet')
 
 #%%
 #---------------------------------------------------------------------------------------------------
