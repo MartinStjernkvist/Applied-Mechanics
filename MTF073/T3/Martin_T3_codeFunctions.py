@@ -196,6 +196,20 @@ def correctGlobalContinuity(Fe, Fw, Fn, Fs,
     # Note that F is here supposed to include the multiplication with area
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    
+    
+    
+    
+    """
+    --------------------------------
+    # ^^^
+    --------------------------------
+    """
 
     # Just for checking (if you want to):
     # globContErr = np.sum(Fe[nI-2,1:nJ-1]) - np.sum(Fw[1,1:nJ-1]) + \
@@ -231,7 +245,11 @@ def calcD(De, Dw, Dn, Ds,
 def calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
                            nI, nJ, alphaUV, De, Dw, Dn, Ds,
                            Fe, Fw, Fn, Fs):
+    """
+    ################################
     # OPTIONAL!!! ONLY IF YOU ARE INTERESTED!
+    ################################
+    """
     # Calculate under-relaxed momentum equation coefficients, based on FOU_CD
     # (First-Order Upwind for convection and Central Differencing for diffusion),
     # using max-functions.
@@ -246,19 +264,6 @@ def calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     #         aN_uv[i,j] = 0 # ADD CODE HERE
     #         aS_uv[i,j] = 0 # ADD CODE HERE
     #         aP_uv[i,j] = 0 # ADD CODE HERE
-    
-    """
-    --------------------------------
-    # ADDED CODE
-    --------------------------------
-    """
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            aE_uv[i,j] = 0 
-            aW_uv[i,j] = 0 
-            aN_uv[i,j] = 0 
-            aS_uv[i,j] = 0
-            aP_uv[i,j] = 0 
 
 def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
                            nI, nJ, alphaUV, De, Dw, Dn, Ds,
@@ -269,19 +274,27 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     # Keep 'nan' where values are not needed!
     # NEGLECT CONTINUITY ERROR IN CENTRAL COEFFICIENT! (Sp = 0)
     # ADD CODE HERE
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            aE_uv[i,j] = 0 # ADD CODE HERE
-            aW_uv[i,j] = 0 # ADD CODE HERE
-            aN_uv[i,j] = 0 # ADD CODE HERE
-            aS_uv[i,j] = 0 # ADD CODE HERE
-            aP_uv[i,j] = 0 # ADD CODE HERE
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         aE_uv[i,j] = 0 # ADD CODE HERE
+    #         aW_uv[i,j] = 0 # ADD CODE HERE
+    #         aN_uv[i,j] = 0 # ADD CODE HERE
+    #         aS_uv[i,j] = 0 # ADD CODE HERE
+    #         aP_uv[i,j] = 0 # ADD CODE HERE
             
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+            aE_uv[i,j] = np.max([-Fe[i, j], De[i, j] - fxe[i,j] * Fe[i, j], 0])
+            aW_uv[i,j] = np.max([Fw[i, j], Dw[i, j] + fxw[i,j] * Fw[i, j], 0])
+            aN_uv[i,j] = np.max([-Fn[i, j], Dn[i, j] - fyn[i,j] * Fn[i, j], 0])
+            aS_uv[i,j] = np.max([Fs[i, j], Ds[i, j] + fys[i,j] * Fs[i, j], 0])
+            
+            aP_uv[i,j] = aE_uv[i,j] + aW_uv[i,j] + aN_uv[i,j] + aS_uv[i,j]
 
 def calcMomEqSu(Su_u, Su_v,
                 nI, nJ, p, dx_WP, dx_PE, dy_SP, dy_PN, dx_we, dy_sn,
@@ -292,16 +305,20 @@ def calcMomEqSu(Su_u, Su_v,
     # Keep 'nan' where values are not needed!
     # NEGLECT CONTINUITY ERROR IN CENTRAL COEFFICIENT! (Sp = 0)
     # ADD CODE HERE
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            Su_u[i,j] = 0 # ADD CODE HERE
-            Su_v[i,j] = 0 # ADD CODE HERE
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         Su_u[i,j] = 0 # ADD CODE HERE
+    #         Su_v[i,j] = 0 # ADD CODE HERE
             
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):
+            Su_u[i,j] = 0
+            Su_v[i,j] = 0
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
