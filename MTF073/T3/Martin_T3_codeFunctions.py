@@ -293,9 +293,43 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
             aW_uv[i,j] = np.max([Fw[i, j], Dw[i, j] + fxw[i,j] * Fw[i, j], 0])
             aN_uv[i,j] = np.max([-Fn[i, j], Dn[i, j] - fyn[i,j] * Fn[i, j], 0])
             aS_uv[i,j] = np.max([Fs[i, j], Ds[i, j] + fys[i,j] * Fs[i, j], 0])
-            
-            aP_uv[i,j] = aE_uv[i,j] + aW_uv[i,j] + aN_uv[i,j] + aS_uv[i,j]
+    
+    # At outlets, set homogeneous Neumann
+    for j in range(1, nJ-1):
+        i = nI-2
 
+        i = 1
+        if Fw[i, j] < 0:
+            aW_uv[i, j] = 0
+        
+    for i in range(1,nI-1):
+        j = nJ-2
+        
+        j = 1
+    
+    # (Homogeneous) Neumann walls:
+    for i in range(1,nI-1):
+        j = nJ-2
+        if  Fn[i, j] == 0:
+            aN_uv[i, j] = 0
+            
+        j = 1
+        if Fs[i, j] == 0:
+            aS_uv[i, j] = 0
+        
+    for j in range(1,nJ-1):
+        i = nI-2
+        if Fe[i,j] == 0:
+            aE_uv[i, j] = 0
+            
+        i = 1
+        if Fw[i, j] == 0:
+            aW_uv[i, j] = 0
+    
+    for i in range(1,nI-1):
+        for j in range(1,nJ-1):       
+            aP_uv[i,j] = aE_uv[i,j] + aW_uv[i,j] + aN_uv[i,j] + aS_uv[i,j]
+            
 def calcMomEqSu(Su_u, Su_v,
                 nI, nJ, p, dx_WP, dx_PE, dy_SP, dy_PN, dx_we, dy_sn,
                 alphaUV, aP_uv, u, v, fxe, fxw, fyn, fys):
@@ -459,7 +493,7 @@ def solveTDMA(phi,
     # Do it in two directions, as in Task 2.
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
     # ADDED CODE - SOLVED
