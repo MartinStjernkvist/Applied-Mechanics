@@ -48,7 +48,7 @@ def calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
     #         dy_sn[i,j] = 0 # ADD CODE HERE
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1, nI-1):
@@ -78,7 +78,7 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
     
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1, nI-1):
@@ -218,7 +218,7 @@ def calcD(De, Dw, Dn, Ds,
             
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range (1,nI-1):
@@ -314,7 +314,7 @@ def solveGaussSeidel(phi,
 
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for linSolIter in range(nLinSolIter):  
@@ -445,7 +445,7 @@ def solveTDMA(phi,
     pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     
