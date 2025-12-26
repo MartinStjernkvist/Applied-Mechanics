@@ -53,12 +53,14 @@ def calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
     """
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            dx_PE[i,j] = 0 
-            dx_WP[i,j] = 0 
-            dy_PN[i,j] = 0
-            dy_SP[i,j] = 0
-            dx_we[i,j] = 0
-            dy_sn[i,j] = 0
+            dx_PE[i, j] = nodeX[i + 1, j] - nodeX[i, j] # P->E
+            dx_WP[i, j] = nodeX[i, j] - nodeX[i - 1, j] # W->P
+            
+            dy_PN[i, j] = nodeY[i, j + 1] - nodeY[i, j] # P->N
+            dy_SP[i, j] = nodeY[i, j] - nodeY[i, j - 1] # S->P
+            
+            dx_we[i, j] = pointX[i, 0] - pointX[i - 1, 0] # Length W-E
+            dy_sn[i, j] = pointY[0, j] - pointY[0, j - 1] # Length S-N
     
     
 def calcInterpolationFactors(fxe, fxw, fyn, fys,
@@ -81,10 +83,10 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
     """
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            fxe[i,j] = 0 
-            fxw[i,j] = 0 
-            fyn[i,j] = 0 
-            fys[i,j] = 0
+            fxe[i, j] = 0.5 * dx_we[i, j] / dx_PE[i, j] # P->face e / P->E
+            fxw[i, j] = 0.5 * dx_we[i, j] / dx_WP[i, j] # face w->P  / W->P
+            fyn[i, j] = 0.5 * dy_sn[i, j] / dy_PN[i, j] # P->face n / P->N
+            fys[i, j] = 0.5 * dy_sn[i, j] / dy_SP[i, j] # face s->P  / S->P
     
 
 def initArrays(u, v, p, Fe, Fw, Fn, Fs):
@@ -221,10 +223,10 @@ def calcD(De, Dw, Dn, Ds,
     """
     for i in range (1,nI-1):
         for j in range(1,nJ-1):
-            De[i,j] = 0
-            Dw[i,j] = 0
-            Dn[i,j] = 0 
-            Ds[i,j] = 0 
+            De[i,j] = gamma / dx_PE[i,j] * dy_sn[i,j]
+            Dw[i,j] = gamma / dx_WP[i,j] * dy_sn[i,j]
+            Dn[i,j] = gamma / dy_PN[i,j] * dx_we[i,j]
+            Ds[i,j] = gamma / dy_SP[i,j] * dx_we[i,j]
     
 def calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
                            nI, nJ, alphaUV, De, Dw, Dn, Ds,
@@ -308,13 +310,30 @@ def solveGaussSeidel(phi,
     # Do it in two directions, as in Task 2
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
 
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
+    for linSolIter in range(nLinSolIter):  
+         
+        for i in range(1,nI-1):
+            for j in range(1,nJ-1):
+                phi[i,j] = (aE[i, j] * phi[i + 1, j] +
+                            aW[i, j] * phi[i - 1, j] +
+                            aN[i, j] * phi[i, j + 1] +
+                            aS[i, j] * phi[i, j - 1] +
+                            Su[i, j]) / aP[i, j]
+            
+        for j in range(1,nJ-1):
+            for i in range(1,nI-1):
+                phi[i,j] = (aE[i, j] * phi[i + 1, j] +
+                            aW[i, j] * phi[i - 1, j] +
+                            aN[i, j] * phi[i, j + 1] +
+                            aS[i, j] * phi[i, j - 1] +
+                            Su[i, j]) / aP[i, j]
 
 def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
                         nI, nJ, rho, u, v,
@@ -429,6 +448,78 @@ def solveTDMA(phi,
     # ADDED CODE
     --------------------------------
     """
+    
+    nan = float("nan")
+    P      = np.zeros((nI,nJ))*nan       # Array for TDMA, in nodes
+    Q      = np.zeros((nI,nJ))*nan       # Array for TDMA, in nodes
+    for linSolIter in range(0,nLinSolIter_phi):
+        # March from west to east
+        # Sweep from south to north
+        for j in range(1, nJ - 1):
+            
+            i = 1
+            
+            a = aP[i, j]
+            b = aE[i, j]
+            c = aW[i, j]
+            
+            d = (aN[i, j] * phi[i, j + 1] + 
+                 aS[i, j] * phi[i, j - 1] + 
+                 Su[i, j])
+            
+            P[i, j] = b / a
+            Q[i, j] = (d + c * phi[i - 1, j]) / a
+            
+            for i in range(2, nI - 1):
+                
+                a = aP[i, j]
+                b = aE[i, j]
+                c = aW[i, j]
+                d = (aN[i, j] * phi[i, j + 1] + 
+                     aS[i, j] * phi[i, j - 1] + 
+                     Su[i, j])
+                
+                denominator = a - c * P[i - 1, j]
+                
+                P[i, j] = b / denominator
+                Q[i, j] = (d + c * Q[i - 1, j]) / denominator
+            
+            for i in reversed(range(1, nI - 1)):
+                phi[i, j] = P[i, j] * phi[i + 1, j] + Q[i, j]
+            
+        # March from north to south <- THIS IS WRONG, we're marching from south to north
+        # Sweep from west to east 
+        for i in range(1, nI - 1):
+            
+            j = 1
+            
+            a = aP[i, j]
+            b = aN[i, j]
+            c = aS[i, j]
+            d = (aE[i, j] * phi[i + 1, j] + 
+                 aW[i, j] * phi[i - 1, j] + 
+                 Su[i, j])
+            
+            P[i, j] = b / a
+            Q[i, j] = (d + c * phi[i, j - 1]) / a
+            
+            for j in range(2, nJ - 1):
+            
+                a = aP[i, j]
+                b = aN[i, j]
+                c = aS[i, j]
+                d = (aE[i, j] * phi[i + 1, j] + 
+                     aW[i, j] * phi[i - 1, j] + 
+                     Su[i, j])
+                
+                denominator = a - c * P[i, j - 1]
+                
+                P[i, j] = b / denominator
+                Q[i, j] = (d + c * Q[i, j - 1]) / denominator
+            
+            for j in reversed(range(1, nJ - 1)):
+                
+                phi[i, j] = P[i, j] * phi[i, j + 1] + Q[i, j]
 
 def setPressureCorrectionLevel(pp,
                                nI, nJ, pRef_i, pRef_j):
