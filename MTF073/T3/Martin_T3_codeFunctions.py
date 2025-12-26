@@ -134,16 +134,24 @@ def setInletVelocityAndFlux(u, v, Fe, Fw, Fn, Fs,
     
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     match grid_type:
         case 'coarse' | 'newCoarse':
-            
-            pass
+            for j in range(1,nJ-1):
+
+                i = 1
+                if 1.946202 < nodeY[i, j] < 2.0:
+                    u[i - 1, j] = 1
+                    Fw[i, j] = rho * u[i - 1, j] * dy_sn[i, j]
         case 'fine':
-            
-            pass
+            for j in range(1,nJ-1):
+
+                i = 1
+                if 1.968983 < nodeY[i, j] < 2.0:
+                    u[i - 1, j] = 1
+                    Fw[i, j] = rho * u[i - 1, j] * dy_sn[i, j]
         case _:
             sys.exit("Incorrect grid type!")
 
@@ -176,13 +184,18 @@ def initOutletFlux(Fe, Fw, Fn, Fs,
     
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     match grid_type:
         case 'coarse' | 'fine' | 'newCoarse':
             
-            pass
+            for j in range(1,nJ-1):
+
+                i = 1
+                if 0 < nodeY[i, j] < 0.03101719:
+                    u_out = -1
+                    Fw[i, j] = u_out * rho * dy_sn[i, j]
         case _:
             sys.exit("Incorrect grid type!")
     
@@ -329,6 +342,8 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     for i in range(1,nI-1):
         for j in range(1,nJ-1):       
             aP_uv[i,j] = aE_uv[i,j] + aW_uv[i,j] + aN_uv[i,j] + aS_uv[i,j]
+            
+            aP_uv[i, j] = aP_uv[i, j] / alphaUV
             
 def calcMomEqSu(Su_u, Su_v,
                 nI, nJ, p, dx_WP, dx_PE, dy_SP, dy_PN, dx_we, dy_sn,
@@ -659,7 +674,6 @@ def correctOutletVelocity(u, v,
     #              nodeX = L, 0.0 < nodeY < 0.122958
     # Cases 21-25: nodeX = L, 0.0 < nodeY < 0.122958
     # ADD CODE HERE
-            
     """
     --------------------------------
     # ADDED CODE
@@ -668,7 +682,11 @@ def correctOutletVelocity(u, v,
     
     match grid_type:
         case 'coarse' | 'fine' | 'newCoarse':
-            pass
+            for j in range(1,nJ-1):
+
+                i = 1
+                if 0 < nodeY[i, j] < 0.03101719:
+                    pass
         case _:
             sys.exit("Incorrect grid type!")
 
