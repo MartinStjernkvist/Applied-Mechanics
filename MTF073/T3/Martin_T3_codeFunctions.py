@@ -88,7 +88,7 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
             fyn[i, j] = 0.5 * dy_sn[i, j] / dy_PN[i, j] # P->face n / P->N
             fys[i, j] = 0.5 * dy_sn[i, j] / dy_SP[i, j] # face s->P  / S->P
     
-
+    
 def initArrays(u, v, p, Fe, Fw, Fn, Fs):
     """
     ################################
@@ -241,8 +241,7 @@ def calcD(De, Dw, Dn, Ds,
     #         De[i,j] = 0 # ADD CODE HERE
     #         Dw[i,j] = 0 # ADD CODE HERE
     #         Dn[i,j] = 0 # ADD CODE HERE
-    #         Ds[i,j] = 0 # ADD CODE HERE
-            
+    #         Ds[i,j] = 0 # ADD CODE HERE       
     """
     --------------------------------
     # ADDED CODE - SOLVED
@@ -293,8 +292,7 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     #         aW_uv[i,j] = 0 # ADD CODE HERE
     #         aN_uv[i,j] = 0 # ADD CODE HERE
     #         aS_uv[i,j] = 0 # ADD CODE HERE
-    #         aP_uv[i,j] = 0 # ADD CODE HERE
-            
+    #         aP_uv[i,j] = 0 # ADD CODE HERE         
     """
     --------------------------------
     # ADDED CODE
@@ -357,8 +355,7 @@ def calcMomEqSu(Su_u, Su_v,
     # for i in range(1,nI-1):
     #     for j in range(1,nJ-1):
     #         Su_u[i,j] = 0 # ADD CODE HERE
-    #         Su_v[i,j] = 0 # ADD CODE HERE
-            
+    #         Su_v[i,j] = 0 # ADD CODE HERE     
     """
     --------------------------------
     # ADDED CODE
@@ -366,8 +363,8 @@ def calcMomEqSu(Su_u, Su_v,
     """
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            Su_u[i,j] = 0
-            Su_v[i,j] = 0
+            Su_u[i,j] = (1 - alphaUV) * aP_uv[i, j] * u[i, j]
+            Su_v[i,j] = (1 - alphaUV) * aP_uv[i, j] * v[i, j]
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
@@ -377,7 +374,6 @@ def solveGaussSeidel(phi,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     # pass
-
     """
     --------------------------------
     # ADDED CODE - SOLVED
@@ -420,6 +416,7 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
     # ADDED CODE
     --------------------------------
     """
+    
 
 def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
                           nI, nJ, rho, u, v,
@@ -438,12 +435,17 @@ def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
     # ADDED CODE
     --------------------------------
     """
+    
 
 def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
                              nI, nJ, rho, u, v,
                              dx_we, dy_sn, fxe, fxw, fyn, fys, aP_uv, p,
                              dx_WP, dx_PE, dy_SP, dy_PN):
+    """
+    ################################
     # OPTIONAL!!! ONLY IF YOU ARE INTERESTED!
+    ################################
+    """
     # Calculate face fluxes for pressure correction equation source term,
     # using central differencing of velocity on a non-equidistant mesh,
     # and non-equidistant implementation of Rhie & Chow correction term.
@@ -453,11 +455,6 @@ def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE (IF YOU ARE INTERESTED TO TRY IT OUT)
     pass
-    """
-    --------------------------------
-    # ADDED CODE
-    --------------------------------
-    """
 
 def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
                    nI, nJ, rho, dx_we, dy_sn, fxe, fxw, fyn, fys, aP_uv):
@@ -629,7 +626,6 @@ def correctPressureBCandCorners(p,
     # required to get correct Suu in u-mom. equation!
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    
     """
     --------------------------------
     # ADDED CODE
