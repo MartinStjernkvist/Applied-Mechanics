@@ -12,9 +12,11 @@ import os # For saving plots
 
 def calcNodePositions(nodeX, nodeY,
                       nI, nJ, pointX, pointY):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Calculates node coordinates.
     # Only changes arrays in first row of argument list!
     # Internal nodes:
@@ -36,14 +38,28 @@ def calcDistances(dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
+    # for i in range(1, nI-1):
+    #     for j in range(1, nJ-1):
+    #         dx_PE[i,j] = 0 # ADD CODE HERE
+    #         dx_WP[i,j] = 0 # ADD CODE HERE
+    #         dy_PN[i,j] = 0 # ADD CODE HERE
+    #         dy_SP[i,j] = 0 # ADD CODE HERE
+    #         dx_we[i,j] = 0 # ADD CODE HERE
+    #         dy_sn[i,j] = 0 # ADD CODE HERE
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            dx_PE[i,j] = 0 # ADD CODE HERE
-            dx_WP[i,j] = 0 # ADD CODE HERE
-            dy_PN[i,j] = 0 # ADD CODE HERE
-            dy_SP[i,j] = 0 # ADD CODE HERE
-            dx_we[i,j] = 0 # ADD CODE HERE
-            dy_sn[i,j] = 0 # ADD CODE HERE
+            dx_PE[i,j] = 0 
+            dx_WP[i,j] = 0 
+            dy_PN[i,j] = 0
+            dy_SP[i,j] = 0
+            dx_we[i,j] = 0
+            dy_sn[i,j] = 0
+    
     
 def calcInterpolationFactors(fxe, fxw, fyn, fys,
                              nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP, dx_we, dy_sn):
@@ -51,17 +67,32 @@ def calcInterpolationFactors(fxe, fxw, fyn, fys,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
+    # for i in range(1, nI-1):
+    #     for j in range(1, nJ-1):
+    #         fxe[i,j] = 0 # ADD CODE HERE
+    #         fxw[i,j] = 0 # ADD CODE HERE
+    #         fyn[i,j] = 0 # ADD CODE HERE
+    #         fys[i,j] = 0 # ADD CODE HERE 
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for i in range(1, nI-1):
         for j in range(1, nJ-1):
-            fxe[i,j] = 0 # ADD CODE HERE
-            fxw[i,j] = 0 # ADD CODE HERE
-            fyn[i,j] = 0 # ADD CODE HERE
-            fys[i,j] = 0 # ADD CODE HERE 
+            fxe[i,j] = 0 
+            fxw[i,j] = 0 
+            fyn[i,j] = 0 
+            fys[i,j] = 0
+    
 
 def initArrays(u, v, p, Fe, Fw, Fn, Fs):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # Sets initial default velocity, pressure and face fluxes
     # The velocity and face flux is later kept to zero at walls 
     # (also in corner nodes, for contour plot).
@@ -89,12 +120,27 @@ def setInletVelocityAndFlux(u, v, Fe, Fw, Fn, Fs,
     # Cases 1-5:   nodeX = 0, 1.864762 < nodeY < 2.0
     # Cases 6-10:  nodeX = 0, 1.968983 < nodeY < 2.0
     # Cases 11-25: nodeY = H, 1.263541 < nodeX < 1.736459
+    # match grid_type:
+    #     case 'coarse' | 'newCoarse':
+    #         # ADD CODE HERE
+    #         pass
+    #     case 'fine':
+    #         # ADD CODE HERE
+    #         pass
+    #     case _:
+    #         sys.exit("Incorrect grid type!")
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     match grid_type:
         case 'coarse' | 'newCoarse':
-            # ADD CODE HERE
+            
             pass
         case 'fine':
-            # ADD CODE HERE
+            
             pass
         case _:
             sys.exit("Incorrect grid type!")
@@ -119,12 +165,25 @@ def initOutletFlux(Fe, Fw, Fn, Fs,
     #              nodeX = L, 0.0 < nodeY < 0.122958
     # Cases 21-25: nodeX = L, 0.0 < nodeY < 0.122958
     # ADD CODE HERE
+    # match grid_type:
+    #     case 'coarse' | 'fine' | 'newCoarse':
+    #         # ADD CODE HERE
+    #         pass
+    #     case _:
+    #         sys.exit("Incorrect grid type!")
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     match grid_type:
         case 'coarse' | 'fine' | 'newCoarse':
-            # ADD CODE HERE
+            
             pass
         case _:
             sys.exit("Incorrect grid type!")
+    
 
 def correctGlobalContinuity(Fe, Fw, Fn, Fs,
                             nI, nJ):
@@ -148,13 +207,25 @@ def calcD(De, Dw, Dn, Ds,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
+    # for i in range (1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         De[i,j] = 0 # ADD CODE HERE
+    #         Dw[i,j] = 0 # ADD CODE HERE
+    #         Dn[i,j] = 0 # ADD CODE HERE
+    #         Ds[i,j] = 0 # ADD CODE HERE
+            
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for i in range (1,nI-1):
         for j in range(1,nJ-1):
-            De[i,j] = 0 # ADD CODE HERE
-            Dw[i,j] = 0 # ADD CODE HERE
-            Dn[i,j] = 0 # ADD CODE HERE
-            Ds[i,j] = 0 # ADD CODE HERE
-
+            De[i,j] = 0
+            Dw[i,j] = 0
+            Dn[i,j] = 0 
+            Ds[i,j] = 0 
+    
 def calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
                            nI, nJ, alphaUV, De, Dw, Dn, Ds,
                            Fe, Fw, Fn, Fs):
@@ -166,13 +237,26 @@ def calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     # Keep 'nan' where values are not needed!
     # NEGLECT CONTINUITY ERROR IN CENTRAL COEFFICIENT! (Sp = 0)
     # ADD CODE HERE (IF YOU ARE INTERESTED TO TRY IT OUT)
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         aE_uv[i,j] = 0 # ADD CODE HERE
+    #         aW_uv[i,j] = 0 # ADD CODE HERE
+    #         aN_uv[i,j] = 0 # ADD CODE HERE
+    #         aS_uv[i,j] = 0 # ADD CODE HERE
+    #         aP_uv[i,j] = 0 # ADD CODE HERE
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            aE_uv[i,j] = 0 # ADD CODE HERE
-            aW_uv[i,j] = 0 # ADD CODE HERE
-            aN_uv[i,j] = 0 # ADD CODE HERE
-            aS_uv[i,j] = 0 # ADD CODE HERE
-            aP_uv[i,j] = 0 # ADD CODE HERE
+            aE_uv[i,j] = 0 
+            aW_uv[i,j] = 0 
+            aN_uv[i,j] = 0 
+            aS_uv[i,j] = 0
+            aP_uv[i,j] = 0 
 
 def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
                            nI, nJ, alphaUV, De, Dw, Dn, Ds,
@@ -190,6 +274,12 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
             aN_uv[i,j] = 0 # ADD CODE HERE
             aS_uv[i,j] = 0 # ADD CODE HERE
             aP_uv[i,j] = 0 # ADD CODE HERE
+            
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcMomEqSu(Su_u, Su_v,
                 nI, nJ, p, dx_WP, dx_PE, dy_SP, dy_PN, dx_we, dy_sn,
@@ -204,6 +294,12 @@ def calcMomEqSu(Su_u, Su_v,
         for j in range(1,nJ-1):
             Su_u[i,j] = 0 # ADD CODE HERE
             Su_v[i,j] = 0 # ADD CODE HERE
+            
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
@@ -213,6 +309,12 @@ def solveGaussSeidel(phi,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     pass
+
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
                         nI, nJ, rho, u, v,
@@ -228,6 +330,11 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
                           nI, nJ, rho, u, v,
@@ -241,6 +348,11 @@ def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
                              nI, nJ, rho, u, v,
@@ -256,6 +368,11 @@ def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE (IF YOU ARE INTERESTED TO TRY IT OUT)
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
                    nI, nJ, rho, dx_we, dy_sn, fxe, fxw, fyn, fys, aP_uv):
@@ -267,6 +384,11 @@ def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcPpEqSu(Su_pp,
                nI, nJ, Fe, Fw, Fn, Fs):
@@ -275,6 +397,11 @@ def calcPpEqSu(Su_pp,
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def fixPp(Su_pp, aP_pp,
           pRef_i, pRef_j, aE_pp, aW_pp, aN_pp, aS_pp):
@@ -282,6 +409,11 @@ def fixPp(Su_pp, aP_pp,
     # MAKES CONVERGENCE POOR, SO BETTER TO SKIP IT FOR NOW. TRY IF YOU LIKE
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def solveTDMA(phi,
               nI, nJ, aE, aW, aN, aS, aP, Su,
@@ -292,6 +424,11 @@ def solveTDMA(phi,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def setPressureCorrectionLevel(pp,
                                nI, nJ, pRef_i, pRef_j):
@@ -299,6 +436,11 @@ def setPressureCorrectionLevel(pp,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def correctPressureCorrectionBC(pp,
                                 nI, nJ):
@@ -306,6 +448,11 @@ def correctPressureCorrectionBC(pp,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def correctPressure(p,
                     nI, nJ, alphaP, pp):
@@ -313,6 +460,11 @@ def correctPressure(p,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def correctPressureBCandCorners(p,
                                 nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP):
@@ -320,6 +472,19 @@ def correctPressureBCandCorners(p,
     # required to get correct Suu in u-mom. equation!
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    
+    
+    """
+    --------------------------------
+    # ^^^
+    --------------------------------
+    """
 
     # Interpolate pressure to corners (kept so all do the same)
     p[0,0] = 0.5*(p[1,0]+p[0,1])
@@ -352,6 +517,13 @@ def correctOutletVelocity(u, v,
     #              nodeX = L, 0.0 < nodeY < 0.122958
     # Cases 21-25: nodeX = L, 0.0 < nodeY < 0.122958
     # ADD CODE HERE
+            
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    
     match grid_type:
         case 'coarse' | 'fine' | 'newCoarse':
             pass
@@ -373,8 +545,26 @@ def calcNormalizedResiduals(res_u, res_v, res_c,
     # to this function. Not an ideal way to do it, since they can potentially
     # be changed elsewhere, but we do it like this anyway and make sure not
     # to change them anywhere else.
+    # global F_uv, F_c
+    # # ADD CODE HERE
+    
+    # # Compute residuals
+    # res_u.append(0) # U momentum residual
+    # res_v.append(0) # V momentum residual
+    # res_c.append(0) # Continuity residual/error
+    # for i in range(1,nI-1):
+    #     for j in range(1,nJ-1):
+    #         res_u[-1] = 1 # ADD CODE HERE
+    #         res_v[-1] = 1 # ADD CODE HERE
+    #         res_c[-1] = 1 # ADD CODE HERE
+    
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
+    
     global F_uv, F_c
-    # ADD CODE HERE
     
     # Compute residuals
     res_u.append(0) # U momentum residual
@@ -382,9 +572,15 @@ def calcNormalizedResiduals(res_u, res_v, res_c,
     res_c.append(0) # Continuity residual/error
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            res_u[-1] = 1 # ADD CODE HERE
-            res_v[-1] = 1 # ADD CODE HERE
-            res_c[-1] = 1 # ADD CODE HERE
+            res_u[-1] = 1 
+            res_v[-1] = 1 
+            res_c[-1] = 1 
+    
+    """
+    --------------------------------
+    # ^^^
+    --------------------------------
+    """
     
     # Normalization with first non-normalized residual:        
     # Same normalization factor for u,v (based on largest initial)
@@ -400,9 +596,11 @@ def createDefaultPlots(
                nI, nJ, pointX, pointY, nodeX, nodeY, pRef_i, pRef_j,
                caseID, grid_type, u, v, uTask2, vTask2, p,
                iter, res_u, res_v, res_c):
+    """
     ################################
     # DO NOT CHANGE ANYTHING HERE! #
     ################################
+    """
     # (Do not change any input arrays!)
     if not os.path.isdir('Figures'):
         os.makedirs('Figures')

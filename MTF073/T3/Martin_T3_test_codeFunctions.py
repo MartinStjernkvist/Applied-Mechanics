@@ -15,7 +15,7 @@ import Martin_T3_codeFunctions as cF
 #===================== Inputs =====================
 
 # Case number (same as case in description, 1-25)
-caseID = 1
+caseID = 8
 
 # Functions to check:
 check_calcDistances = True
@@ -54,10 +54,13 @@ rTol = 1e-07
 # aTol = 0
 # rTol = 0
 
+"""
 ###########################################
 # DON'T CHANGE ANYTHING BELOW!            #
 # DON'T TRY TO UNDERSTAND THE CODE BELOW! #
 ###########################################
+"""
+
 # For Håkan:
 # First run the solution code for all cases.
 # Move refData_new to refData
@@ -853,7 +856,7 @@ if not useModData:
 pp = copy.deepcopy(pp_ref)
 ###############################################################################
 # The level should be changed, so change the level first to avoid that a
-# function that doesn't change the lavel is marked as OK
+# function that doesn't change the level is marked as OK
 pp[:,:] += 1.0
 cF.setPressureCorrectionLevel(pp,
                               nI, nJ, pRef_i, pRef_j)
@@ -888,8 +891,9 @@ if not useModData:
 # Reset modified arrays:
 pp = copy.deepcopy(pp_ref)
 ###############################################################################
-# Not necessary to set to zero, but can be done anyway
-p*=0
+# Set p to pp_ref, so that the correction gives 2*pp_ref in  nodes where
+# the pressure should be corrected. Also catches the use of = instead of +=
+p = copy.deepcopy(pp_ref)
 cF.correctPressure(p,
                    nI, nJ, alphaP, pp)
 if check_correctPressure and useModData:
@@ -923,9 +927,10 @@ if not useModData:
 # Reset modified arrays:
 p = copy.deepcopy(p_ref)
 ###############################################################################
-# Not necessary to set to zero, but can be done anyway
-u*=0
-v*=0
+# Set to small value to not cause truncation of correction
+# Do not set to zero, which will not catch = instead of +=
+u=np.ones((nI,nJ))*1e-6
+v=np.ones((nI,nJ))*1e-6
 cF.correctVelocity(u, v,
                    nI, nJ, fxe, fxw, fyn, fys, pp, dy_sn, dx_we, aP_uv)
 if check_correctVelocity and useModData:
@@ -978,11 +983,12 @@ if not useModData:
 u = copy.deepcopy(u_ref)
 v = copy.deepcopy(v_ref)
 ###############################################################################
-# Not necessary to set to zero, but can be done anyway (to avoid truncation of correction)
-Fe*=0
-Fw*=0
-Fn*=0
-Fs*=0
+# Set to small value to not cause truncation of correction
+# Do not set to zero, which will not catch = instead of +=
+Fe=np.ones((nI,nJ))*1e-6
+Fw=np.ones((nI,nJ))*1e-6
+Fn=np.ones((nI,nJ))*1e-6
+Fs=np.ones((nI,nJ))*1e-6
 cF.correctFaceFlux(Fe, Fw, Fn, Fs,
                    nI, nJ, rho, dy_sn, dx_we, de, dw, dn, ds, pp)
 if check_correctFaceFlux and useModData:
