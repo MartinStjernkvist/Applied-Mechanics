@@ -574,7 +574,7 @@ def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
     # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1, nI - 1):
@@ -605,7 +605,6 @@ def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
                 aS_pp[i, j] = rho * ds[i, j] * dx_we[i, j]
                 
                 aP_pp[i, j] =  aE_pp[i, j] + aW_pp[i, j] + aN_pp[i, j] + aS_pp[i, j]
-                
 
 def calcPpEqSu(Su_pp,
                nI, nJ, Fe, Fw, Fn, Fs):
@@ -613,12 +612,16 @@ def calcPpEqSu(Su_pp,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                Su_pp[i, j] = Fw[i, j] - Fe[i, j] + Fs[i, j] - Fn[i, j]
 
 def fixPp(Su_pp, aP_pp,
           pRef_i, pRef_j, aE_pp, aW_pp, aN_pp, aS_pp):
@@ -723,12 +726,18 @@ def setPressureCorrectionLevel(pp,
     # Set pressure correction level explicitly
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    ppRef = pp[pRef_i, pRef_j]
+    
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                pp[i, j] = pp[i, j] - ppRef
 
 def correctPressureCorrectionBC(pp,
                                 nI, nJ):
