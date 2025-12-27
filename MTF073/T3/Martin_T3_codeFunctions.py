@@ -455,6 +455,9 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
                 Fw[i, j] = rho * u_w * dy_sn[i, j]
                 Fn[i, j] = rho * v_n * dx_we[i, j]
                 Fs[i, j] = rho * v_s * dx_we[i, j]
+                
+                if i == 1:
+                    Fw[i, j] = 0
     
 
 def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
@@ -468,13 +471,77 @@ def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
     
+    #  aP_uv interpolated to each separate face (assuming equidistant mesh)
+    # - same expressions for the rest of the correction term as at the lecture (assuming equidistant mesh)
+    # - but velocity should be linearly interpolated for non-equidistant mesh!!!
+    
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                pP = p[i, j]
+                pE = p[i + 1, j]
+                pW = p[i - 1, j]
+                pN = p[i, j + 1]
+                pS = p[i, j - 1]
+                
+                if i == 1:
+                    pWW = 0
+                    aP_uv_w = aP_uv[i, j]
+                else:
+                    pWW = p[i - 2, j]
+                    aP_uv_w = 1 / 2 * (aP_uv[i - 1, j] + aP_uv[i, j])
+
+                if j == 1:
+                    pSS = 0
+                    aP_uv_s = aP_uv[i, j]
+                else:
+                    pSS = p[i, j - 2]
+                    aP_uv_s = 1 / 2 * (aP_uv[i, j - 1] + aP_uv[i, j])
+
+                if i == nI - 2:
+                    pEE = 0
+                    aP_uv_e = aP_uv[i, j]
+                else:
+                    pEE = p[i + 2, j]
+                    aP_uv_e = 1 / 2 * (aP_uv[i + 1, j] + aP_uv[i, j])
+                    
+                if j == nJ - 2:
+                    pNN = 0
+                    aP_uv_n = aP_uv[i, j]
+                else:
+                    pNN = p[i, j + 2]
+                    aP_uv_n = 1 / 2 * (aP_uv[i, j + 1] + aP_uv[i, j])
+
+                
+                u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j] \
+                    + dy_sn[i, j] / (4 * aP_uv_e) * (pEE - 3 * pE + 3 * pP -  pW)
+                u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j] \
+                    + dy_sn[i, j] / (4 * aP_uv_w) * (pE - 3 * pP + 3 * pW -  pWW)
+                v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j] \
+                    + dx_we[i, j] / (4 * aP_uv_n) * (pNN - 3 * pN + 3 * pP -  pS)
+                v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j] \
+                    + dx_we[i, j] / (4 * aP_uv_s) * (pN - 3 * pP + 3 * pS -  pSS)
+                
+                Fe[i, j] = rho * u_e * dy_sn[i, j]
+                Fw[i, j] = rho * u_w * dy_sn[i, j]
+                Fn[i, j] = rho * v_n * dx_we[i, j]
+                Fs[i, j] = rho * v_s * dx_we[i, j]
+                
+                if i == 1:
+                    Fw[i, j] = 0
+                if j == 1:
+                    Fs[i, j] = 0
+                if i == nI - 2:
+                    Fe[i, j] = 0
+                if j == nJ - 2:
+                    Fn[i, j] = 0
 
 def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
                              nI, nJ, rho, u, v,
