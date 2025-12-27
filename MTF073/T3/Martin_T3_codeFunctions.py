@@ -744,7 +744,7 @@ def correctPressureCorrectionBC(pp,
     # Correct pressure correction homogeneous Neumann boundary conditions
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
     # ADDED CODE - SOLVED
@@ -777,12 +777,16 @@ def correctPressure(p,
     # Correct pressure, using explicit under-relaxation
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                p[i, j] = p[i, j] + alphaP * pp[i, j]
     
 
 def correctPressureBCandCorners(p,
