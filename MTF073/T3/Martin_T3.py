@@ -39,7 +39,7 @@ import Martin_T3_codeFunctions as cF
 #================= Inputs =====================
 
 # Case number (same as case in description, 1-25)
-caseID    =  1
+caseID    =  8
 
 # Geometric and mesh inputs (mesh is read from file)
 grid_type = 'coarse'  # Either 'coarse', 'fine' or 'newCoarse' (or your own)

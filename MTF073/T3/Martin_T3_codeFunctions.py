@@ -211,12 +211,27 @@ def correctGlobalContinuity(Fe, Fw, Fn, Fs,
     pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     
+    flux_in = 0
+    for j in range(1,nJ-1):
+
+                i = 1
+                if Fw[i, j] > 0:
+                    flux_in += Fw[i, j]
     
-    
+    n_outlets = 0           
+    for j in range(1,nJ-1):
+                i = 1
+                if Fw[i, j] < 0:
+                    n_outlets +=1
+                    
+    for j in range(1,nJ-1):
+                i = 1
+                if Fw[i, j] < 0:
+                    Fw[i, j] = - flux_in / n_outlets
     
     """
     --------------------------------
@@ -295,7 +310,7 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     #         aP_uv[i,j] = 0 # ADD CODE HERE         
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1,nI-1):
@@ -321,20 +336,20 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     # (Homogeneous) Neumann walls:
     for i in range(1,nI-1):
         j = nJ-2
-        if  Fn[i, j] == 0:
+        if  Fn[i, j + 1] == 0:
             aN_uv[i, j] = 0
             
         j = 1
-        if Fs[i, j] == 0:
+        if Fs[i, j - 1] == 0:
             aS_uv[i, j] = 0
         
     for j in range(1,nJ-1):
         i = nI-2
-        if Fe[i,j] == 0:
+        if Fe[i + 1,j] == 0:
             aE_uv[i, j] = 0
             
         i = 1
-        if Fw[i, j] == 0:
+        if Fw[i - 1, j] == 0:
             aW_uv[i, j] = 0
     
     for i in range(1,nI-1):
@@ -653,6 +668,11 @@ def correctVelocity(u, v,
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def correctOutletVelocity(u, v,
                           nI, nJ, rho, dx_we, dy_sn, nodeX, nodeY, grid_type, caseID):
@@ -692,6 +712,11 @@ def correctFaceFlux(Fe, Fw, Fn, Fs,
     # Note that F is here supposed to include the multiplication with area
     # Only change arrays in first row of argument list!
     pass
+    """
+    --------------------------------
+    # ADDED CODE
+    --------------------------------
+    """
 
 def calcNormalizedResiduals(res_u, res_v, res_c,
                             nI, nJ, iter, u, v,
@@ -713,7 +738,6 @@ def calcNormalizedResiduals(res_u, res_v, res_c,
     #         res_u[-1] = 1 # ADD CODE HERE
     #         res_v[-1] = 1 # ADD CODE HERE
     #         res_c[-1] = 1 # ADD CODE HERE
-    
     """
     --------------------------------
     # ADDED CODE
