@@ -580,17 +580,29 @@ def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
     for i in range(1, nI - 1):
             for j in range(1, nJ - 1):
                 
+                aP_uv_e = fxe[i, j] * aP_uv[i + 1, j] + (1 - fxe[i, j]) * aP_uv[i, j]
+                aP_uv_w = fxw[i, j] * aP_uv[i - 1, j] + (1 - fxw[i, j]) * aP_uv[i, j]
+                aP_uv_n = fyn[i, j] * aP_uv[i, j + 1] + (1 - fyn[i, j]) * aP_uv[i, j]
+                aP_uv_s = fys[i, j] * aP_uv[i, j - 1] + (1 - fys[i, j]) * aP_uv[i, j]
+                    
+                de[i, j] = dy_sn[i, j] / aP_uv_e
+                dw[i, j] = dy_sn[i, j] / aP_uv_w
+                dn[i, j] = dx_we[i, j] / aP_uv_n
+                ds[i, j] = dx_we[i, j] / aP_uv_s
                 
-                
-                de[i, j] = dy_sn[i, j] * alpha
-                dw[i, j] =   0
-                dn[i, j] =  0
-                ds[i, j] =  0
-                
-                aE_pp[i, j] = 0
-                aW_pp[i, j] = 0
-                aN_pp[i, j] =  0
-                aS_pp[i, j] =  0
+                if i == 1:
+                    dw[i, j] = 0
+                if j == 1:
+                    ds[i, j] = 0
+                if i == nI - 2:
+                    de[i, j] = 0
+                if j == nJ - 2:
+                    dn[i, j] = 0
+                    
+                aE_pp[i, j] = rho * de[i, j] * dy_sn[i, j]
+                aW_pp[i, j] = rho * dw[i, j] * dy_sn[i, j]
+                aN_pp[i, j] = rho * dn[i, j] * dx_we[i, j]
+                aS_pp[i, j] = rho * ds[i, j] * dx_we[i, j]
                 
                 aP_pp[i, j] =  aE_pp[i, j] + aW_pp[i, j] + aN_pp[i, j] + aS_pp[i, j]
                 
