@@ -437,12 +437,24 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
+    for i in range(1,nI-1):
+            for j in range(1,nJ-1):
+                
+                u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j]
+                u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j]
+                v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j]
+                v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j]
+                
+                Fe[i, j] = rho * u_e * dy_sn[i, j]
+                Fw[i, j] = rho * u_w * dy_sn[i, j]
+                Fn[i, j] = rho * v_n * dx_we[i, j]
+                Fs[i, j] = rho * v_s * dx_we[i, j]
     
 
 def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
