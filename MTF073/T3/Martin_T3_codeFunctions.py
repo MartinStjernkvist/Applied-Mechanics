@@ -440,7 +440,7 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
     # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1,nI-1):
@@ -474,7 +474,7 @@ def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
     # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     
@@ -571,12 +571,29 @@ def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
     # ADDED CODE
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                
+                
+                de[i, j] = dy_sn[i, j] * alpha
+                dw[i, j] =   0
+                dn[i, j] =  0
+                ds[i, j] =  0
+                
+                aE_pp[i, j] = 0
+                aW_pp[i, j] = 0
+                aN_pp[i, j] =  0
+                aS_pp[i, j] =  0
+                
+                aP_pp[i, j] =  aE_pp[i, j] + aW_pp[i, j] + aN_pp[i, j] + aS_pp[i, j]
+                
 
 def calcPpEqSu(Su_pp,
                nI, nJ, Fe, Fw, Fn, Fs):
@@ -594,14 +611,13 @@ def calcPpEqSu(Su_pp,
 def fixPp(Su_pp, aP_pp,
           pRef_i, pRef_j, aE_pp, aW_pp, aN_pp, aS_pp):
     # Fix pressure by forcing pp to zero in reference node, through source terms
+    """
+    ################################
     # MAKES CONVERGENCE POOR, SO BETTER TO SKIP IT FOR NOW. TRY IF YOU LIKE
+    ################################
+    # """
     # ADD CODE HERE
     pass
-    """
-    --------------------------------
-    # ADDED CODE
-    --------------------------------
-    """
 
 def solveTDMA(phi,
               nI, nJ, aE, aW, aN, aS, aP, Su,
