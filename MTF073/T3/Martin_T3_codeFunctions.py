@@ -800,7 +800,20 @@ def correctPressureBCandCorners(p,
     # ADDED CODE
     --------------------------------
     """
-    
+    for i in range(0, nI):
+            for j in range(0, nJ):
+                
+                if i == 0:
+                    p[i, j] = p[i + 1, j] + ((p[i + 1, j] - p[i + 2, j]) / dx_PE[i + 1, j]) * dx_WP[i + 1, j]
+                    
+                if j == 0:
+                    p[i, j] = p[i, j + 1] + ((p[i, j + 1] - p[i, j + 2]) / dy_PN[i, j + 1]) * dy_SP[i, j + 1]
+                    
+                if i == nI - 1:
+                    p[i, j] = p[i - 1, j] + ((p[i - 1, j] - p[i - 2, j]) / dx_WP[i - 1, j]) * dx_PE[i - 1, j]
+                    
+                if j == nJ - 1:
+                    p[i, j] = p[i, j - 1] + ((p[i, j - 1] - p[i, j - 2]) / dy_SP[i, j - 1]) * dy_PN[i, j - 1]
     
     """
     --------------------------------
@@ -814,7 +827,7 @@ def correctPressureBCandCorners(p,
     p[0,nJ-1] = 0.5*(p[1,nJ-1]+p[0,nJ-2])
     p[nI-1,nJ-1] = 0.5*(p[nI-2,nJ-1]+p[nI-1,nJ-2])
     
-    pass
+    # pass
 
 def correctVelocity(u, v,
                     nI, nJ, fxe, fxw, fyn, fys, pp, dy_sn, dx_we, aP_uv):
