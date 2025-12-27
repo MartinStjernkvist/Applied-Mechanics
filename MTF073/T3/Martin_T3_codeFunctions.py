@@ -848,7 +848,6 @@ def correctVelocity(u, v,
                 pp_n = fyn[i, j] * pp[i, j + 1] + (1 - fyn[i, j]) * pp[i, j]
                 pp_s = fys[i, j] * pp[i, j - 1] + (1 - fys[i, j]) * pp[i, j]
                 
-                
                 dP_u = dy_sn[i, j] / aP_uv[i, j]
                 dP_v = dx_we[i, j] / aP_uv[i, j]
                            
@@ -873,17 +872,17 @@ def correctOutletVelocity(u, v,
     # ADD CODE HERE
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
-    
     match grid_type:
         case 'coarse' | 'fine' | 'newCoarse':
             for j in range(1,nJ-1):
 
-                i = 1
+                i = 0
                 if 0 < nodeY[i, j] < 0.03101719:
-                    pass
+                    u[i, j] = 0
+                    v[i, j] = 0
         case _:
             sys.exit("Incorrect grid type!")
 
@@ -892,12 +891,19 @@ def correctFaceFlux(Fe, Fw, Fn, Fs,
     # Correct face fluxes using pp solution (DO NOT TOUCH BOUNDARIES!)
     # Note that F is here supposed to include the multiplication with area
     # Only change arrays in first row of argument list!
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                    
+                Fe[i, j] = Fe[i, j] + rho * dy_sn[i, j] * de[i, j] * (pp[i, j] - pp[i + 1, j])
+                Fw[i, j] = Fw[i, j] + rho * dy_sn[i, j] * dw[i, j] * (pp[i - 1, j] - pp[i, j])
+                Fn[i, j] = Fn[i, j] + rho * dx_we[i, j] * dn[i, j] * (pp[i, j] - pp[i, j + 1])
+                Fs[i, j] = Fs[i, j] + rho * dx_we[i, j] * ds[i, j] * (pp[i, j - 1] - pp[i, j])
 
 def calcNormalizedResiduals(res_u, res_v, res_c,
                             nI, nJ, iter, u, v,
