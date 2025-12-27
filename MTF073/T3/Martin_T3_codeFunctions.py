@@ -747,9 +747,30 @@ def correctPressureCorrectionBC(pp,
     pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(0, nI):
+            for j in range(0, nJ):
+                
+                if i == 0:
+                    pp[i, j] = pp[i + 1, j]
+                if j == 0:
+                    pp[i, j] = pp[i, j + 1]
+                if i == nI - 1:
+                    pp[i, j] = pp[i - 1, j]
+                if j == nJ - 1:
+                    pp[i, j] = pp[i, j - 1]
+                
+                # Take care of corners
+                if i == 0 and j == 0:
+                    pp[i, j] = 0
+                if i == nI - 1 and j == 0:
+                    pp[i, j] = 0
+                if i == 0 and j == nJ - 1:
+                    pp[i, j] = 0
+                if i == nI - 1 and j == nJ - 1:
+                    pp[i, j] = 0
 
 def correctPressure(p,
                     nI, nJ, alphaP, pp):
@@ -762,6 +783,7 @@ def correctPressure(p,
     # ADDED CODE
     --------------------------------
     """
+    
 
 def correctPressureBCandCorners(p,
                                 nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP):
