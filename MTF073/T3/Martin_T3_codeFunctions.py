@@ -797,7 +797,7 @@ def correctPressureBCandCorners(p,
     # ADD CODE HERE
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(0, nI):
@@ -834,12 +834,26 @@ def correctVelocity(u, v,
     # Correct velocity components using pp solution (DO NOT TOUCH BOUNDARIES!)
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                pp_e = fxe[i, j] * pp[i + 1, j] + (1 - fxe[i, j]) * pp[i, j]
+                pp_w = fxw[i, j] * pp[i - 1, j] + (1 - fxw[i, j]) * pp[i, j]
+                pp_n = fyn[i, j] * pp[i, j + 1] + (1 - fyn[i, j]) * pp[i, j]
+                pp_s = fys[i, j] * pp[i, j - 1] + (1 - fys[i, j]) * pp[i, j]
+                
+                
+                dP_u = dy_sn[i, j] / aP_uv[i, j]
+                dP_v = dx_we[i, j] / aP_uv[i, j]
+                           
+                u[i, j] = u[i, j] + dP_u * (pp_w - pp_e)
+                v[i, j] = v[i, j] + dP_v * (pp_s - pp_n)  
 
 def correctOutletVelocity(u, v,
                           nI, nJ, rho, dx_we, dy_sn, nodeX, nodeY, grid_type, caseID):
