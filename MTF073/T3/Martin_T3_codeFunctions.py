@@ -932,13 +932,30 @@ def calcNormalizedResiduals(res_u, res_v, res_c,
     """
     
     global F_uv, F_c
-    
+            
     # Compute residuals
     res_u.append(0) # U momentum residual
     res_v.append(0) # V momentum residual
     res_c.append(0) # Continuity residual/error
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
+            
+            u_balance = abs(aP_uv[i, j] * u[i, j] 
+                       - (aE_uv[i, j] * u[i + 1, j]
+                        + aW_uv[i, j] * u[i - 1, j] 
+                        + aN_uv[i, j] * u[i, j + 1]
+                        + aS_uv[i, j] * u[i, j - 1]
+                        ))
+
+            v_balance = abs(aP_uv[i, j] * v[i, j] 
+                       - (aE_uv[i, j] * v[i + 1, j]
+                        + aW_uv[i, j] * v[i - 1, j] 
+                        + aN_uv[i, j] * v[i, j + 1]
+                        + aS_uv[i, j] * v[i, j - 1]
+                        ))
+            
+            v_balance = 0
+            
             res_u[-1] = 1 
             res_v[-1] = 1 
             res_c[-1] = 1 
