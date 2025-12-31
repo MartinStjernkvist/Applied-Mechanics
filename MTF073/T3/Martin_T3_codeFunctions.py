@@ -389,9 +389,6 @@ def calcMomEqSu(Su_u, Su_v,
             
             Su_v[i,j] = - (p_n - p_s) * dx_we[i, j]
             Su_v[i,j] = Su_v[i,j] + (1 - alphaUV) * aP_uv[i, j] * v[i, j]
-            
-            # f_w[1]*p[0]+(f_e[1]-f_w[1])*p[1]-f_e[1]*p[2] + b*dx_we[1], \
-            # f_w[2]*p[1]+(f_e[2]-f_w[2])*p[2]-f_e[2]*p[3] + b*dx_we[2], \
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):

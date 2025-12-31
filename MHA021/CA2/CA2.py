@@ -80,14 +80,14 @@ def sfig(fig_name):
 new_task('Task 1')
 
 # Define inputs
-W = 5 # m
-H = 0.4 # m
-t = 0.01 # m
-E = 210e9 # Pa
+W = 5               # m
+H = 0.4             # m
+t = 0.01            # m
+E = 210e9           # Pa
 nu = 0.3
-rho = 7800 # kg/m^3
-g = 9.81 # m/s^2
-b = [0, -rho * g] # N
+rho = 7800          # kg/m^3
+g = 9.81            # m/s^2
+b = [0, -rho * g]   # N
 
 # Analytical: simply supported beam with uniform load
 L = W * 2 
@@ -116,11 +116,13 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
             ny=nely
         )
 
+    # Nodes, elements, edge nodes, element degrees of freedom
     nodes = mesh.nodes
     elements = mesh.elements
     edge_nodes = mesh.edges
     Edof = mesh.edofs
     
+    # Element centers
     el_centers = np.mean(nodes[elements[:, :] - 1], axis=1)
 
     if plot_n_print == True:
@@ -132,9 +134,13 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
     
     edof_map = build_edof(elements, dofs_per_node=2)
 
+    # Constitutive matrix
     D = hooke_2d_plane_stress(E, nu)
     
+    # Number of degrees of freedom
     ndofs = nodes.shape[0] * 2
+    
+    # Initialize stiffness matrix and load vector
     K = np.zeros((ndofs, ndofs))
     f = np.zeros(ndofs)
     
@@ -149,20 +155,27 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
         assem(K, Ke, dofs)
         assem(f, fe, dofs)
     
+    # Initialize boundary condition degrees of freedom and values
     bc_dofs = []
     bc_vals = []
     
     # Symmetry condition (right edge)
     right_nodes = edge_nodes['right']
+    
     for n in right_nodes:
-        bc_dofs.append(2 * (n - 1) + 1)
+        bc_dofs.append(2 * (n - 1) + 1) # "-1" to convert from 1-based indexing
         bc_vals.append(0)
 
     # Support condition (left bottom node)
     left_nodes = edge_nodes['left']
-    min_y = np.min(nodes[left_nodes - 1, 1])
+    
+    # Node with lowest y-value
+    min_y = np.min(nodes[left_nodes - 1, 1]) # "-1" to convert from 1-based indexing
+    
     support_node = None
+    
     for n in left_nodes:
+        
         if np.isclose(nodes[n - 1, 1], min_y):
             support_node = n
             break
@@ -170,26 +183,37 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
     if support_node:
         bc_dofs.append(2 * (support_node - 1) + 2) # u_y
         bc_vals.append(0)
+        
     else:
         print("support node not found")
-        
+    
+    # Solve the system
     a, r = solve_eq(K, f, bc_dofs, bc_vals)
     
+    # Right boundary degrees of freedom in y-direction
     right_dofs_y = [2 * (n - 1) + 2 for n in right_nodes]
+    
+    # Deflection in y-direction, right boundary
     uy_right = a[np.array(right_dofs_y) - 1]
+    
+    # Average deflection in y-direction, right boundary
     uy_avg = np.mean(uy_right)
     
+    # Extract degrees of freedom
     ed = extract_dofs(a, Edof)
+    
     if plot_n_print == True:
         fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='uy')
         fig.show()
     else:
         pass
     
+    # Initialize element stress and strain matrices
     el_stress = np.zeros((len(elements), 3))
     el_strain = np.zeros((len(elements), 3))
 
     for el in range(len(elements)):
+        
         nodes[elements[el, :] - 1]
         dofs = Edof[el, :]
         ae = a[dofs - 1]
@@ -207,7 +231,8 @@ def task12(element_type='cst', nelx=50, nely=10, plot_n_print=False, W=5):
 
     right_edge_stress = el_stress[el_right_edge, :]
     sigmaxx_max = np.max(np.abs(right_edge_stress[:, 0]))
-        
+    
+    # Print statements
     print(f'\n number of DOFs: {ndofs}')
     print(f'Deflection: {uy_avg:.3e} m')
     print(f'Stress: {sigmaxx_max:.3e} Pa')
@@ -248,11 +273,17 @@ task12(element_type='cst', nelx=212, nely=16, plot_n_print=False)
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 1 - Convergence')
 
+# Initialize number of elements in x-direction list
 nelx_list = []
+
 for i in range(5):
+    
     nelx_list.append(int(300 / np.sqrt(2)**(4 - i)))
+
+# Number of elements in y-direction list
 nely_list = [int(i * (H / W)) for i in nelx_list]
 
+# Initialize result lists
 uy_avg_list = []
 sigmaxx_max_list = []
 ndofs_list = []
@@ -260,8 +291,10 @@ f_uy_list = []
 f_sigmaxx_list = []
 
 for i in range(len(nelx_list)):
+    
     uy_avg, sigmaxx_max, ndofs, f_uy, f_sigmaxx, nodes, elements, el_centers, el_stress, el_strain = task12(element_type='cst', nelx=nelx_list[i], nely=nely_list[i])
     
+    # Append results to result lists
     uy_avg_list.append(uy_avg)
     sigmaxx_max_list.append(sigmaxx_max)
     ndofs_list.append(ndofs)
@@ -389,24 +422,32 @@ def compute_Ne_Be_detJ(nodes, ξ, η):
     # Jacobian matrix
     J = dNe @ nodes
 
+    # Determinant of jacobian matrix
     detJ = np.linalg.det(J)
     
     minDetJ = 1e-16
     if detJ < minDetJ:
         raise ValueError(f"Bad element geometry: detJ = {detJ}") # may happen if the nodes are not counter-clockwize 
+    
+    # Inverse of jacobian matrix
     Jinv = np.linalg.inv(J)
     
     # Derivatives of shape functions w.r.t global coordinates x, y
     dNedxy = Jinv @ dNe
 
-    # N matrix 
+    # Initialize N-matrix
     N = np.zeros((2, 8))
+    
+    # Assemble N-matrix
     N[0, 0::2] = Ne
     N[1, 1::2] = Ne
 
-    # B-matrix
+    # Initialize B-matrix
     Be = np.zeros((3, 8))
+    
+    # Assemble B-matrix
     for i in range(4):
+        
         dNdx = dNedxy[0, i]
         dNdy = dNedxy[1, i]
         
@@ -446,6 +487,7 @@ def bilinear_element(nodes, D, t, body_load, ngp):
     """
     b = np.asarray(body_load, dtype=float).reshape(2)
     
+    # Initialize element stiffness matrix and element force vector
     Ke = np.zeros((8, 8))
     fe = np.zeros(8)
 
@@ -455,12 +497,13 @@ def bilinear_element(nodes, D, t, body_load, ngp):
     
     for gpIndex_1, weight_ξ in enumerate(weights):
         for gpIndex_2, weight_η in enumerate(weights):
+            
             ξ = coords[gpIndex_1]
             η = coords[gpIndex_2]
             
             N, Be, detJ = compute_Ne_Be_detJ(nodes, ξ, η) # use the function you wrote earlier
             
-            weight_factor =weight_ξ *weight_η
+            weight_factor = weight_ξ * weight_η
 
             # Stiffness matrix and force vector
             Ke += Be.T @ D @ Be * detJ * weight_factor
@@ -491,6 +534,7 @@ def bilinear_element_stress_strain(nodes: np.ndarray, D: np.ndarray, ae: np.ndar
     _, Be, _ = compute_Ne_Be_detJ(nodes, 0.0, 0.0)
     ϵe = Be @ ae
     σe = D @ ϵe
+    
     return σe, ϵe
 
 #%%
@@ -500,9 +544,9 @@ def bilinear_element_stress_strain(nodes: np.ndarray, D: np.ndarray, ae: np.ndar
 new_subtask('Task 2 - Verification')
 
 nodes = np.array([[0.1, 0.0],
-                [1.0, 0.0],
-                [1.2, 1.0],
-                [0.0, 1.3]]) # an element defined by these four nodes
+                  [1.0, 0.0],
+                  [1.2, 1.0],
+                  [0.0, 1.3]]) # an element defined by these four nodes
 
 N, B, detJ = compute_Ne_Be_detJ(nodes, ξ=0.15, η=0.25) # Call your function here with the provied nodes, ξ and η  
 

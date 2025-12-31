@@ -170,8 +170,6 @@ def task12(E, rho, nu, nelx=50, nely=10, plot_n_print=False, W=5):
     edge_nodes = mesh.edges
     Edof = mesh.edofs
     
-    el_centers = np.mean(nodes[elements[:, :] - 1], axis=1)
-
     if plot_n_print == True:
         fig = mesh.plot('mesh')
         fig = plot_mesh(nodes, elements, edge_nodes)
@@ -179,8 +177,6 @@ def task12(E, rho, nu, nelx=50, nely=10, plot_n_print=False, W=5):
     else:
         pass
     
-    edof_map = build_edof(elements, dofs_per_node=2)
-
     D = hooke_2d_plane_stress(E, nu)
     
     ndofs = nodes.shape[0] * 2
@@ -241,6 +237,7 @@ def task12(E, rho, nu, nelx=50, nely=10, plot_n_print=False, W=5):
     f = np.sqrt(omega2) / (2 * np.pi)
     
     ed = extract_dofs(a, Edof)
+    
     if plot_n_print == True:
         fig = plot_deformed_mesh(nodes, elements, ed, scale=40e-3, field='uy')
         fig.show()
@@ -565,19 +562,12 @@ new_task('Task 2 - Continuation')
 #---------------------------------------------------------------------------------------------------
 new_subtask('Task 2 - d) Solve system of equations')
 
-# You will additionally need to use the folowing functions
-# plot_scalar_field
-# plot_vector_field
-# flow2t_Ke_fe
-# flow2t_qe
-# convection_Ke_fe
-
-alpha_w = 1000 # W / (m^2 C)
-T_air = 20 # C
-alpha_air = 5 # W / (m^2 C)
-T_b = 10 # C
-k = 0.75 # W / (m C)
-t = 1 # m
+alpha_w = 1000  # W / (m^2 C)
+T_air = 20      # C
+alpha_air = 5   # W / (m^2 C)
+T_b = 10        # C
+k = 0.75        # W / (m C)
+t = 1           # m
 
 T_w = 30 # C
 
@@ -596,10 +586,14 @@ num_dofs = num_nodes
 K = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs, 1))
 
+# Assemble stiffness matrix and load vector
 for el in range(num_el):
+    
     el_nodes = mesh.nodes[mesh.elements[el] - 1]
+    
     Ke, fe = flow2t_Ke_fe(el_nodes, D=D, t=t, Q=0)
     el_dofs = mesh.edofs[el, :]
+    
     assem(K, Ke, el_dofs)
     assem(f, fe, el_dofs)
 
@@ -607,28 +601,30 @@ for el in range(num_el):
 conv_nodes_w = mesh.edges['circle']
 num_edges_w = len(conv_nodes_w) - 1
 
+# Assemble stiffness matrix and load vector
 for edge in range(num_edges_w):
+    
     edge_nodes = conv_nodes_w[edge:edge + 2] - 1
     nodes = mesh.nodes[edge_nodes, :]
-    # displayvar("nodes", nodes)
+    
     Kec, fec = convection_Ke_fe(nodes, alpha=alpha_w, t=t, Tamb=T_w)
     dofs = edge_nodes + 1
-    # displayvar("edge dofs", dofs)
+    
     assem(K, Kec, dofs)
     assem(f, fec, dofs)
-
 
 # Convection: air
 conv_nodes_air = mesh.edges['top']
 num_edges_air = len(conv_nodes_air) - 1
 
 for edge in range(num_edges_air):
+    
     edge_nodes = conv_nodes_air[edge:edge + 2] - 1
     nodes = mesh.nodes[edge_nodes, :]
-    # displayvar("nodes", nodes)
+
     Kec, fec = convection_Ke_fe(nodes, alpha=alpha_air, t=t, Tamb=T_air)
     dofs = edge_nodes + 1
-    # displayvar("edge dofs", dofs)
+
     assem(K, Kec, dofs)
     assem(f, fec, dofs)
 
@@ -643,7 +639,7 @@ a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
 # Plot temperature field
 Ed = extract_dofs(a, mesh.edofs)
-# print('Ed shape and values:\n', np.shape(Ed), Ed)
+
 fig = plot_scalar_field(mesh.nodes, mesh.elements, Ed, title=fr'Tempterature')
 fig.show()
 
@@ -660,6 +656,8 @@ for edge in range(num_edges_air):
     T_sum += (Te_i + Te_j) / 2
     
 T_mean = T_sum / num_edges_air
+
+# Print statements
 print(f'\nNumber of DOFs: {num_dofs}')
 print(f'Mean temperature: {T_mean:.3f}')
 
@@ -680,8 +678,11 @@ new_subtask('Task 2 - e) Compute heat flux vectors + visualization')
 q = np.zeros((num_el, 2))
 
 for el in range(num_el):
+    
     el_nodes = mesh.nodes[mesh.elements[el] - 1]
+    
     qe = flow2t_qe(el_nodes, D, Ed[el, :])
+    
     q[el, :] = qe
 
 plot_vector_field(mesh.nodes, mesh.elements, q, title='Heat flux')
@@ -701,7 +702,6 @@ for edge in range(num_edges_w):
     
     Te_i = a[node_i]
     Te_j = a[node_j]
-    # print(Te_i, Te_j)
     
     Q += alpha_w * mesh_size * t * ((Te_i + Te_j) / 2 - T_w)
 
@@ -714,10 +714,11 @@ print(f'\nTotal heat flux: {Q}')
 new_subtask('Task 2 - g) Required water temperature')
 
 def FEA(T_w_var):
+    
     # Initiate stiffness and load matrices
     K = np.zeros((num_dofs, num_dofs))
     f = np.zeros((num_dofs, 1))
-
+    
     for el in range(num_el):
         el_nodes = mesh.nodes[mesh.elements[el] - 1]
         Ke, fe = flow2t_Ke_fe(el_nodes, D=D, t=t, Q=0)
@@ -772,14 +773,13 @@ while T_mean <=30:
         
         Te_i = a[node_i]
         Te_j = a[node_j]
-        # print(Te_i, Te_j)
         
         T_sum += (Te_i + Te_j) / 2
         
     T_mean = T_sum / num_edges_air
     print(f'\nMean temperature: {T_mean:.3f}')
     
-    T_step = 0.001
-    T_w_var += T_step # temperature step, optimized
+    T_step = 0.001 # temperature step, optimized
+    T_w_var += T_step 
     T_sum = 0
 #%%
