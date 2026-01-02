@@ -335,8 +335,10 @@ f = np.zeros((num_dofs))
 
 # Assemble stiffness matrix and load vector
 for el in range(num_el):
+    
     dofs = Edof[el, :]   # DOFs for the element
     Ke, fe = beam2e(Ex[el, :], Ey[el, :], E, A, I, qxy[el, :]) # Element stiffness matrix
+    
     assem(K, Ke, dofs)
     assem(f, fe, dofs)
 

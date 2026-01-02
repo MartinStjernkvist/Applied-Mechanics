@@ -208,7 +208,7 @@ def correctGlobalContinuity(Fe, Fw, Fn, Fs,
     # flux through the outlet boundary/ies
     # Note that F is here supposed to include the multiplication with area
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
     # ADDED CODE - SOLVED
@@ -837,6 +837,7 @@ def correctVelocity(u, v,
     # ADDED CODE - SOLVED
     --------------------------------
     """
+    
     for i in range(1, nI - 1):
             for j in range(1, nJ - 1):
                 
@@ -878,8 +879,8 @@ def correctOutletVelocity(u, v,
 
                 i = 0
                 if 0 < nodeY[i, j] < 0.03101719:
-                    u[i, j] = 0
-                    v[i, j] = 0
+                    u[i, j] = u[i + 1, j]
+                    v[i, j] = v[i + 1, j]
         case _:
             sys.exit("Incorrect grid type!")
 

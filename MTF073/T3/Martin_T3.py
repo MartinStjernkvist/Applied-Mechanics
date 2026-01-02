@@ -337,6 +337,14 @@ for iter in range(nSIMPLEiter):
     cF.correctVelocity(u, v,
                         nI, nJ, fxe, fxw, fyn, fys, pp, dy_sn, dx_we, aP_uv)
 
+    print(f'iteration: {iter}')
+    print('i = 0')
+    print(u[0, 1])
+    print(u[0, 2])
+    print('i = 1')
+    print(u[1, 1])
+    print(u[1, 2])
+    
     # Extraplate velocity at outlet
     # (only changes arrays in first row of argument list)
     cF.correctOutletVelocity(u, v,
