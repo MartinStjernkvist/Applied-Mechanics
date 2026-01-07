@@ -24,7 +24,7 @@ check_setInletVelocityAndFlux = True
 check_initOutletFlux = True
 check_correctGlobalContinuity = True
 check_calcD = True
-check_calcMomEqCoeffs_FOU_CD = True
+check_calcMomEqCoeffs_FOU_CD =  False # changed
 check_calcMomEqCoeffs_Hybrid = True
 check_calcMomEqSu = True
 check_solveGaussSeidel_u = True
@@ -32,7 +32,7 @@ check_solveGaussSeidel_v = True
 check_solveGaussSeidel_pp = True
 check_calcRhieChow_noCorr = True
 check_calcRhieChow_equiCorr = True
-check_calcRhieChow_nonEquiCorr = True
+check_calcRhieChow_nonEquiCorr =  False # changed
 check_calcPpEqCoeffs = True
 check_calcPpEqSu = True
 check_solveTDMA = True
@@ -54,13 +54,10 @@ rTol = 1e-07
 # aTol = 0
 # rTol = 0
 
-"""
 ###########################################
 # DON'T CHANGE ANYTHING BELOW!            #
 # DON'T TRY TO UNDERSTAND THE CODE BELOW! #
 ###########################################
-"""
-
 # For Håkan:
 # First run the solution code for all cases.
 # Move refData_new to refData
@@ -513,30 +510,30 @@ aW_uv*=0
 aN_uv*=0
 aS_uv*=0
 aP_uv*=0
-# cF.calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
-#                           nI, nJ, alphaUV, De, Dw, Dn, Ds,
-#                           Fe, Fw, Fn, Fs)
-# if check_calcMomEqCoeffs_FOU_CD and useModData:
-#     compare(aE_uv, aE_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aE_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
-#     compare(aW_uv, aW_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aW_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
-#     compare(aN_uv, aN_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aN_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
-#     compare(aS_uv, aS_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aS_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
-#     compare(aP_uv, aP_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aP_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
-#     # Save your modified arrays:
-#     aE_uv_cMEC_FOU_CD_your = copy.deepcopy(aE_uv)
-#     aW_uv_cMEC_FOU_CD_your = copy.deepcopy(aW_uv)
-#     aN_uv_cMEC_FOU_CD_your = copy.deepcopy(aN_uv)
-#     aS_uv_cMEC_FOU_CD_your = copy.deepcopy(aS_uv)
-#     aP_uv_cMEC_FOU_CD_your = copy.deepcopy(aP_uv)
-# if not check_calcMomEqCoeffs_FOU_CD and useModData:
-#     print('calcMomEqCoeffs_FOU_CD:      NOT CHECKED')
-# # Save reference modified arrays:
-# if not useModData:
-#     aE_uv_cMEC_FOU_CD = copy.deepcopy(aE_uv)
-#     aW_uv_cMEC_FOU_CD = copy.deepcopy(aW_uv)
-#     aN_uv_cMEC_FOU_CD = copy.deepcopy(aN_uv)
-#     aS_uv_cMEC_FOU_CD = copy.deepcopy(aS_uv)
-#     aP_uv_cMEC_FOU_CD = copy.deepcopy(aP_uv)
+cF.calcMomEqCoeffs_FOU_CD(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
+                          nI, nJ, alphaUV, De, Dw, Dn, Ds,
+                          Fe, Fw, Fn, Fs)
+if check_calcMomEqCoeffs_FOU_CD and useModData:
+    compare(aE_uv, aE_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aE_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
+    compare(aW_uv, aW_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aW_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
+    compare(aN_uv, aN_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aN_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
+    compare(aS_uv, aS_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aS_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
+    compare(aP_uv, aP_uv_cMEC_FOU_CD, rTol, aTol, 'calcMomEqCoeffs_FOU_CD', 'aP_uv', 'cMEC_FOU_CD', 'cMEC_FOU_CD_your')
+    # Save your modified arrays:
+    aE_uv_cMEC_FOU_CD_your = copy.deepcopy(aE_uv)
+    aW_uv_cMEC_FOU_CD_your = copy.deepcopy(aW_uv)
+    aN_uv_cMEC_FOU_CD_your = copy.deepcopy(aN_uv)
+    aS_uv_cMEC_FOU_CD_your = copy.deepcopy(aS_uv)
+    aP_uv_cMEC_FOU_CD_your = copy.deepcopy(aP_uv)
+if not check_calcMomEqCoeffs_FOU_CD and useModData:
+    print('calcMomEqCoeffs_FOU_CD:      NOT CHECKED')
+# Save reference modified arrays:
+if not useModData:
+    aE_uv_cMEC_FOU_CD = copy.deepcopy(aE_uv)
+    aW_uv_cMEC_FOU_CD = copy.deepcopy(aW_uv)
+    aN_uv_cMEC_FOU_CD = copy.deepcopy(aN_uv)
+    aS_uv_cMEC_FOU_CD = copy.deepcopy(aS_uv)
+    aP_uv_cMEC_FOU_CD = copy.deepcopy(aP_uv)
 # Reset modified arrays:
 aE_uv = copy.deepcopy(aE_uv_ref)
 aW_uv = copy.deepcopy(aW_uv_ref)
@@ -726,20 +723,20 @@ Fe*=0
 Fw*=0
 Fn*=0
 Fs*=0
-# cF.calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
-#                             nI, nJ, rho, u, v,
-#                             dx_we, dy_sn, fxe, fxw, fyn, fys, aP_uv, p,
-#                             dx_WP, dx_PE, dy_SP, dy_PN)
-# if check_calcRhieChow_nonEquiCorr and useModData:
-#     compare(Fe, Fe_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fe', 'cRCnEC', 'cRCnEC_your')
-#     compare(Fw, Fw_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fw', 'cRCnEC', 'cRCnEC_your')
-#     compare(Fn, Fn_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fn', 'cRCnEC', 'cRCnEC_your')
-#     compare(Fs, Fs_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fs', 'cRCnEC', 'cRCnEC_your')
-#     # Save your modified arrays:
-#     Fe_cRCnEC_your = copy.deepcopy(Fe)
-#     Fw_cRCnEC_your = copy.deepcopy(Fw)
-#     Fn_cRCnEC_your = copy.deepcopy(Fn)
-#     Fs_cRCnEC_your = copy.deepcopy(Fs)
+cF.calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
+                            nI, nJ, rho, u, v,
+                            dx_we, dy_sn, fxe, fxw, fyn, fys, aP_uv, p,
+                            dx_WP, dx_PE, dy_SP, dy_PN)
+if check_calcRhieChow_nonEquiCorr and useModData:
+    compare(Fe, Fe_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fe', 'cRCnEC', 'cRCnEC_your')
+    compare(Fw, Fw_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fw', 'cRCnEC', 'cRCnEC_your')
+    compare(Fn, Fn_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fn', 'cRCnEC', 'cRCnEC_your')
+    compare(Fs, Fs_cRCnEC, rTol, aTol, 'calcRhieChow_nonEquiCorr', 'Fs', 'cRCnEC', 'cRCnEC_your')
+    # Save your modified arrays:
+    Fe_cRCnEC_your = copy.deepcopy(Fe)
+    Fw_cRCnEC_your = copy.deepcopy(Fw)
+    Fn_cRCnEC_your = copy.deepcopy(Fn)
+    Fs_cRCnEC_your = copy.deepcopy(Fs)
 if not check_calcRhieChow_nonEquiCorr and useModData:
     print('calcRhieChow_nonEquiCorr:    NOT CHECKED')
 # Save reference modified arrays:

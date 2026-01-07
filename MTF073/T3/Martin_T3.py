@@ -39,7 +39,7 @@ import Martin_T3_codeFunctions as cF
 #================= Inputs =====================
 
 # Case number (same as case in description, 1-25)
-caseID    =  1
+caseID    =  8
 
 # Geometric and mesh inputs (mesh is read from file)
 grid_type = 'coarse'  # Either 'coarse', 'fine' or 'newCoarse' (or your own)
@@ -337,6 +337,14 @@ for iter in range(nSIMPLEiter):
     cF.correctVelocity(u, v,
                         nI, nJ, fxe, fxw, fyn, fys, pp, dy_sn, dx_we, aP_uv)
 
+    print(f'iteration: {iter}')
+    print('i = 0')
+    print(u[0, 1])
+    print(u[0, 2])
+    print('i = 1')
+    print(u[1, 1])
+    print(u[1, 2])
+    
     # Extraplate velocity at outlet
     # (only changes arrays in first row of argument list)
     cF.correctOutletVelocity(u, v,

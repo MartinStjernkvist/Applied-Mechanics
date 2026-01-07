@@ -93,6 +93,8 @@ new_subtask('1a)')
 
 # See labeling of elements in the report
 Ly = 3 * L / 4
+
+# Element coordinates in x-direction
 Ex = np.array([
     [0, 0],
     [0, L],
@@ -102,6 +104,8 @@ Ex = np.array([
     [L, 2 * L],
     [L, 2 * L]
 ])
+
+# Element coordinates in y-direction
 Ey = np.array([ 
     [0, Ly],
     [0, 0],
@@ -112,6 +116,7 @@ Ey = np.array([
     [Ly, Ly]
 ])
 
+# Draw element figure
 fig = draw_discrete_elements(
     Ex, Ey,
     title="Geometry with nodes and elements",
@@ -123,7 +128,7 @@ fig.show()
 
 # Topology matrix (connectivity)
 Edof = np.array([
-    [1, 2, 3, 4],   # Element 1
+    [1, 2, 3, 4],   # Element 1: dof 1,2 (node 1) connected with dof 3, 4 (node 2)
     [1, 2, 5, 6],   # Element 2
     [1, 2, 7, 8],   # Element 3
     [3, 4, 7, 8],   # Element 4
@@ -133,10 +138,14 @@ Edof = np.array([
 ])
 
 # Number of elements
-num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
+num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one
+
+# Number of degrees of freedom 
 num_dofs = np.max(np.max(Edof))
-print(f"number of dofs = {num_dofs}")
+
+# Print statements
 print(f"number of elements = {num_el}")
+print(f"number of dofs = {num_dofs}")
 
 #---------------------------------------------------------------------------------------------------
 # 1b)
@@ -144,19 +153,17 @@ print(f"number of elements = {num_el}")
 new_subtask('1b)')
 
 # Assemble stiffness matrix and load vector, first allocate space
-K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
-f = np.zeros((num_dofs))            # Load vector
+K = np.zeros((num_dofs, num_dofs))
+f = np.zeros((num_dofs))
 
 # Loop over all elements to assemble global stiffness matrix
 for el in range(num_el):
     Ke = bar2e(Ex[el, :], Ey[el, :], E = E, A=A)  # Element stiffness matrix
     dofs = Edof[el, :]   # DOFs for the element
     assem(K, Ke, dofs)
-displayvar("K", K, accuracy=3)
 
 # External forces
 f[10-1] = -P  # Add a vertical force at node 5 (= dof 10)
-displayvar("f", f, accuracy=3)
 
 # Boundary conditions
 bc_dofs = np.array([1, 3, 4]) # DOFs fixed: 1, 3, 4
@@ -164,19 +171,26 @@ bc_vals = np.array([0.0, 0.0, 0.0])
 
 # Solve the system of equations
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
-displayvar("a", a, accuracy=3)
-displayvar("r", np.round(r))
 
 # Vertical deflection p
-displayvar("p_{truss}", a[10-1]) 
+p_truss = a[10-1] # "-1" for 1-indexing
+
+# Print statements
+displayvar("K", K, accuracy=3)
+displayvar("f", f, accuracy=3)
+displayvar("a", a, accuracy=3)
+displayvar("r", np.round(r))
+displayvar("p_{truss}", p_truss) 
 
 #---------------------------------------------------------------------------------------------------
 # 1c)
 #---------------------------------------------------------------------------------------------------
 new_subtask('1c)')
 
-# Displacement for each element (Edof to extract dofs for each element)
+# Element displacement (Edof to extract dofs for each element)
 Ed = extract_dofs(a, Edof)
+
+# Draw element figure
 fig = draw_discrete_elements(
     Ex, Ey,
     title="Deformed truss",
@@ -184,6 +198,8 @@ fig = draw_discrete_elements(
     ylabel="y [m]",
     line_style="dashed"
 )
+
+# Draw deformed mesh
 plot_deformed_bars(fig, Ex, Ey, Ed)
 fig.show()
 
@@ -192,18 +208,24 @@ fig.show()
 #---------------------------------------------------------------------------------------------------
 new_subtask('1d)')
 
-# Compute normal forces
+# Initiate normal force vector
 N = np.zeros((num_el))
+
+# Compute normal forces
 for el in range(num_el):
+    # Axial force in a 2D bar (truss) element from global displacements
     N[el] = bar2s(Ex[el, :], Ey[el, :], E, A, Ed[el, :]) 
-displayvar("N", np.round(N))
 
 # Normal stresses
 sigma = N / A
-displayvar("\sigma", np.round(sigma*1e-6)) # stresses in MPa
 
 # Factor of safety
-displayvar("FOS", sigma_y / np.max(np.abs(sigma))) # stresses in Pa
+FOS = sigma_y / np.max(np.abs(sigma)) # stresses in Pa
+
+# Print statements
+displayvar("N", np.round(N))
+displayvar("\sigma", np.round(sigma * 1e-6)) # stresses in MPa
+displayvar("FOS", FOS) 
 
 #%%
 ####################################################################################################
@@ -237,6 +259,8 @@ q = 0
 
 # See labeling of elements in the report
 Ly = 3 * L / 4
+
+# Element x-coordinates
 Ex = np.array([
     [0, 0],
     [0, L],
@@ -246,6 +270,8 @@ Ex = np.array([
     [L, 2 * L],
     [L, 2 * L]
 ])
+
+# Element y-coordinates
 Ey = np.array([ 
     [0, Ly],
     [0, 0],
@@ -268,8 +294,9 @@ fig.show()
 
 # Radius and area moment of inertia for cross-sectional area
 radius = np.sqrt(A / np.pi)
+
+# Second moment of inertia
 I = np.pi * radius**4 / 4 
-displayvar("I", I, accuracy=3)
 
 # Topology matrix (connectivity)
 Edof = np.array([
@@ -281,34 +308,42 @@ Edof = np.array([
     [7, 8, 9, 13, 14, 15],      # Element 6
     [10, 11, 12, 13, 14, 15]    # Element 7
 ])
+
 # Number of elements
 num_el = Edof.shape[0] # => (num_rows, num_columns) => select first one 
+
+# Number of degrees of freedom
 num_dofs = np.max(np.max(Edof))
 
-num_el = Edof.shape[0]
-qxy = np.zeros((num_el, 2)) # Distributed loads 
-qxy[:, 1] = -q # All elements in vertical direction
+# Initiate distributed load vector
+qxy = np.zeros((num_el, 2)) 
 
-ep = [E, A, I]
-num_dofs = np.max(np.max(Edof))
+# Set distributed loads (all elements in vertical direction)
+qxy[:, 1] = -q
+
+# Print statement
+displayvar("I", I, accuracy=3)
 
 #---------------------------------------------------------------------------------------------------
 # 2b)
 #---------------------------------------------------------------------------------------------------
 new_subtask('2b)')
 
-K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
-f = np.zeros((num_dofs))            # Load vector
+# Initiate stiffness matrix and load vector
+K = np.zeros((num_dofs, num_dofs))
+f = np.zeros((num_dofs))
 
+# Assemble stiffness matrix and load vector
 for el in range(num_el):
+    
     dofs = Edof[el, :]   # DOFs for the element
-    Ke, fe = beam2e(Ex[el, :], Ey[el, :], E, A, I, qxy[el, :])  # Element stiffness matrix
+    Ke, fe = beam2e(Ex[el, :], Ey[el, :], E, A, I, qxy[el, :]) # Element stiffness matrix
+    
     assem(K, Ke, dofs)
     assem(f, fe, dofs)
 
 # External forces
 f[14-1] = -P  # Add a vertical force at node 5 (= dof 14)
-displayvar("f", f, accuracy=3)
 
 # Boundary conditions
 # From Task 1: DOFs fixed: 1, 3, 4 
@@ -316,21 +351,24 @@ displayvar("f", f, accuracy=3)
 bc_dofs = [1, 4, 5]
 bc_vals = [0.0, 0.0, 0.0]
 
-# # Solve the system
+# Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
+# Vertical deflection p
+p_P = a[14-1]
+
+# Print statement
+displayvar("f", f, accuracy=3)
 displayvar("a", a, accuracy=3)
 displayvar("r", np.round(r), 2)
-
-# Vertical deflection p
-displayvar("p_P", a[14-1], accuracy=3) 
+displayvar("p_P", p_P, accuracy=3) 
 
 #---------------------------------------------------------------------------------------------------
 # 2c)
 #---------------------------------------------------------------------------------------------------
 new_subtask('2c)')
 
-## Postprocessing
+# Postprocessing
 Ed = extract_dofs(a, Edof)
 
 # Draw the deformed structure
@@ -338,16 +376,16 @@ fig = draw_discrete_elements(Ex, Ey, title="Deformed frame", line_style="dashed"
 plot_deformed_beams(fig, Ex, Ey, Ed)
 fig.show()
 
+# Initiate moment matrix and normal force matrix
 M = np.zeros((num_el, 2))
 N = np.zeros((num_el, 2))
+
 for el in range(num_el):
     data = beam2s(Ex[el, :], Ey[el, :], Ed[el, :], E, A, I)
     M[el, :] = data["M"]
     N[el, :] = data["N"]
 
-displayvar("M", M, accuracy=3) 
-displayvar("N", N, accuracy=3) 
-
+# Initiate top & bottom stress matrices
 sigma_top = np.zeros((num_el, 2))
 sigma_bottom = np.zeros((num_el, 2))
 
@@ -356,10 +394,12 @@ for i in range(7):
     for j in range(2):
         sigma_top[i, j] = M[i, j] * radius / I + N[i, j] / A
         sigma_bottom[i, j] = M[i, j] * (-radius) / I + N[i, j] / A
-        
+
+# Print statement
+displayvar("M", M, accuracy=3) 
+displayvar("N", N, accuracy=3) 
 displayvar("stress top", sigma_top, accuracy=3) 
 displayvar("stress bottom", sigma_bottom, accuracy=3) 
-
 print('max tensile stress: ', max(np.max(sigma_top), np.max(sigma_bottom)))
 print('max compressive stress: ', min(np.min(sigma_top), np.min(sigma_bottom)))
 
@@ -372,15 +412,20 @@ q = P / L
 
 # New distributed loads
 num_el = Edof.shape[0]
-qxy = np.zeros((num_el, 2)) # Distributed loads 
+
+# Initiate distributed load matrix
+qxy = np.zeros((num_el, 2))
+
+# Set loads
 qxy[7-1, 1] = -q # Element 7, in vertical direction
 
 # Same number of dofs
 
-# Reset 
+# Reset stiffness matrix and load vector
 K = np.zeros((num_dofs, num_dofs))  # Stiffness matrix
 f = np.zeros((num_dofs))            # Load vector
 
+# Assemble stiffness matrix and load vector
 for el in range(num_el):
     dofs = Edof[el, :]   # DOFs for the element
     Ke, fe = beam2e(Ex[el, :], Ey[el, :], E, A, I, qxy[el, :])  # Element stiffness matrix
@@ -392,11 +437,13 @@ for el in range(num_el):
 # Solve the system
 a, r = solve_eq(K, f, bc_dofs, bc_vals)
 
+# Vertical deflection p
+p_q = a[14-1]
+
+# Print statements
 displayvar("a", a, accuracy=3)
 displayvar("r", np.round(r), accuracy=3)
-
-# Vertical deflection p
-displayvar("p_q", a[14-1], accuracy=3) 
+displayvar("p_q", p_q, accuracy=3) 
 
 #%%
 ####################################################################################################
@@ -423,13 +470,14 @@ def q(x):
     return q0 * x / L
 
 #---------------------------------------------------------------------------------------------------
-# 3e)
+# 3e) 
 #---------------------------------------------------------------------------------------------------
 new_subtask('3e)')
 
 n_elem = 1
 iteration = 5
 
+# Analytical solution
 x_analytical = np.linspace(0, L, 100)
 u_analytical = (q0 * L**2 / (6 * EA)) * (3 * x_analytical / L - (x_analytical / L)**3)
 N_analytical = q0 * L / 2 * (1 - x_analytical**2 / L**2)
@@ -444,18 +492,22 @@ def FEM_3(n_elem_start, iterations):
     for iteration in range(iterations + 1):
         print('\nIteraration: ', iteration)
         
-        n_elem = n_elem_start * 2**iteration
+        n_elem = n_elem_start * (2 ** iteration)
         
         # Mesh generation
         n_nodes = n_elem + 1
+        
+        # Nodes x-coordinates
         x_nodes = np.linspace(0, L, n_nodes)
-        Le = L / n_elem  # element length
+        
+        # Element length
+        Le = L / n_elem
 
         # Initialize global stiffness matrix and load vector
         K_global = np.zeros((n_nodes, n_nodes))
         fl_global = np.zeros(n_nodes)
 
-        # Assemble element contributions
+        # Assemble stiffness matrix and load vector from element contributions
         for e in range(n_elem):
             i = e
             j = e + 1
@@ -569,6 +621,7 @@ P = 70 * 10**3          # [N]
 
 EI = E * I_y
 
+# Element stiffness matrix: hermite beam
 def hermite_beam_stiffness(EI, Le):
     K_e = (EI / Le**3) * np.array([
         [12,      6*Le,    -12,     6*Le],
@@ -578,6 +631,7 @@ def hermite_beam_stiffness(EI, Le):
     ])
     return K_e
 
+# Element stiffness matrix: winkler beam
 def winkler_stiffness(K_w, Le):
     K_w_e = (K_w * Le / 420) * np.array([
         [156,     22*Le,    54,      -13*Le],
@@ -589,25 +643,33 @@ def winkler_stiffness(K_w, Le):
 
 def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
     
+    # Number of nodes and degrees of freedom
     n_nodes = n_elem + 1
     n_dof = 2 * n_nodes
+    
+    # Element length
     Le = L / n_elem
     
+    # Initiate stiffness matrix and load vector
     K_global = np.zeros((n_dof, n_dof))
     f_global = np.zeros(n_dof)
     
+    # Assemble stiffness matrix and load vector
     for e in range(n_elem):
         i = e
         j = e + 1
         
         K_e = hermite_beam_stiffness(EI, Le)
         K_w_e = winkler_stiffness(k_w, Le)
+        
         K_total_e = K_e + K_w_e
         
         # DOFs: [w_i, th_i, w_j, th_j]
         dofs = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1] 
+        
         for ii in range(4):
             for jj in range(4):
+                
                 K_global[dofs[ii], dofs[jj]] += K_total_e[ii, jj]
         
     # Load at left end (x=0)
@@ -620,7 +682,7 @@ def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
         fixed_dofs = []
         
     if bc_type == 'cantilever':
-        # Fixed at x=0: w=0, theta=0
+        # Fixed at x=L: w=0, theta=0
         fixed_dofs = [2 * (n_nodes - 1), 2 * (n_nodes - 1) + 1]
     
     # Create boolean mask for free DOFs
@@ -638,13 +700,21 @@ def solve_rail(n_elem, k_w, bc_type='semi-infinite'):
     a = np.zeros(n_dof)
     a[free_dofs_mask] = a_reduced
     
+    # Nodes x-coordinates
     x = np.linspace(0, L, n_nodes)
+    
+    # Node displacement
     w = a[0::2]
+    
     return x, w, a 
 
 def compute_bending_moments(n_elem, a):
+    
+    # Element length
     Le = L / n_elem
-    M = np.zeros((n_elem, 2))  # moment at start and end of each element
+    
+    # Initiate moment matrix
+    M = np.zeros((n_elem, 2))  # at start and end of each element
     
     for e in range(n_elem):
         i = e
@@ -662,6 +732,7 @@ def compute_bending_moments(n_elem, a):
         # Bending moments
         M[e, 0] = -f_e[1]  # node i
         M[e, 1] = f_e[3]   # node j
+        
     return M
 
 #---------------------------------------------------------------------------------------------------
@@ -671,12 +742,13 @@ new_subtask('4c)')
 
 # Cantilever beam (point load P at tip)
 w_analytical = -P * L**3 / (3 * EI)
-print(f"Analytical max deflection: {w_analytical:.2e} m")
 
 # Verification
 n_elem_verify = 10
 x_ver, w_ver, _ = solve_rail(n_elem=n_elem_verify, k_w=0, bc_type='cantilever')
 
+# Print statements
+print(f"Analytical max deflection: {w_analytical:.2e} m")
 print(f"FEM max deflection: {min(w_ver):.2e} m")
 print(f"Relative error: {abs(min(w_ver) - w_analytical)/abs(w_analytical) * 100:.2f}%")
 
@@ -710,6 +782,7 @@ new_subtask('4e)')
 
 x_final, w_final, a_final = solve_rail(n_elem=chosen_n_elem, k_w=K_w)
 
+# Compute bending moments
 M_final = compute_bending_moments(chosen_n_elem, a_final)
 
 print(f"Maximum deflection: {abs(min(w_final)):.2e} m")
@@ -727,10 +800,14 @@ plt.show()
 
 x_M = []
 M_plot = []
+
 for e in range(chosen_n_elem):
     i = e
     j = e + 1
+    
+    # Element length
     Le = L / chosen_n_elem
+    
     x_M.extend([i * Le, j * Le])
     M_plot.extend([M_final[i, 0], M_final[i, 1]])
     

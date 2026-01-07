@@ -208,15 +208,30 @@ def correctGlobalContinuity(Fe, Fw, Fn, Fs,
     # flux through the outlet boundary/ies
     # Note that F is here supposed to include the multiplication with area
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     
+    flux_in = 0
+    for j in range(1,nJ-1):
+
+                i = 1
+                if Fw[i, j] > 0:
+                    flux_in += Fw[i, j]
     
-    
+    n_outlets = 0           
+    for j in range(1,nJ-1):
+                i = 1
+                if Fw[i, j] < 0:
+                    n_outlets +=1
+                    
+    for j in range(1,nJ-1):
+                i = 1
+                if Fw[i, j] < 0:
+                    Fw[i, j] = - flux_in / n_outlets
     
     """
     --------------------------------
@@ -295,7 +310,7 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     #         aP_uv[i,j] = 0 # ADD CODE HERE         
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1,nI-1):
@@ -321,20 +336,20 @@ def calcMomEqCoeffs_Hybrid(aE_uv, aW_uv, aN_uv, aS_uv, aP_uv,
     # (Homogeneous) Neumann walls:
     for i in range(1,nI-1):
         j = nJ-2
-        if  Fn[i, j] == 0:
+        if  Fn[i, j + 1] == 0:
             aN_uv[i, j] = 0
             
         j = 1
-        if Fs[i, j] == 0:
+        if Fs[i, j - 1] == 0:
             aS_uv[i, j] = 0
         
     for j in range(1,nJ-1):
         i = nI-2
-        if Fe[i,j] == 0:
+        if Fe[i + 1,j] == 0:
             aE_uv[i, j] = 0
             
         i = 1
-        if Fw[i, j] == 0:
+        if Fw[i - 1, j] == 0:
             aW_uv[i, j] = 0
     
     for i in range(1,nI-1):
@@ -358,13 +373,22 @@ def calcMomEqSu(Su_u, Su_v,
     #         Su_v[i,j] = 0 # ADD CODE HERE     
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
-            Su_u[i,j] = (1 - alphaUV) * aP_uv[i, j] * u[i, j]
-            Su_v[i,j] = (1 - alphaUV) * aP_uv[i, j] * v[i, j]
+            
+            p_e = fxe[i, j] * p[i + 1, j] + (1 - fxe[i, j]) * p[i, j]
+            p_w = fxw[i, j] * p[i - 1, j] + (1 - fxw[i, j]) * p[i, j]
+            p_n = fyn[i, j] * p[i, j + 1] + (1 - fyn[i, j]) * p[i, j]
+            p_s = fys[i, j] * p[i, j - 1] + (1 - fys[i, j]) * p[i, j]
+            
+            Su_u[i,j] = - (p_e - p_w) * dy_sn[i, j]
+            Su_u[i,j] =  Su_u[i,j] + (1 - alphaUV) * aP_uv[i, j] * u[i, j]
+            
+            Su_v[i,j] = - (p_n - p_s) * dx_we[i, j]
+            Su_v[i,j] = Su_v[i,j] + (1 - alphaUV) * aP_uv[i, j] * v[i, j]
 
 def solveGaussSeidel(phi,
                      nI, nJ, aE, aW, aN, aS, aP, Su, nLinSolIter):
@@ -410,12 +434,27 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1,nI-1):
+            for j in range(1,nJ-1):
+                
+                u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j]
+                u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j]
+                v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j]
+                v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j]
+                
+                Fe[i, j] = rho * u_e * dy_sn[i, j]
+                Fw[i, j] = rho * u_w * dy_sn[i, j]
+                Fn[i, j] = rho * v_n * dx_we[i, j]
+                Fs[i, j] = rho * v_s * dx_we[i, j]
+                
+                if i == 1:
+                    Fw[i, j] = 0
     
 
 def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
@@ -429,13 +468,77 @@ def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
     
+    #  aP_uv interpolated to each separate face (assuming equidistant mesh)
+    # - same expressions for the rest of the correction term as at the lecture (assuming equidistant mesh)
+    # - but velocity should be linearly interpolated for non-equidistant mesh!!!
+    
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                pP = p[i, j]
+                pE = p[i + 1, j]
+                pW = p[i - 1, j]
+                pN = p[i, j + 1]
+                pS = p[i, j - 1]
+                
+                if i == 1:
+                    pWW = 0
+                    aP_uv_w = aP_uv[i, j]
+                else:
+                    pWW = p[i - 2, j]
+                    aP_uv_w = 1 / 2 * (aP_uv[i - 1, j] + aP_uv[i, j])
+
+                if j == 1:
+                    pSS = 0
+                    aP_uv_s = aP_uv[i, j]
+                else:
+                    pSS = p[i, j - 2]
+                    aP_uv_s = 1 / 2 * (aP_uv[i, j - 1] + aP_uv[i, j])
+
+                if i == nI - 2:
+                    pEE = 0
+                    aP_uv_e = aP_uv[i, j]
+                else:
+                    pEE = p[i + 2, j]
+                    aP_uv_e = 1 / 2 * (aP_uv[i + 1, j] + aP_uv[i, j])
+                    
+                if j == nJ - 2:
+                    pNN = 0
+                    aP_uv_n = aP_uv[i, j]
+                else:
+                    pNN = p[i, j + 2]
+                    aP_uv_n = 1 / 2 * (aP_uv[i, j + 1] + aP_uv[i, j])
+
+                
+                u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j] \
+                    + dy_sn[i, j] / (4 * aP_uv_e) * (pEE - 3 * pE + 3 * pP -  pW)
+                u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j] \
+                    + dy_sn[i, j] / (4 * aP_uv_w) * (pE - 3 * pP + 3 * pW -  pWW)
+                v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j] \
+                    + dx_we[i, j] / (4 * aP_uv_n) * (pNN - 3 * pN + 3 * pP -  pS)
+                v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j] \
+                    + dx_we[i, j] / (4 * aP_uv_s) * (pN - 3 * pP + 3 * pS -  pSS)
+                
+                Fe[i, j] = rho * u_e * dy_sn[i, j]
+                Fw[i, j] = rho * u_w * dy_sn[i, j]
+                Fn[i, j] = rho * v_n * dx_we[i, j]
+                Fs[i, j] = rho * v_s * dx_we[i, j]
+                
+                if i == 1:
+                    Fw[i, j] = 0
+                if j == 1:
+                    Fs[i, j] = 0
+                if i == nI - 2:
+                    Fe[i, j] = 0
+                if j == nJ - 2:
+                    Fn[i, j] = 0
 
 def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
                              nI, nJ, rho, u, v,
@@ -465,12 +568,40 @@ def calcPpEqCoeffs(aE_pp, aW_pp, aN_pp, aS_pp, aP_pp, de, dw, dn, ds,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                aP_uv_e = fxe[i, j] * aP_uv[i + 1, j] + (1 - fxe[i, j]) * aP_uv[i, j]
+                aP_uv_w = fxw[i, j] * aP_uv[i - 1, j] + (1 - fxw[i, j]) * aP_uv[i, j]
+                aP_uv_n = fyn[i, j] * aP_uv[i, j + 1] + (1 - fyn[i, j]) * aP_uv[i, j]
+                aP_uv_s = fys[i, j] * aP_uv[i, j - 1] + (1 - fys[i, j]) * aP_uv[i, j]
+                    
+                de[i, j] = dy_sn[i, j] / aP_uv_e
+                dw[i, j] = dy_sn[i, j] / aP_uv_w
+                dn[i, j] = dx_we[i, j] / aP_uv_n
+                ds[i, j] = dx_we[i, j] / aP_uv_s
+                
+                if i == 1:
+                    dw[i, j] = 0
+                if j == 1:
+                    ds[i, j] = 0
+                if i == nI - 2:
+                    de[i, j] = 0
+                if j == nJ - 2:
+                    dn[i, j] = 0
+                    
+                aE_pp[i, j] = rho * de[i, j] * dy_sn[i, j]
+                aW_pp[i, j] = rho * dw[i, j] * dy_sn[i, j]
+                aN_pp[i, j] = rho * dn[i, j] * dx_we[i, j]
+                aS_pp[i, j] = rho * ds[i, j] * dx_we[i, j]
+                
+                aP_pp[i, j] =  aE_pp[i, j] + aW_pp[i, j] + aN_pp[i, j] + aS_pp[i, j]
 
 def calcPpEqSu(Su_pp,
                nI, nJ, Fe, Fw, Fn, Fs):
@@ -478,24 +609,27 @@ def calcPpEqSu(Su_pp,
     # Only change arrays in first row of argument list!
     # Keep 'nan' where values are not needed!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                Su_pp[i, j] = Fw[i, j] - Fe[i, j] + Fs[i, j] - Fn[i, j]
 
 def fixPp(Su_pp, aP_pp,
           pRef_i, pRef_j, aE_pp, aW_pp, aN_pp, aS_pp):
     # Fix pressure by forcing pp to zero in reference node, through source terms
+    """
+    ################################
     # MAKES CONVERGENCE POOR, SO BETTER TO SKIP IT FOR NOW. TRY IF YOU LIKE
+    ################################
+    # """
     # ADD CODE HERE
     pass
-    """
-    --------------------------------
-    # ADDED CODE
-    --------------------------------
-    """
 
 def solveTDMA(phi,
               nI, nJ, aE, aW, aN, aS, aP, Su,
@@ -589,36 +723,68 @@ def setPressureCorrectionLevel(pp,
     # Set pressure correction level explicitly
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    ppRef = pp[pRef_i, pRef_j]
+    
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                pp[i, j] = pp[i, j] - ppRef
 
 def correctPressureCorrectionBC(pp,
                                 nI, nJ):
     # Correct pressure correction homogeneous Neumann boundary conditions
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(0, nI):
+            for j in range(0, nJ):
+                
+                if i == 0:
+                    pp[i, j] = pp[i + 1, j]
+                if j == 0:
+                    pp[i, j] = pp[i, j + 1]
+                if i == nI - 1:
+                    pp[i, j] = pp[i - 1, j]
+                if j == nJ - 1:
+                    pp[i, j] = pp[i, j - 1]
+                
+                # Take care of corners
+                if i == 0 and j == 0:
+                    pp[i, j] = 0
+                if i == nI - 1 and j == 0:
+                    pp[i, j] = 0
+                if i == 0 and j == nJ - 1:
+                    pp[i, j] = 0
+                if i == nI - 1 and j == nJ - 1:
+                    pp[i, j] = 0
 
 def correctPressure(p,
                     nI, nJ, alphaP, pp):
     # Correct pressure, using explicit under-relaxation
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                p[i, j] = p[i, j] + alphaP * pp[i, j]
+    
 
 def correctPressureBCandCorners(p,
                                 nI, nJ, dx_PE, dx_WP, dy_PN, dy_SP):
@@ -628,10 +794,23 @@ def correctPressureBCandCorners(p,
     # ADD CODE HERE
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
-    
+    for i in range(0, nI):
+            for j in range(0, nJ):
+                
+                if i == 0:
+                    p[i, j] = p[i + 1, j] + ((p[i + 1, j] - p[i + 2, j]) / dx_PE[i + 1, j]) * dx_WP[i + 1, j]
+                    
+                if j == 0:
+                    p[i, j] = p[i, j + 1] + ((p[i, j + 1] - p[i, j + 2]) / dy_PN[i, j + 1]) * dy_SP[i, j + 1]
+                    
+                if i == nI - 1:
+                    p[i, j] = p[i - 1, j] + ((p[i - 1, j] - p[i - 2, j]) / dx_WP[i - 1, j]) * dx_PE[i - 1, j]
+                    
+                if j == nJ - 1:
+                    p[i, j] = p[i, j - 1] + ((p[i, j - 1] - p[i, j - 2]) / dy_SP[i, j - 1]) * dy_PN[i, j - 1]
     
     """
     --------------------------------
@@ -645,14 +824,33 @@ def correctPressureBCandCorners(p,
     p[0,nJ-1] = 0.5*(p[1,nJ-1]+p[0,nJ-2])
     p[nI-1,nJ-1] = 0.5*(p[nI-2,nJ-1]+p[nI-1,nJ-2])
     
-    pass
+    # pass
 
 def correctVelocity(u, v,
                     nI, nJ, fxe, fxw, fyn, fys, pp, dy_sn, dx_we, aP_uv):
     # Correct velocity components using pp solution (DO NOT TOUCH BOUNDARIES!)
     # Only change arrays in first row of argument list!
     # ADD CODE HERE
-    pass
+    # pass
+    """
+    --------------------------------
+    # ADDED CODE - SOLVED
+    --------------------------------
+    """
+    
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                
+                pp_e = fxe[i, j] * pp[i + 1, j] + (1 - fxe[i, j]) * pp[i, j]
+                pp_w = fxw[i, j] * pp[i - 1, j] + (1 - fxw[i, j]) * pp[i, j]
+                pp_n = fyn[i, j] * pp[i, j + 1] + (1 - fyn[i, j]) * pp[i, j]
+                pp_s = fys[i, j] * pp[i, j - 1] + (1 - fys[i, j]) * pp[i, j]
+                
+                dP_u = dy_sn[i, j] / aP_uv[i, j]
+                dP_v = dx_we[i, j] / aP_uv[i, j]
+                           
+                u[i, j] = u[i, j] + dP_u * (pp_w - pp_e)
+                v[i, j] = v[i, j] + dP_v * (pp_s - pp_n)  
 
 def correctOutletVelocity(u, v,
                           nI, nJ, rho, dx_we, dy_sn, nodeX, nodeY, grid_type, caseID):
@@ -672,17 +870,17 @@ def correctOutletVelocity(u, v,
     # ADD CODE HERE
     """
     --------------------------------
-    # ADDED CODE
+    # ADDED CODE - SOLVED
     --------------------------------
     """
-    
     match grid_type:
         case 'coarse' | 'fine' | 'newCoarse':
             for j in range(1,nJ-1):
 
-                i = 1
+                i = 0
                 if 0 < nodeY[i, j] < 0.03101719:
-                    pass
+                    u[i, j] = u[i + 1, j]
+                    v[i, j] = v[i + 1, j]
         case _:
             sys.exit("Incorrect grid type!")
 
@@ -691,7 +889,19 @@ def correctFaceFlux(Fe, Fw, Fn, Fs,
     # Correct face fluxes using pp solution (DO NOT TOUCH BOUNDARIES!)
     # Note that F is here supposed to include the multiplication with area
     # Only change arrays in first row of argument list!
-    pass
+    # pass
+    """
+    --------------------------------
+    # ADDED CODE - SOLVED
+    --------------------------------
+    """
+    for i in range(1, nI - 1):
+            for j in range(1, nJ - 1):
+                    
+                Fe[i, j] = Fe[i, j] + rho * dy_sn[i, j] * de[i, j] * (pp[i, j] - pp[i + 1, j])
+                Fw[i, j] = Fw[i, j] + rho * dy_sn[i, j] * dw[i, j] * (pp[i - 1, j] - pp[i, j])
+                Fn[i, j] = Fn[i, j] + rho * dx_we[i, j] * dn[i, j] * (pp[i, j] - pp[i, j + 1])
+                Fs[i, j] = Fs[i, j] + rho * dx_we[i, j] * ds[i, j] * (pp[i, j - 1] - pp[i, j])
 
 def calcNormalizedResiduals(res_u, res_v, res_c,
                             nI, nJ, iter, u, v,
@@ -713,7 +923,6 @@ def calcNormalizedResiduals(res_u, res_v, res_c,
     #         res_u[-1] = 1 # ADD CODE HERE
     #         res_v[-1] = 1 # ADD CODE HERE
     #         res_c[-1] = 1 # ADD CODE HERE
-    
     """
     --------------------------------
     # ADDED CODE
@@ -721,13 +930,30 @@ def calcNormalizedResiduals(res_u, res_v, res_c,
     """
     
     global F_uv, F_c
-    
+            
     # Compute residuals
     res_u.append(0) # U momentum residual
     res_v.append(0) # V momentum residual
     res_c.append(0) # Continuity residual/error
     for i in range(1,nI-1):
         for j in range(1,nJ-1):
+            
+            u_balance = abs(aP_uv[i, j] * u[i, j] 
+                       - (aE_uv[i, j] * u[i + 1, j]
+                        + aW_uv[i, j] * u[i - 1, j] 
+                        + aN_uv[i, j] * u[i, j + 1]
+                        + aS_uv[i, j] * u[i, j - 1]
+                        ))
+
+            v_balance = abs(aP_uv[i, j] * v[i, j] 
+                       - (aE_uv[i, j] * v[i + 1, j]
+                        + aW_uv[i, j] * v[i - 1, j] 
+                        + aN_uv[i, j] * v[i, j + 1]
+                        + aS_uv[i, j] * v[i, j - 1]
+                        ))
+            
+            v_balance = 0
+            
             res_u[-1] = 1 
             res_v[-1] = 1 
             res_c[-1] = 1 

@@ -39,4 +39,7 @@ def smart_latex_formatter(match):
 # Regex matches floating point numbers
 new_latex = re.sub(r'-?\d+\.\d+(?:e[+-]?\d+)?', smart_latex_formatter, latex_code)
 print(new_latex)
+
+for i in range(1,5):
+    print(i)
 #%%
