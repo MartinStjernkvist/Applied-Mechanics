@@ -448,13 +448,32 @@ def calcRhieChow_noCorr(Fe, Fw, Fn, Fs,
                 v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j]
                 v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j]
                 
-                Fe[i, j] = rho * u_e * dy_sn[i, j]
-                Fw[i, j] = rho * u_w * dy_sn[i, j]
-                Fn[i, j] = rho * v_n * dx_we[i, j]
-                Fs[i, j] = rho * v_s * dx_we[i, j]
                 
-                if i == 1:
-                    Fw[i, j] = 0
+                if i < nI - 2:
+                    u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j]
+                    Fe[i, j] = rho * u_e * dy_sn[i, j]
+
+                if i > 1:
+                    u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j]
+                    Fw[i, j] = rho * u_w * dy_sn[i, j]
+                
+                if j < nJ - 2:
+                    v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j]
+                    Fn[i, j] = rho * v_n * dx_we[i, j]
+
+                if j > 1:
+                    v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j]
+                    Fs[i, j] = rho * v_s * dx_we[i, j]
+                
+                
+                # if i < 1:
+                # Fe[i, j] = rho * u_e * dy_sn[i, j]
+                # Fw[i, j] = rho * u_w * dy_sn[i, j]
+                # Fn[i, j] = rho * v_n * dx_we[i, j]
+                # Fs[i, j] = rho * v_s * dx_we[i, j]
+                
+                # if i = 1:
+                #     Fw[i, j] = 0
     
 
 def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,

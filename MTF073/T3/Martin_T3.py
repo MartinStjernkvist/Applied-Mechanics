@@ -69,7 +69,7 @@ alphaP         = 0.3            # Under-relaxation factor for p
 
 linSol_pp      = 'TDMA'         # Either 'GS' or 'TDMA'
 scheme         = 'Hybrid'       # Either 'FOU_CD' or 'Hybrid'
-RhieChow       = 'equiCorr'     # Either 'noCorr', 'equiCorr' or 'nonEquiCorr'
+RhieChow       = 'noCorr'     # Either 'noCorr', 'equiCorr' or 'nonEquiCorr'
 
 pRef_i = 3 # P=0 in some internal node (1..nI-2, not on boundary)
 pRef_j = 3 # P=0 in some internal node (1..nJ-2, not on boundary)
