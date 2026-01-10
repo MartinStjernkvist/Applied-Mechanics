@@ -516,29 +516,27 @@ def calcRhieChow_equiCorr(Fe, Fw, Fn, Fs,
                     pNN = p[i, j + 2]
                     aP_uv_n = 1 / 2 * (aP_uv[i, j + 1] + aP_uv[i, j])
 
+
+                if i < nI - 2: 
+                    u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j] \
+                        + dy_sn[i, j] / (4 * aP_uv_e) * (pEE - 3 * pE + 3 * pP -  pW)
+                    Fe[i, j] = rho * u_e * dy_sn[i, j]
                 
-                u_e = fxe[i, j] * u[i + 1, j] + (1 - fxe[i, j]) * u[i, j] \
-                    + dy_sn[i, j] / (4 * aP_uv_e) * (pEE - 3 * pE + 3 * pP -  pW)
-                u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j] \
-                    + dy_sn[i, j] / (4 * aP_uv_w) * (pE - 3 * pP + 3 * pW -  pWW)
-                v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j] \
-                    + dx_we[i, j] / (4 * aP_uv_n) * (pNN - 3 * pN + 3 * pP -  pS)
-                v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j] \
-                    + dx_we[i, j] / (4 * aP_uv_s) * (pN - 3 * pP + 3 * pS -  pSS)
+                if i > 1:
+                    u_w = fxw[i, j] * u[i - 1, j] + (1 - fxw[i, j]) * u[i, j] \
+                        + dy_sn[i, j] / (4 * aP_uv_w) * (pE - 3 * pP + 3 * pW -  pWW)
+                    Fw[i, j] = rho * u_w * dy_sn[i, j]
+                    
+                if j < nJ - 2:
+                    v_n = fyn[i, j] * v[i, j + 1] + (1 - fyn[i, j]) * v[i, j] \
+                        + dx_we[i, j] / (4 * aP_uv_n) * (pNN - 3 * pN + 3 * pP -  pS)
+                    Fn[i, j] = rho * v_n * dx_we[i, j]
+                    
+                if j > 1:
+                    v_s = fys[i, j] * v[i, j - 1] + (1 - fys[i, j]) * v[i, j] \
+                        + dx_we[i, j] / (4 * aP_uv_s) * (pN - 3 * pP + 3 * pS -  pSS)
+                    Fs[i, j] = rho * v_s * dx_we[i, j]
                 
-                Fe[i, j] = rho * u_e * dy_sn[i, j]
-                Fw[i, j] = rho * u_w * dy_sn[i, j]
-                Fn[i, j] = rho * v_n * dx_we[i, j]
-                Fs[i, j] = rho * v_s * dx_we[i, j]
-                
-                if i == 1:
-                    Fw[i, j] = 0
-                if j == 1:
-                    Fs[i, j] = 0
-                if i == nI - 2:
-                    Fe[i, j] = 0
-                if j == nJ - 2:
-                    Fn[i, j] = 0
 
 def calcRhieChow_nonEquiCorr(Fe, Fw, Fn, Fs,
                              nI, nJ, rho, u, v,
