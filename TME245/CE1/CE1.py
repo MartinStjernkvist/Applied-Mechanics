@@ -202,17 +202,14 @@ Ae = sp.simplify(0.5 * Fisop.det())
 
 Ae_func = sp.lambdify((xe1, xe2, xe3), Ae, modules="numpy")
 
-def cst(ex, ey, D, h=1):
-    x1, x2, x3 = ex
-    y1, y2, y3 = ey
+def cst(coords1, coords2, coords3, D, h=1):
     
     Be_val = Be_func_cst(coords1, coords2, coords3)
     Ae_val = Ae_func(coords1, coords2, coords3)
 
-    h = l_L
     Ke = Be_val.T @ D @ Be_val * h * Ae_val
 
-    nodal_force = Ae_val * l_L * b / 3
+    nodal_force = Ae_val * h * b / 3
 
     fe = np.zeros((6, 1))
     fe[1::2, :] = nodal_force 
@@ -223,10 +220,7 @@ coords1 = [0.00, 0.00]
 coords2 = [1.00, 0.25]
 coords3 = [0.50, 1.00]
 
-ex = [coords1[0], coords2[0], coords3[0]]
-ey = [coords1[1], coords2[1], coords3[1]]
-
-Ke, fe = cst(ex, ey, D)
+Ke, fe = cst(coords1, coords2, coords3, D)
 
 displayvar('K^e', Ke, accuracy=3)
 displayvar('f^e', fe, accuracy=3)
@@ -241,8 +235,10 @@ def fe_edge(coords1, coords2, p, h=1):
     vec = coords2 - coords1
     n = np.array([vec[1], -vec[0]]).T
     n_unit = n / np.linalg.norm(n)
+    
     tn = -p * n_unit
     Le = np.linalg.norm(vec)
+    
     force = tn * h * Le / 2
     fe = np.array([force[0], force[1], force[0], force[1]])
     return fe
@@ -272,14 +268,37 @@ num_el = Edof.shape[0]
 num_ed_right = len(RightSide_nodes) - 1
 num_ed_top = len(TopSide_nodes) - 1
 
+polygons = np.zeros((num_el, 3, 2))
+# the code below assumes Edof has elemets sortered
+for el in range(num_el):
+    node_ids = (Edof[el, [1, 3, 5]] - 1) // 2
+    Ex[el,:] = Coord[node_ids,0]
+    Ey[el,:] = Coord[node_ids,1]
+    polygons[el,:,:] = [[Ex[el,0],Ey[el,0]], [Ex[el,1],Ey[el,1]], [Ex[el,2],Ey[el,2]]]
+    
+
+fig1, ax1 = plt.subplots()
+pc1 = PolyCollection(
+    polygons,
+    facecolors='none',
+    edgecolors='k'
+)
+ax1.add_collection(pc1)
+ax1.autoscale()
+ax1.set_title("Undeformed mesh")
+
 K = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs))
 
 for el in range(num_el):
-    ex = Ex[el, :]
-    ey = Ey[el, :]
+    # ex = Ex[el, :]
+    # ey = Ey[el, :]
     
-    Ke, fe = cst(ex, ey, D)
+    coords1 = np.array([Ex[el,0], Ey[el,0]])
+    coords2 = np.array([Ex[el,1], Ey[el,1]])
+    coords3 = np.array([Ex[el,2], Ey[el,2]])
+    
+    Ke, fe = cst(coords1, coords2, coords3, D)
     
     dofs = Edof[el, 1:] - 1
     
@@ -289,6 +308,8 @@ for el in range(num_el):
     
     for row in range(6):
         f[dofs[row]] += fe[row]
+        
+
 
 # Right edge contributions
 for ed in range(num_ed_right):
@@ -326,7 +347,7 @@ for node in LeftSide_nodes:
     n = node - 1
     bc_dofs.extend([2 * n])
     bc_vals.extend([0])
-    
+
 bc_dofs = np.array(bc_dofs)
 bc_vals = np.array(bc_vals)
 _, idx = np.unique(bc_dofs, return_index=True)
@@ -350,29 +371,71 @@ uy = a[1::2]
 uy_max = np.max(np.abs(uy))
 print('\nmax vertical displacement: ', uy_max)
 
-magnification = 1000
 
-Coord_deformed = Coord + magnification * np.column_stack((ux, uy))
+polygons = np.zeros((num_el, 3, 2))
+for el in range(num_el):
+    edofs = Edof[el,1:] - 1
+    polygons[el,:,:] = [
+        [Ex[el,0] + a[edofs[0]], Ey[el,0] + a[edofs[1]]],
+        [Ex[el,1] + a[edofs[2]], Ey[el,1] + a[edofs[3]]],
+        [Ex[el,2] + a[edofs[4]], Ey[el,2] + a[edofs[5]]]
+    ]
 
-polygons = []
-for i in range(num_el):
-    dof_indices = Edof[i, 1:].astype(int) - 1
-        
-    node_indices = dof_indices[::2] // 2 
-    
-    poly = Coord_deformed[node_indices, :]
-    polygons.append(poly)
 
-fig1, ax1 = plt.subplots()
-pc1 = PolyCollection(
+fig2, ax2 = plt.subplots()
+pc2 = PolyCollection(
     polygons,
     facecolors='none',
+    edgecolors='r'
+)
+
+ax2.add_collection(pc2)
+ax2.autoscale()
+ax2.set_title("Deformed mesh")
+
+#%%
+#===================================================================================================
+new_subtask('Task 1 - e) stress plot')
+#===================================================================================================
+
+def sigma(coords1, coords2, coords3, disp):
+    
+    Be_val = Be_func_cst(coords1, coords2, coords3)
+    sigma = D @ Be_val @ disp
+    return sigma
+
+disp = np.array([0, 0, 0.003, 0.001, 0.002, 0.002]).T
+coords1 = [0.00, 0.00]
+coords2 = [1.00, 0.25]
+coords3 = [0.50, 1.00]
+
+sigma_val = sigma(coords1, coords2, coords3, disp)
+
+displayvar('\sigma', sigma_val, accuracy=4)
+
+Es = np.zeros((num_el, 3))
+for el in range(num_el):
+    
+    coords1 = np.array([Ex[el,0], Ey[el,0]])
+    coords2 = np.array([Ex[el,1], Ey[el,1]])
+    coords3 = np.array([Ex[el,2], Ey[el,2]])
+    
+    Be = Be_func_cst(coords1, coords2, coords3)
+    edofs = Edof[el,1:] - 1
+    Es[el,:] = D @ Be @ a[edofs]
+
+fig3, ax3 = plt.subplots()
+
+pc3 = PolyCollection(
+    polygons,
+    array=Es[:,0],
+    cmap='turbo',
     edgecolors='k'
 )
 
-ax1.add_collection(pc1)
-ax1.autoscale()
-ax1.set_title("Undeformed mesh")
-fig1.colorbar(pc1, ax=ax1)
+ax3.add_collection(pc3)
+ax3.autoscale()
+ax3.set_title("sigma xx")
+fig2.colorbar(pc3, ax=ax3)
 
 #%%
