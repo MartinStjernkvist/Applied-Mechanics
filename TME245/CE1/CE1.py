@@ -164,45 +164,6 @@ D = factor * np.array([
         [   0.0,       0.0,  (1.0 - 2.0*nu)/2.0]
 ], dtype=float)
 
-# xi, eta = sp.symbols('xi, eta')
-# xe1, xe2, xe3, ye1, ye2, ye3 = sp.symbols('xe1, xe2, xe3, ye1, ye2, ye3')
-
-# xe = sp.Matrix([xe1, xe2, xe3])
-# ye = sp.Matrix([ye1, ye2, ye3])
-
-# N1 = xi
-# N2 = eta
-# N3 = 1 - xi - eta
-
-# Ne_bar = sp.Matrix([N1, N2, N3]).T
-# displayvar('Nbar', Ne_bar)
-
-# x = Ne_bar @ xe
-# y = Ne_bar @ ye 
-
-# J = sp.Matrix([x, y]).jacobian(sp.Matrix([xi, eta]))
-# displayvar('J', J)
-
-# dNbar_dxi = sp.diff(Ne_bar, xi)
-# dNbar_deta = sp.diff(Ne_bar, eta)
-
-# # dNbar_dxideta = sp.Matrix([dNbar_dxi, dNbar_deta])
-# dNbar_dxideta = dNbar_dxi.col_join(dNbar_deta)
-# displayvar('dNbar_dxideta', dNbar_dxideta)
-
-# dNbar_dxdy = (J.T).inv() @ dNbar_dxideta 
-# displayvar('dNbar_dxdy', dNbar_dxdy)
-# print(sp.shape(dNbar_dxdy))
-
-# Be = sp.zeros(3, 6)
-# Be[0, 0::2] = dNbar_dxdy[0, :]
-# Be[1, 1::2] = dNbar_dxdy[1, :]
-# Be[2, 0::2] = dNbar_dxdy[1, :]
-# Be[2, 1::2] = dNbar_dxdy[0, :]
-# displayvar('B_e', Be)
-
-# calc_Be = sp.lambdify((xi, eta, xe1, xe2, xe3, ye1, ye2, ye3), Be, "numpy")
-
 xi1, xi2 = sp.symbols('xi1 xi2', real=True)
 xi = sp.Matrix([xi1, xi2])
 
@@ -275,16 +236,6 @@ displayvar('f^e', fe, accuracy=3)
 new_subtask('Task 1 - c) Constant strain element')
 #===================================================================================================
 
-# def fe_edge(coords1, coords2, t, h=1):
-    
-#     vec = coords2 - coords1
-#     n = np.array([vec[1], -vec[0]]).T
-#     n_unit = n / np.linalg.norm(n)
-#     tn = np.dot(n_unit, t) * n_unit
-#     Le = np.linalg.norm(vec)
-#     fe = tn * h * Le / 2
-#     return fe
-
 def fe_edge(coords1, coords2, p, h=1):
     
     vec = coords2 - coords1
@@ -292,7 +243,8 @@ def fe_edge(coords1, coords2, p, h=1):
     n_unit = n / np.linalg.norm(n)
     tn = -p * n_unit
     Le = np.linalg.norm(vec)
-    fe = tn * h * Le / 2
+    force = tn * h * Le / 2
+    fe = np.array([force[0], force[1], force[0], force[1]])
     return fe
 
 coords1 = np.array([0, 0]).T
@@ -308,35 +260,17 @@ new_subtask('Task 1 - d) solve elasticity problem')
 
 p = l_Z * rho_w * g
 
-Nr, Nt = 10, 10
+Nr, Nt = 10, 20
 elemtype = 1
 
 output = TunnelMeshGen(l_H, l_B, l_D, l_b, l_h, l_r, Nr, Nt, elemtype)
 Edof, Coord, Ex, Ey, LeftSide_nodes, TopSide_nodes, RightSide_nodes, BottomSide_nodes = output
 
-
-# Example. Plot polygons without colouring (e.g. undeformed and deformed mesh)
-fig1, ax1 = plt.subplots()
-
-pc1 = PolyCollection(
-    polygons,
-    facecolors='none',
-    edgecolors='k'
-)
-
-ax1.add_collection(pc1)
-ax1.autoscale()
-ax1.set_title("Undeformed mesh")
-fig1.colorbar(pc1, ax=ax1)
-
-
-
-num_dofs = 2 * Coord.shape[0]
+num_nodes = Coord.shape[0]
+num_dofs = 2 * num_nodes
 num_el = Edof.shape[0]
 num_ed_right = len(RightSide_nodes) - 1
 num_ed_top = len(TopSide_nodes) - 1
-
-print(TopSide_nodes)
 
 K = np.zeros((num_dofs, num_dofs))
 f = np.zeros((num_dofs))
@@ -347,47 +281,98 @@ for el in range(num_el):
     
     Ke, fe = cst(ex, ey, D)
     
-    dofs = Edof[el, :] - 1
+    dofs = Edof[el, 1:] - 1
     
     for row in range(6):
         for column in range(6):
             K[dofs[row], dofs[column]] += Ke[row, column]
     
-    for row in range(dofs):
+    for row in range(6):
         f[dofs[row]] += fe[row]
 
 # Right edge contributions
 for ed in range(num_ed_right):
-    n1 = RightSide_nodes[ed]
-    n2 = RightSide_nodes[ed + 1]
+    n1 = RightSide_nodes[ed] - 1
+    n2 = RightSide_nodes[ed + 1] - 1
     
     dofs = np.array([2 * n1, 2 * n1 + 1, 2 * n2, 2 * n2 + 1])
-
     coords1 = Coord[n1]
     coords2 = Coord[n2]
     
     fe = fe_edge(coords1, coords2, p)
-    
     f[dofs] += fe
 
 # Top edge contributions
 for ed in range(num_ed_top):
-    n1 = TopSide_nodes[ed]
-    n2 = TopSide_nodes[ed + 1]
+    n1 = TopSide_nodes[ed] - 1
+    n2 = TopSide_nodes[ed + 1] - 1
     
     dofs = np.array([2 * n1, 2 * n1 + 1, 2 * n2, 2 * n2 + 1])
-
     coords1 = Coord[n1]
     coords2 = Coord[n2]
     
     fe = fe_edge(coords1, coords2, p)
-    
     f[dofs] += fe
 
 bc_dofs = []
 bc_vals = []
 
+for node in BottomSide_nodes:
+    n = node - 1
+    bc_dofs.extend([2 * n, 2 * n + 1])
+    bc_vals.extend([0, 0])
+    
+for node in LeftSide_nodes:
+    n = node - 1
+    bc_dofs.extend([2 * n])
+    bc_vals.extend([0])
+    
+bc_dofs = np.array(bc_dofs)
+bc_vals = np.array(bc_vals)
+_, idx = np.unique(bc_dofs, return_index=True)
+bc_dofs = bc_dofs[idx]
+bc_vals = bc_vals[idx]
 
+all_dofs = np.arange(num_dofs)
+free_dofs = np.setdiff1d(all_dofs, bc_dofs)
 
+K_red = K[free_dofs, :][:, free_dofs]
+f_red = f[free_dofs]
+
+a_red = np.linalg.solve(K_red, f_red)
+
+a = np.zeros(num_dofs)
+a[free_dofs] = a_red
+a[bc_dofs] = bc_vals
+
+ux = a[0::2]
+uy = a[1::2]
+uy_max = np.max(np.abs(uy))
+print('\nmax vertical displacement: ', uy_max)
+
+magnification = 1000
+
+Coord_deformed = Coord + magnification * np.column_stack((ux, uy))
+
+polygons = []
+for i in range(num_el):
+    dof_indices = Edof[i, 1:].astype(int) - 1
+        
+    node_indices = dof_indices[::2] // 2 
+    
+    poly = Coord_deformed[node_indices, :]
+    polygons.append(poly)
+
+fig1, ax1 = plt.subplots()
+pc1 = PolyCollection(
+    polygons,
+    facecolors='none',
+    edgecolors='k'
+)
+
+ax1.add_collection(pc1)
+ax1.autoscale()
+ax1.set_title("Undeformed mesh")
+fig1.colorbar(pc1, ax=ax1)
 
 #%%
