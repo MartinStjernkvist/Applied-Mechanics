@@ -1,3 +1,4 @@
+#%%
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan 14 16:15:43 2026
@@ -16,6 +17,7 @@ polygons = [
     np.array([[1,0], [2,0], [2,1]]),
     np.array([[0,1], [1,1], [1,2]])
 ]
+print(np.shape(polygons))
 
 # Example. Plot polygons without colouring (e.g. undeformed and deformed mesh)
 fig1, ax1 = plt.subplots()
@@ -67,3 +69,4 @@ plt.tripcolor(triang, nodal_values, shading='gouraud', cmap='jet')
 plt.triplot(triang, color='k', linewidth=1.0)
 plt.colorbar()
 plt.show()
+#%%

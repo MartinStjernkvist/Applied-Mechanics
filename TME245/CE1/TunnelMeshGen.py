@@ -1,3 +1,4 @@
+#%% 
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan 14 14:43:38 2026
@@ -263,3 +264,4 @@ BottomSide_nodes is a list of the nodes on the bottom boundary
 #Edof, Coord, Ex, Ey,\
 #LeftSide_nodes, TopSide_nodes,\
 #RightSide_nodes, BottomSide_nodes = TunnelMeshGen(45, 15, 6, 6, 7, 2, 5, 10, 1)
+#%% 

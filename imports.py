@@ -15,7 +15,6 @@ from scipy.optimize import curve_fit
 import multiprocessing as mp
 import tkinter as tk
 from tkinter import simpledialog
-from numba import jit
 import json
 import matplotlib as mpl
 
