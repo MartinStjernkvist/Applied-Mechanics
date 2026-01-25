@@ -165,30 +165,34 @@ D = factor * np.array([
 ], dtype=float)
 
 xi1, xi2 = sp.symbols('xi1 xi2', real=True)
+
 xi = sp.Matrix([xi1, xi2])
-
-N1 = 1 - xi1 - xi2
-N2 = xi1
-N3 = xi2
-
-dN1_dxi = sp.Matrix([sp.diff(N1, xi1), sp.diff(N1, xi2)])
-dN2_dxi = sp.Matrix([sp.diff(N2, xi1), sp.diff(N2, xi2)])
-dN3_dxi = sp.Matrix([sp.diff(N3, xi1), sp.diff(N3, xi2)])
-
 xe1_1, xe1_2 = sp.symbols('xe1_1 xe1_2', real=True)
 xe2_1, xe2_2 = sp.symbols('xe2_1 xe2_2', real=True)
 xe3_1, xe3_2 = sp.symbols('xe3_1 xe3_2', real=True)
+
+# Coordinate matrices
 xe1 = sp.Matrix([xe1_1, xe1_2])
 xe2 = sp.Matrix([xe2_1, xe2_2])
 xe3 = sp.Matrix([xe3_1, xe3_2])
 
-x = N1*xe1 + N2*xe2 + N3*xe3
-Fisop = x.jacobian(xi)
-Fisop_inv_T = Fisop.inv().T
+# Shape functions
+N1 = 1 - xi1 - xi2
+N2 = xi1
+N3 = xi2
 
-dN1_dx = sp.simplify(Fisop_inv_T * dN1_dxi)
-dN2_dx = sp.simplify(Fisop_inv_T * dN2_dxi)
-dN3_dx = sp.simplify(Fisop_inv_T * dN3_dxi)
+# Partial derivatives
+dN1_dxi = sp.Matrix([sp.diff(N1, xi1), sp.diff(N1, xi2)])
+dN2_dxi = sp.Matrix([sp.diff(N2, xi1), sp.diff(N2, xi2)])
+dN3_dxi = sp.Matrix([sp.diff(N3, xi1), sp.diff(N3, xi2)])
+
+x = N1*xe1 + N2*xe2 + N3*xe3
+J = x.jacobian(xi)
+J_inv_T = J.inv().T
+
+dN1_dx = sp.simplify(J_inv_T * dN1_dxi)
+dN2_dx = sp.simplify(J_inv_T * dN2_dxi)
+dN3_dx = sp.simplify(J_inv_T * dN3_dxi)
 
 Be = sp.Matrix([
 [dN1_dx[0], 0, dN2_dx[0], 0, dN3_dx[0], 0],
@@ -198,7 +202,7 @@ Be = sp.Matrix([
 
 Be_func_cst = sp.lambdify((xe1, xe2, xe3), Be, modules="numpy")
 
-Ae = sp.simplify(0.5 * Fisop.det())
+Ae = sp.simplify(0.5 * J.det())
 
 Ae_func = sp.lambdify((xe1, xe2, xe3), Ae, modules="numpy")
 
@@ -222,7 +226,7 @@ coords3 = [0.50, 1.00]
 
 Ke, fe = cst(coords1, coords2, coords3, D)
 
-displayvar('K^e', Ke, accuracy=3)
+displayvar('K^e', np.round(Ke), accuracy=3)
 displayvar('f^e', fe, accuracy=3)
 
 #%%
@@ -254,8 +258,10 @@ displayvar('f', fe_val)
 new_subtask('Task 1 - d) solve elasticity problem')
 #===================================================================================================
 
+# Constant pressure
 p = l_Z * rho_w * g
 
+# Define geometry
 Nr, Nt = 10, 20
 elemtype = 1
 
@@ -269,14 +275,13 @@ num_ed_right = len(RightSide_nodes) - 1
 num_ed_top = len(TopSide_nodes) - 1
 
 polygons = np.zeros((num_el, 3, 2))
-# the code below assumes Edof has elemets sortered
 for el in range(num_el):
     node_ids = (Edof[el, [1, 3, 5]] - 1) // 2
     Ex[el,:] = Coord[node_ids,0]
     Ey[el,:] = Coord[node_ids,1]
     polygons[el,:,:] = [[Ex[el,0],Ey[el,0]], [Ex[el,1],Ey[el,1]], [Ex[el,2],Ey[el,2]]]
     
-
+# Plot undeformed mesh
 fig1, ax1 = plt.subplots()
 pc1 = PolyCollection(
     polygons,
@@ -287,12 +292,39 @@ ax1.add_collection(pc1)
 ax1.autoscale()
 ax1.set_title("Undeformed mesh")
 
-K = np.zeros((num_dofs, num_dofs))
-f = np.zeros((num_dofs))
+# Boundary conditions
+dof_C = []
+a_C = []
+
+# Bottom
+for node in BottomSide_nodes:
+    n = node - 1
+    dof_C.extend([2 * n, 2 * n + 1])
+    a_C.extend([0, 0])
+
+# Left
+for node in LeftSide_nodes:
+    n = node - 1
+    dof_C.extend([2 * n])
+    a_C.extend([0])
+
+dof_C = np.array(dof_C)
+a_C = np.array(a_C)
+
+_, idx = np.unique(dof_C, return_index=True)
+
+dof_C = dof_C[idx]
+a_C = a_C[idx]
+
+all_dofs = np.arange(num_dofs)
+dof_F = np.setdiff1d(all_dofs, dof_C)
+
+# Initialize stiffness matrix and load vector
+K = scipy.sparse.lil_matrix((num_dofs, num_dofs))
+f = np.zeros(num_dofs)
+a = np.zeros(num_dofs)
 
 for el in range(num_el):
-    # ex = Ex[el, :]
-    # ey = Ey[el, :]
     
     coords1 = np.array([Ex[el,0], Ey[el,0]])
     coords2 = np.array([Ex[el,1], Ey[el,1]])
@@ -302,14 +334,11 @@ for el in range(num_el):
     
     dofs = Edof[el, 1:] - 1
     
-    for row in range(6):
-        for column in range(6):
-            K[dofs[row], dofs[column]] += Ke[row, column]
+    K[np.ix_(dofs, dofs)] += Ke
     
-    for row in range(6):
-        f[dofs[row]] += fe[row]
-        
+    f[dofs] += fe.flatten()
 
+K = K.tocsr()
 
 # Right edge contributions
 for ed in range(num_ed_right):
@@ -335,83 +364,79 @@ for ed in range(num_ed_top):
     fe = fe_edge(coords1, coords2, p)
     f[dofs] += fe
 
-bc_dofs = []
-bc_vals = []
 
-for node in BottomSide_nodes:
-    n = node - 1
-    bc_dofs.extend([2 * n, 2 * n + 1])
-    bc_vals.extend([0, 0])
-    
-for node in LeftSide_nodes:
-    n = node - 1
-    bc_dofs.extend([2 * n])
-    bc_vals.extend([0])
+a_F = scipy.sparse.linalg.spsolve(
+K[np.ix_(dof_F, dof_F)],
+f[dof_F] - K[np.ix_(dof_F, dof_C)] @ a_C
+)
 
-bc_dofs = np.array(bc_dofs)
-bc_vals = np.array(bc_vals)
-_, idx = np.unique(bc_dofs, return_index=True)
-bc_dofs = bc_dofs[idx]
-bc_vals = bc_vals[idx]
+f_C = (
+K[np.ix_(dof_C, dof_F)] @ a_F +
+K[np.ix_(dof_C, dof_C)] @ a_C -
+f[dof_C]
+)
 
-all_dofs = np.arange(num_dofs)
-free_dofs = np.setdiff1d(all_dofs, bc_dofs)
+a[dof_F] = a_F
+a[dof_C] = a_C
 
-K_red = K[free_dofs, :][:, free_dofs]
-f_red = f[free_dofs]
-
-a_red = np.linalg.solve(K_red, f_red)
-
-a = np.zeros(num_dofs)
-a[free_dofs] = a_red
-a[bc_dofs] = bc_vals
-
-ux = a[0::2]
 uy = a[1::2]
 uy_max = np.max(np.abs(uy))
-print('\nmax vertical displacement: ', uy_max)
+print('\nmax vertical displacement [mm]:')
+displayvar('u_y', uy_max * 1000, accuracy=3)
 
+mag = 2000
 
 polygons = np.zeros((num_el, 3, 2))
 for el in range(num_el):
     edofs = Edof[el,1:] - 1
     polygons[el,:,:] = [
-        [Ex[el,0] + a[edofs[0]], Ey[el,0] + a[edofs[1]]],
-        [Ex[el,1] + a[edofs[2]], Ey[el,1] + a[edofs[3]]],
-        [Ex[el,2] + a[edofs[4]], Ey[el,2] + a[edofs[5]]]
+        [Ex[el,0] + mag * a[edofs[0]], Ey[el,0] + mag * a[edofs[1]]],
+        [Ex[el,1] + mag * a[edofs[2]], Ey[el,1] + mag * a[edofs[3]]],
+        [Ex[el,2] + mag * a[edofs[4]], Ey[el,2] + mag * a[edofs[5]]]
     ]
 
-
+# Plot deformed mesh
 fig2, ax2 = plt.subplots()
 pc2 = PolyCollection(
     polygons,
     facecolors='none',
     edgecolors='r'
 )
-
 ax2.add_collection(pc2)
 ax2.autoscale()
-ax2.set_title("Deformed mesh")
+ax2.set_title(f"Deformed mesh, magnification = {mag}")
 
 #%%
 #===================================================================================================
 new_subtask('Task 1 - e) stress plot')
 #===================================================================================================
 
-def sigma(coords1, coords2, coords3, disp):
+def sigma(coords1, coords2, coords3, a):
     
-    Be_val = Be_func_cst(coords1, coords2, coords3)
-    sigma = D @ Be_val @ disp
+    Be = Be_func_cst(coords1, coords2, coords3)
+    sigma = D @ Be @ a
     return sigma
 
-disp = np.array([0, 0, 0.003, 0.001, 0.002, 0.002]).T
+a_test = np.array([0, 0, 0.003, 0.001, 0.002, 0.002]).T
 coords1 = [0.00, 0.00]
 coords2 = [1.00, 0.25]
 coords3 = [0.50, 1.00]
 
-sigma_val = sigma(coords1, coords2, coords3, disp)
+sigma_val = sigma(coords1, coords2, coords3, a_test)
+sig_xx = sigma_val[0]
+sig_yy = sigma_val[1]
+tau_xy = sigma_val[2]
+sig_zz = nu * (sig_xx + sig_yy)
+
+center = (sig_xx + sig_yy) / 2
+radius = np.sqrt(((sig_xx - sig_yy) / 2)**2 + tau_xy**2)
+s1_in = center + radius
+s2_in = center - radius
+
+sigma_principal = np.sort([s1_in, s2_in, sig_zz])
 
 displayvar('\sigma', sigma_val, accuracy=4)
+displayvar('\sigma_p', sigma_principal, accuracy=4)
 
 Es = np.zeros((num_el, 3))
 for el in range(num_el):
