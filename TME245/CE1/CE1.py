@@ -347,6 +347,8 @@ for el in range(num_el):
 # Prepare for solving the system
 K = K.tocsr()
 
+f_edge_sum = np.zeros(4)
+
 # Right edge contributions
 for ed in range(num_ed_right):
     n1 = RightSide_nodes[ed] - 1
@@ -358,6 +360,7 @@ for ed in range(num_ed_right):
     
     fe = fe_edge(coords1, coords2, p)
     f[dofs] += fe
+    f_edge_sum += fe
 
 # Top edge contributions
 for ed in range(num_ed_top):
@@ -370,6 +373,7 @@ for ed in range(num_ed_top):
     
     fe = fe_edge(coords1, coords2, p)
     f[dofs] += fe
+    f_edge_sum += fe
 
 # Solve system
 a_F = scipy.sparse.linalg.spsolve(
@@ -417,6 +421,12 @@ ax2.add_collection(pc2)
 ax2.autoscale()
 ax2.set_title(f"Deformed mesh, magnification = {mag}")
 
+print(f'\nsum of all forces in x & y direction: {f_edge_sum[:2] * 2}')
+fe_edge_calc_x = -p * l_L * l_h
+print('calculated for x: ', fe_edge_calc_x)
+fe_edge_calc_y = -p * l_L * l_B
+print('calculated for y: ', fe_edge_calc_y)
+
 #%%
 #===================================================================================================
 new_subtask('Task 1 - e) stress plot')
@@ -437,10 +447,7 @@ def sigma(coords1, coords2, coords3, a):
     s1_in = center + radius
     s2_in = center - radius
 
-    # sigma_principal = np.sort([s1_in, s2_in, sigma_zz])
-    # sigma_principal = np.array([s1_in, s2_in, sigma_zz])
     sigma_principal = np.sort([s1_in, s2_in, sigma_zz])[::-1]
-
     
     sigma_complete = np.hstack([sigma, sigma_principal])
     return sigma_complete
@@ -484,6 +491,7 @@ new_subtask('Task 1 - f) FOS')
 #===================================================================================================
 
 # https://www.engineeringtoolbox.com/concrete-properties-d_1223.html
+# https://eurocodeapplied.com/design/en1992/concrete-design-properties 
 compressive_strength = 30e6 # Pa
 tensile_strength = 3.5e6 # Pa
 
@@ -522,5 +530,7 @@ ax5.add_collection(pc5)
 ax5.autoscale()
 ax5.set_title("sigma 1")
 fig2.colorbar(pc5, ax=ax5)
+
+# https://www.teknologisk.dk/_root/media/Artikel%20Concrete%20for%20the%20Oresund%20Tunnel_1997(1).pdf
 
 #%%
