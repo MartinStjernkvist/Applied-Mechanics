@@ -415,7 +415,20 @@ def sigma(coords1, coords2, coords3, a):
     
     Be = Be_func_cst(coords1, coords2, coords3)
     sigma = D @ Be @ a
-    return sigma
+    
+    sigma_xx = sigma[0]
+    sigma_yy = sigma[1]
+    tau_xy = sigma[2]
+    sigma_zz = nu * (sigma_xx + sigma_yy)
+
+    center = (sigma_xx + sigma_yy) / 2
+    radius = np.sqrt(((sigma_xx - sigma_yy) / 2)**2 + tau_xy**2)
+    s1_in = center + radius
+    s2_in = center - radius
+
+    sigma_principal = np.sort([s1_in, s2_in, sigma_zz])
+    sigma_complete = np.hstack([sigma, sigma_principal])
+    return sigma_complete
 
 a_test = np.array([0, 0, 0.003, 0.001, 0.002, 0.002]).T
 coords1 = [0.00, 0.00]
@@ -423,32 +436,23 @@ coords2 = [1.00, 0.25]
 coords3 = [0.50, 1.00]
 
 sigma_val = sigma(coords1, coords2, coords3, a_test)
-sig_xx = sigma_val[0]
-sig_yy = sigma_val[1]
-tau_xy = sigma_val[2]
-sig_zz = nu * (sig_xx + sig_yy)
-
-center = (sig_xx + sig_yy) / 2
-radius = np.sqrt(((sig_xx - sig_yy) / 2)**2 + tau_xy**2)
-s1_in = center + radius
-s2_in = center - radius
-
-sigma_principal = np.sort([s1_in, s2_in, sig_zz])
 
 displayvar('\sigma', sigma_val, accuracy=4)
-displayvar('\sigma_p', sigma_principal, accuracy=4)
 
-Es = np.zeros((num_el, 3))
+Es = np.zeros((num_el, 6))
 for el in range(num_el):
     
     coords1 = np.array([Ex[el,0], Ey[el,0]])
     coords2 = np.array([Ex[el,1], Ey[el,1]])
     coords3 = np.array([Ex[el,2], Ey[el,2]])
     
-    Be = Be_func_cst(coords1, coords2, coords3)
     edofs = Edof[el,1:] - 1
-    Es[el,:] = D @ Be @ a[edofs]
-
+    
+    # Be = Be_func_cst(coords1, coords2, coords3)
+    # Es[el,:] = D @ Be @ a[edofs]
+    
+    Es[el, :] = sigma(coords1, coords2, coords3, a[edofs])
+    
 fig3, ax3 = plt.subplots()
 
 pc3 = PolyCollection(
@@ -457,10 +461,49 @@ pc3 = PolyCollection(
     cmap='turbo',
     edgecolors='k'
 )
-
 ax3.add_collection(pc3)
 ax3.autoscale()
 ax3.set_title("sigma xx")
 fig2.colorbar(pc3, ax=ax3)
+
+#%%
+#===================================================================================================
+new_subtask('Task 1 - f) FOS')
+#===================================================================================================
+
+# https://www.engineeringtoolbox.com/concrete-properties-d_1223.html
+compressive_strength = 30e6 # Pa
+tensile_strength = 3.5e6 # Pa
+
+FOS_compression = compressive_strength / np.abs(np.min(Es[:, 3]))
+FOS_tension = tensile_strength / np.max(Es[:, -1])
+
+displayvar('FOC_c', FOS_compression, accuracy=3)
+displayvar('FOC_t', FOS_tension, accuracy=3)
+
+
+fig4, ax4 = plt.subplots()
+pc4 = PolyCollection(
+    polygons,
+    array= Es[:,3],
+    cmap='turbo',
+    edgecolors='k'
+)
+ax4.add_collection(pc4)
+ax4.autoscale()
+ax4.set_title("sigma 1")
+fig2.colorbar(pc4, ax=ax4)
+
+fig5, ax5 = plt.subplots()
+pc5 = PolyCollection(
+    polygons,
+    array= Es[:,5],
+    cmap='turbo',
+    edgecolors='k'
+)
+ax5.add_collection(pc5)
+ax5.autoscale()
+ax5.set_title("sigma 3")
+fig2.colorbar(pc5, ax=ax5)
 
 #%%
