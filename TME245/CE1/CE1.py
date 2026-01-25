@@ -131,7 +131,6 @@ new_task('Task 1')
 new_subtask('Task 1 - Problem definition & define inputs')
 #===================================================================================================
 
-
 E = 30e9 # Pa
 nu = 0.2 
 g = 9.82
@@ -265,6 +264,7 @@ p = l_Z * rho_w * g
 Nr, Nt = 10, 20
 elemtype = 1
 
+# Generate mesh
 output = TunnelMeshGen(l_H, l_B, l_D, l_b, l_h, l_r, Nr, Nt, elemtype)
 Edof, Coord, Ex, Ey, LeftSide_nodes, TopSide_nodes, RightSide_nodes, BottomSide_nodes = output
 
@@ -274,6 +274,7 @@ num_el = Edof.shape[0]
 num_ed_right = len(RightSide_nodes) - 1
 num_ed_top = len(TopSide_nodes) - 1
 
+# Polygons
 polygons = np.zeros((num_el, 3, 2))
 for el in range(num_el):
     node_ids = (Edof[el, [1, 3, 5]] - 1) // 2
@@ -308,22 +309,27 @@ for node in LeftSide_nodes:
     dof_C.extend([2 * n])
     a_C.extend([0])
 
+# Convert to numpy arrays
 dof_C = np.array(dof_C)
 a_C = np.array(a_C)
 
+# Identify unique indices
 _, idx = np.unique(dof_C, return_index=True)
 
+# Extract the unique parts
 dof_C = dof_C[idx]
 a_C = a_C[idx]
 
-all_dofs = np.arange(num_dofs)
-dof_F = np.setdiff1d(all_dofs, dof_C)
+# Free DOFs
+dof_all = np.arange(num_dofs)
+dof_F = np.setdiff1d(dof_all, dof_C)
 
 # Initialize stiffness matrix and load vector
 K = scipy.sparse.lil_matrix((num_dofs, num_dofs))
 f = np.zeros(num_dofs)
 a = np.zeros(num_dofs)
 
+# Assemble stiffness matrix and load vector
 for el in range(num_el):
     
     coords1 = np.array([Ex[el,0], Ey[el,0]])
@@ -338,6 +344,7 @@ for el in range(num_el):
     
     f[dofs] += fe.flatten()
 
+# Prepare for solving the system
 K = K.tocsr()
 
 # Right edge contributions
@@ -364,7 +371,7 @@ for ed in range(num_ed_top):
     fe = fe_edge(coords1, coords2, p)
     f[dofs] += fe
 
-
+# Solve system
 a_F = scipy.sparse.linalg.spsolve(
 K[np.ix_(dof_F, dof_F)],
 f[dof_F] - K[np.ix_(dof_F, dof_C)] @ a_C
@@ -376,16 +383,20 @@ K[np.ix_(dof_C, dof_C)] @ a_C -
 f[dof_C]
 )
 
+# Displacement vector
 a[dof_F] = a_F
 a[dof_C] = a_C
 
+# Maximum vertical deflection
 uy = a[1::2]
 uy_max = np.max(np.abs(uy))
 print('\nmax vertical displacement [mm]:')
 displayvar('u_y', uy_max * 1000, accuracy=3)
 
+# Magnification factor
 mag = 2000
 
+# Polygons deformed mesh
 polygons = np.zeros((num_el, 3, 2))
 for el in range(num_el):
     edofs = Edof[el,1:] - 1
@@ -426,19 +437,23 @@ def sigma(coords1, coords2, coords3, a):
     s1_in = center + radius
     s2_in = center - radius
 
-    sigma_principal = np.sort([s1_in, s2_in, sigma_zz])
+    # sigma_principal = np.sort([s1_in, s2_in, sigma_zz])
+    # sigma_principal = np.array([s1_in, s2_in, sigma_zz])
+    sigma_principal = np.sort([s1_in, s2_in, sigma_zz])[::-1]
+
+    
     sigma_complete = np.hstack([sigma, sigma_principal])
     return sigma_complete
 
+# Test the stress function
 a_test = np.array([0, 0, 0.003, 0.001, 0.002, 0.002]).T
 coords1 = [0.00, 0.00]
 coords2 = [1.00, 0.25]
 coords3 = [0.50, 1.00]
-
 sigma_val = sigma(coords1, coords2, coords3, a_test)
-
 displayvar('\sigma', sigma_val, accuracy=4)
 
+# Assemble stress matrix
 Es = np.zeros((num_el, 6))
 for el in range(num_el):
     
@@ -448,13 +463,10 @@ for el in range(num_el):
     
     edofs = Edof[el,1:] - 1
     
-    # Be = Be_func_cst(coords1, coords2, coords3)
-    # Es[el,:] = D @ Be @ a[edofs]
-    
     Es[el, :] = sigma(coords1, coords2, coords3, a[edofs])
-    
-fig3, ax3 = plt.subplots()
 
+# Plott stresses
+fig3, ax3 = plt.subplots()
 pc3 = PolyCollection(
     polygons,
     array=Es[:,0],
@@ -475,35 +487,40 @@ new_subtask('Task 1 - f) FOS')
 compressive_strength = 30e6 # Pa
 tensile_strength = 3.5e6 # Pa
 
-FOS_compression = compressive_strength / np.abs(np.min(Es[:, 3]))
-FOS_tension = tensile_strength / np.max(Es[:, -1])
+max_compressive = np.min(Es[:, 5])
+max_tensile = np.max(Es[:, 3])
+print('max_compressive:', np.round(max_compressive))
+print('max_tensile:', np.round(max_tensile))
 
+FOS_compression = compressive_strength / np.abs(max_compressive)
+FOS_tension = tensile_strength / max_tensile
 displayvar('FOC_c', FOS_compression, accuracy=3)
 displayvar('FOC_t', FOS_tension, accuracy=3)
 
-
+# Plot compressive stresses
 fig4, ax4 = plt.subplots()
 pc4 = PolyCollection(
-    polygons,
-    array= Es[:,3],
-    cmap='turbo',
-    edgecolors='k'
-)
-ax4.add_collection(pc4)
-ax4.autoscale()
-ax4.set_title("sigma 1")
-fig2.colorbar(pc4, ax=ax4)
-
-fig5, ax5 = plt.subplots()
-pc5 = PolyCollection(
     polygons,
     array= Es[:,5],
     cmap='turbo',
     edgecolors='k'
 )
+ax4.add_collection(pc4)
+ax4.autoscale()
+ax4.set_title("sigma 3")
+fig2.colorbar(pc4, ax=ax4)
+
+# Plot tensile stresses
+fig5, ax5 = plt.subplots()
+pc5 = PolyCollection(
+    polygons,
+    array= Es[:,3],
+    cmap='turbo',
+    edgecolors='k'
+)
 ax5.add_collection(pc5)
 ax5.autoscale()
-ax5.set_title("sigma 3")
+ax5.set_title("sigma 1")
 fig2.colorbar(pc5, ax=ax5)
 
 #%%
