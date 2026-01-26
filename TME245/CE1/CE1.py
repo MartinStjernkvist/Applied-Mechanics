@@ -155,8 +155,8 @@ p_w = l_Z * rho_w * g
 new_subtask('Task 1 - b) Constant strain element')
 #===================================================================================================
 
+# Constitutive matrix
 factor = E / ((1 + nu) * (1 - 2 * nu))
-    
 D = factor * np.array([
         [1.0 - nu,     nu,            0.0],
         [    nu,   1.0 - nu,          0.0],
@@ -165,12 +165,12 @@ D = factor * np.array([
 
 xi1, xi2 = sp.symbols('xi1 xi2', real=True)
 
+# Local coordinates
 xi = sp.Matrix([xi1, xi2])
 xe1_1, xe1_2 = sp.symbols('xe1_1 xe1_2', real=True)
 xe2_1, xe2_2 = sp.symbols('xe2_1 xe2_2', real=True)
 xe3_1, xe3_2 = sp.symbols('xe3_1 xe3_2', real=True)
 
-# Coordinate matrices
 xe1 = sp.Matrix([xe1_1, xe1_2])
 xe2 = sp.Matrix([xe2_1, xe2_2])
 xe3 = sp.Matrix([xe3_1, xe3_2])
@@ -185,26 +185,30 @@ dN1_dxi = sp.Matrix([sp.diff(N1, xi1), sp.diff(N1, xi2)])
 dN2_dxi = sp.Matrix([sp.diff(N2, xi1), sp.diff(N2, xi2)])
 dN3_dxi = sp.Matrix([sp.diff(N3, xi1), sp.diff(N3, xi2)])
 
+# Global coordinates (coordinate transformation)
 x = N1*xe1 + N2*xe2 + N3*xe3
 J = x.jacobian(xi)
 J_inv_T = J.inv().T
 
+# Partial derivatives of shape function, wrt global coords
 dN1_dx = sp.simplify(J_inv_T * dN1_dxi)
 dN2_dx = sp.simplify(J_inv_T * dN2_dxi)
 dN3_dx = sp.simplify(J_inv_T * dN3_dxi)
 
+# B-matrix
 Be = sp.Matrix([
 [dN1_dx[0], 0, dN2_dx[0], 0, dN3_dx[0], 0],
 [0, dN1_dx[1], 0, dN2_dx[1], 0, dN3_dx[1]],
 [dN1_dx[1], dN1_dx[0], dN2_dx[1], dN2_dx[0], dN3_dx[1], dN3_dx[0]]
 ])
 
-Be_func_cst = sp.lambdify((xe1, xe2, xe3), Be, modules="numpy")
-
 Ae = sp.simplify(0.5 * J.det())
 
+# Lambdify functions
+Be_func_cst = sp.lambdify((xe1, xe2, xe3), Be, modules="numpy")
 Ae_func = sp.lambdify((xe1, xe2, xe3), Ae, modules="numpy")
 
+# CST element function
 def cst(coords1, coords2, coords3, D, h=1):
     
     Be_val = Be_func_cst(coords1, coords2, coords3)
@@ -218,13 +222,12 @@ def cst(coords1, coords2, coords3, D, h=1):
     fe[1::2, :] = nodal_force 
     
     return Ke, fe
-    
+
+# Test cst function
 coords1 = [0.00, 0.00]
 coords2 = [1.00, 0.25]
 coords3 = [0.50, 1.00]
-
 Ke, fe = cst(coords1, coords2, coords3, D)
-
 displayvar('K^e', np.round(Ke), accuracy=3)
 displayvar('f^e', fe, accuracy=3)
 
@@ -233,6 +236,7 @@ displayvar('f^e', fe, accuracy=3)
 new_subtask('Task 1 - c) Constant strain element')
 #===================================================================================================
 
+# Edge load contribution function
 def fe_edge(coords1, coords2, p, h=1):
     
     vec = coords2 - coords1
@@ -246,12 +250,13 @@ def fe_edge(coords1, coords2, p, h=1):
     fe = np.array([force[0], force[1], force[0], force[1]])
     return fe
 
+# Test edge load function
 coords1 = np.array([0, 0]).T
 coords2 = np.array([1, 1]).T
 p_val = 5
-
 fe_val = fe_edge(coords1, coords2, p_val)
 displayvar('f', fe_val)
+
 #%%
 #===================================================================================================
 new_subtask('Task 1 - d) solve elasticity problem')
@@ -261,7 +266,7 @@ new_subtask('Task 1 - d) solve elasticity problem')
 p = l_Z * rho_w * g
 
 # Define geometry
-Nr, Nt = 10, 20
+Nr, Nt = 40, 80
 elemtype = 1
 
 # Generate mesh
@@ -293,7 +298,7 @@ ax1.add_collection(pc1)
 ax1.autoscale()
 ax1.set_title("Undeformed mesh")
 
-# Boundary conditions
+# Initiate boundary condition matrices
 dof_C = []
 a_C = []
 
@@ -347,6 +352,7 @@ for el in range(num_el):
 # Prepare for solving the system
 K = K.tocsr()
 
+# Initiate sum of edge loads, for comparisons
 f_edge_sum = np.zeros(4)
 
 # Right edge contributions
@@ -375,16 +381,19 @@ for ed in range(num_ed_top):
     f[dofs] += fe
     f_edge_sum += fe
 
-# Solve system
+# Solve system, through partitioning of the system
+
+# Solve for unknown displacements
 a_F = scipy.sparse.linalg.spsolve(
 K[np.ix_(dof_F, dof_F)],
 f[dof_F] - K[np.ix_(dof_F, dof_C)] @ a_C
 )
 
+# Solve for unknown boundary tractions
 f_C = (
-K[np.ix_(dof_C, dof_F)] @ a_F +
-K[np.ix_(dof_C, dof_C)] @ a_C -
-f[dof_C]
+K[np.ix_(dof_C, dof_F)] @ a_F 
++ K[np.ix_(dof_C, dof_C)] @ a_C 
+- f[dof_C]
 )
 
 # Displacement vector
@@ -427,6 +436,8 @@ print('calculated for x: ', fe_edge_calc_x)
 fe_edge_calc_y = -p * l_L * l_B
 print('calculated for y: ', fe_edge_calc_y)
 
+# %%
+
 #%%
 #===================================================================================================
 new_subtask('Task 1 - e) stress plot')
@@ -442,6 +453,7 @@ def sigma(coords1, coords2, coords3, a):
     tau_xy = sigma[2]
     sigma_zz = nu * (sigma_xx + sigma_yy)
 
+    # Mohr's circle
     center = (sigma_xx + sigma_yy) / 2
     radius = np.sqrt(((sigma_xx - sigma_yy) / 2)**2 + tau_xy**2)
     s1_in = center + radius
@@ -532,5 +544,176 @@ ax5.set_title("sigma 1")
 fig2.colorbar(pc5, ax=ax5)
 
 # https://www.teknologisk.dk/_root/media/Artikel%20Concrete%20for%20the%20Oresund%20Tunnel_1997(1).pdf
+
+
+#%%
+def convergence_analysis(Nr, Nt):
+    # Generate mesh
+    output = TunnelMeshGen(l_H, l_B, l_D, l_b, l_h, l_r, Nr, Nt, elemtype)
+    Edof, Coord, Ex, Ey, LeftSide_nodes, TopSide_nodes, RightSide_nodes, BottomSide_nodes = output
+
+    num_nodes = Coord.shape[0]
+    num_dofs = 2 * num_nodes
+    num_el = Edof.shape[0]
+    num_ed_right = len(RightSide_nodes) - 1
+    num_ed_top = len(TopSide_nodes) - 1
+
+    # Initiate boundary condition matrices
+    dof_C = []
+    a_C = []
+
+    # Bottom
+    for node in BottomSide_nodes:
+        n = node - 1
+        dof_C.extend([2 * n, 2 * n + 1])
+        a_C.extend([0, 0])
+
+    # Left
+    for node in LeftSide_nodes:
+        n = node - 1
+        dof_C.extend([2 * n])
+        a_C.extend([0])
+
+    # Convert to numpy arrays
+    dof_C = np.array(dof_C)
+    a_C = np.array(a_C)
+
+    # Identify unique indices
+    _, idx = np.unique(dof_C, return_index=True)
+
+    # Extract the unique parts
+    dof_C = dof_C[idx]
+    a_C = a_C[idx]
+
+    # Free DOFs
+    dof_all = np.arange(num_dofs)
+    dof_F = np.setdiff1d(dof_all, dof_C)
+
+    # Initialize stiffness matrix and load vector
+    K = scipy.sparse.lil_matrix((num_dofs, num_dofs))
+    f = np.zeros(num_dofs)
+    a = np.zeros(num_dofs)
+
+    # Assemble stiffness matrix and load vector
+    for el in range(num_el):
+        
+        coords1 = np.array([Ex[el,0], Ey[el,0]])
+        coords2 = np.array([Ex[el,1], Ey[el,1]])
+        coords3 = np.array([Ex[el,2], Ey[el,2]])
+        
+        Ke, fe = cst(coords1, coords2, coords3, D)
+        
+        dofs = Edof[el, 1:] - 1
+        
+        K[np.ix_(dofs, dofs)] += Ke
+        
+        f[dofs] += fe.flatten()
+
+    # Prepare for solving the system
+    K = K.tocsr()
+
+    # Initiate sum of edge loads, for comparisons
+    f_edge_sum = np.zeros(4)
+
+    # Right edge contributions
+    for ed in range(num_ed_right):
+        n1 = RightSide_nodes[ed] - 1
+        n2 = RightSide_nodes[ed + 1] - 1
+        
+        dofs = np.array([2 * n1, 2 * n1 + 1, 2 * n2, 2 * n2 + 1])
+        coords1 = Coord[n1]
+        coords2 = Coord[n2]
+        
+        fe = fe_edge(coords1, coords2, p)
+        f[dofs] += fe
+        f_edge_sum += fe
+
+    # Top edge contributions
+    for ed in range(num_ed_top):
+        n1 = TopSide_nodes[ed] - 1
+        n2 = TopSide_nodes[ed + 1] - 1
+        
+        dofs = np.array([2 * n1, 2 * n1 + 1, 2 * n2, 2 * n2 + 1])
+        coords1 = Coord[n1]
+        coords2 = Coord[n2]
+        
+        fe = fe_edge(coords1, coords2, p)
+        f[dofs] += fe
+        f_edge_sum += fe
+
+    # Solve system, through partitioning of the system
+
+    # Solve for unknown displacements
+    a_F = scipy.sparse.linalg.spsolve(
+    K[np.ix_(dof_F, dof_F)],
+    f[dof_F] - K[np.ix_(dof_F, dof_C)] @ a_C
+    )
+
+    # Solve for unknown boundary tractions
+    f_C = (
+    K[np.ix_(dof_C, dof_F)] @ a_F 
+    + K[np.ix_(dof_C, dof_C)] @ a_C 
+    - f[dof_C]
+    )
+
+    # Displacement vector
+    a[dof_F] = a_F
+    a[dof_C] = a_C
+
+    # Maximum vertical deflection
+    uy = a[1::2]
+    uy_max = np.max(np.abs(uy))
+    print('\nmax vertical displacement [mm]:')
+    displayvar('u_y', uy_max * 1000, accuracy=3)
+
+    print(f'\nsum of all forces in x & y direction: {f_edge_sum[:2] * 2}')
+    fe_edge_calc_x = -p * l_L * l_h
+    print('calculated for x: ', fe_edge_calc_x)
+    fe_edge_calc_y = -p * l_L * l_B
+    print('calculated for y: ', fe_edge_calc_y)
+
+    # Assemble stress matrix
+    Es = np.zeros((num_el, 6))
+    for el in range(num_el):
+        
+        coords1 = np.array([Ex[el,0], Ey[el,0]])
+        coords2 = np.array([Ex[el,1], Ey[el,1]])
+        coords3 = np.array([Ex[el,2], Ey[el,2]])
+        
+        edofs = Edof[el,1:] - 1
+        
+        Es[el, :] = sigma(coords1, coords2, coords3, a[edofs])
+
+
+    max_compressive = np.min(Es[:, 5])
+    max_tensile = np.max(Es[:, 3])
+    print('max_compressive:', np.round(max_compressive))
+    print('max_tensile:', np.round(max_tensile))
+
+    FOS_compression = compressive_strength / np.abs(max_compressive)
+    FOS_tension = tensile_strength / max_tensile
+    displayvar('FOC_c', FOS_compression, accuracy=3)
+    displayvar('FOC_t', FOS_tension, accuracy=3)
+    
+    return FOS_compression, FOS_tension, uy_max
+
+FOS_compression_list, FOS_tension_list, uy_max_list = [], [], []
+for i in range(5):
+    Nr = 10 * np.sqrt(2)**i
+    Nt = 20 * np.sqrt(2)**i
+    FOS_compression, FOS_tension, uy_max = convergence_analysis(Nr, Nt)
+    
+    FOS_compression_list.append(FOS_compression)
+    FOS_tension_list.append(FOS_tension)
+    uy_max_list.append(uy_max)
+    
+plt.figure()
+plt.plot(i, uy_max)
+plt.show()
+
+    
+# %%
+
+# %%
 
 #%%
