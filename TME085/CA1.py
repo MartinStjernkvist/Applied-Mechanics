@@ -36,7 +36,8 @@ bar_to_Pa = 101_325
 # Task1 1.a
 M1_1a = 0.2
 T1_1a = 293
-P1_1a = 1 * bar_to_Pa
+p1_1a = 1 * bar_to_Pa
+rho1_1a = 1.2
 R_1a = 287.0
 gamma_1a = 1.4
 Cp_1a = Cp_func(gamma_1a, R_1a)
@@ -46,7 +47,7 @@ D = 0.3
 # q_star_2_1a = 2.55954 * 0.9
 # print(q_star_2_1a, 'W/m^2')
 
-def task_1a(T1, M1, Cp):
+def task_1a(T1, M1, p1, rho1, Cp):
     T01 = T0_func(T1, M1)
     T02_star = T02_func(T01, M1, M2=1)
     q_star = q_func(T01, T02_star, Cp)
@@ -60,7 +61,13 @@ def task_1a(T1, M1, Cp):
     # 7.20000e-01 1.39069e+00 1.00260e+00 1.38709e+00 1.03764e+00 9.22122e-01
     M2 = interpolation(9.08499e-01, 7.00000e-01, 9.22122e-01, 7.20000e-01, T02_T0_star)
     print('M2: ', M2)
+    T2 = T2_func(T1, M1, M2)
+    p2 = p2_func(p1, M1, M2)
+    rho2 = rho2_func(rho1, M1, M2)
+    print('T2: ', T2)
+    print('p2: ', p2)
+    print('rho2: ', rho2)
     
-task_1a(T1_1a, M1_1a, Cp_1a)
+task_1a(T1_1a, M1_1a, p1_1a, rho1_1a, Cp_1a)
 
 #%%
