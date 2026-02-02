@@ -1,6 +1,13 @@
 #%%
 import numpy as np
 
+def printt(string):
+    print()
+    print('=' * 40)
+    print(string)
+    print('=' * 40)
+    print()
+
 def interpolation(x1, y1, x2, y2, x):
     return y1 + (x - x1) * (y2 - y1) / (x2 - x1)
 
@@ -51,23 +58,65 @@ def task_1a(T1, M1, p1, rho1, Cp):
     T01 = T0_func(T1, M1)
     T02_star = T02_func(T01, M1, M2=1)
     q_star = q_func(T01, T02_star, Cp)
+    print(f'q_star: {q_star:.2f}')
     q = 0.9 * q_star
-    print('q: ', q)
+    print(f'q: {q:.2f}')
     T02 = T02_from_q_func(q, T01, Cp)
+    
     T01_T0_star = 0.1736
     T02_T0_star = (T02 / T01) * T01_T0_star
-    print('T02_T0_star: ', T02_T0_star)
+    print(f'T02_T0_star: {T02_T0_star:.4f}')
     # 7.00000e-01 1.42349e+00 9.92895e-01 1.43367e+00 1.04310e+00 9.08499e-01
     # 7.20000e-01 1.39069e+00 1.00260e+00 1.38709e+00 1.03764e+00 9.22122e-01
     M2 = interpolation(9.08499e-01, 7.00000e-01, 9.22122e-01, 7.20000e-01, T02_T0_star)
-    print('M2: ', M2)
+    print(f'M2: {M2:.2f}')
+    
     T2 = T2_func(T1, M1, M2)
     p2 = p2_func(p1, M1, M2)
     rho2 = rho2_func(rho1, M1, M2)
-    print('T2: ', T2)
-    print('p2: ', p2)
-    print('rho2: ', rho2)
-    
+    print(f'T2: {T2:.2f}')
+    print(f'p2: {p2:.2f}')
+    print(f'rho2: {rho2:.2f}')
+
+printt('Task 1.a:')
 task_1a(T1_1a, M1_1a, p1_1a, rho1_1a, Cp_1a)
+
+# Task 2.b
+M1_1b = 2
+T1_1b = 293
+p1_1b = 1 * bar_to_Pa
+rho1_1b = 1.2
+R_1b = 287.0
+gamma_1b = 1.4
+Cp_1b = Cp_func(gamma_1a, R_1a)
+
+def task_1b(T1, M1, p1, rho1, Cp):
+    T01 = T0_func(T1, M1)
+    T02_star = T02_func(T01, M1, M2=1)
+    q_star = q_func(T01, T02_star, Cp)
+    print(f'q_star: {q_star:.2f}')
+    q = 0.9 * q_star
+    print(f'q: {q:.2f}')
+    T02 = T02_from_q_func(q, T01, Cp)
+    
+    T01_T0_star = 7.93388e-01
+    T02_T0_star = (T02 / T01) * T01_T0_star
+    print(f'T02_T0_star: {T02_T0_star:.4f}')
+    # 1.18000e+00 8.13736e-01 9.22000e-01 8.82577e-01 1.01573e+00 9.82299e-01
+    # 1.20000e+00 7.95756e-01 9.11848e-01 8.72685e-01 1.01942e+00 9.78717e-01
+    M2 = interpolation(9.82299e-01, 1.18000e+00, 9.78717e-01, 1.20000e+00, T02_T0_star)
+    print(f'M2: {M2:.2f}')
+    
+    T2 = T2_func(T1, M1, M2)
+    p2 = p2_func(p1, M1, M2)
+    rho2 = rho2_func(rho1, M1, M2)
+    print(f'T2: {T2:.2f}')
+    print(f'p2: {p2:.2f}')
+    print(f'rho2: {rho2:.2f}')
+
+printt('Task 1.b:')
+task_1b(T1_1b, M1_1b, p1_1b, rho1_1b, Cp_1b)
+
+
 
 #%%
