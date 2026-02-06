@@ -237,30 +237,4 @@ def task_2b(T1, M1, p1, D, fbar, gamma, R):
     print(f'rho2: {rho2:.2f}')
     
 task_2b(T1_2b, M1_2b, p1_2b, D_2b, fbar_2b, gamma_2b, R_2b)
-
-#%%
-# Task 2.c
-printt('Task 2.c:')
-D_2c = 0.3
-fbar_2c = 0.005
-M1_2c = 2.0
-T1_2c = 293
-p1_2c = 1 * bar_to_Pa
-gamma_2c = gamma_air
-R_2c = R_univ
-
-def task_2c(T1, M1, p1, D, fbar, gamma, R):
-    
-    rho1 = rho_func(p1, R, T1)
-    print(f'rho1_1b: {rho1:.2f}')    
-    
-    frac_4fLstar1_D = 3.04997e-01 # from A.4, M1 = 2.0
-    Lstar1 = frac_4fLstar1_D * D / (4 * fbar)
-    print(f'Lstar1: {Lstar1:.2f}')
-    
-    L = 1.5 * Lstar1
-    print(f'L: {L:.2f}')
-    
-task_2c(T1_2c, M1_2c, p1_2c, D_2c, fbar_2c, gamma_2c, R_2c)
-
 #%%
