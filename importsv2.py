@@ -54,6 +54,13 @@ def new_subtask(string):
     print_string = '\n' + '-' * 80 + '\n' + 'Subtask ' + str(string) + '\n' + '-' * 80 + '\n'
     return print(print_string)
 
+def printt(string):
+    print()
+    print('=' * 40)
+    print(string)
+    print('=' * 40)
+    print()
+
 SMALL_SIZE = 10
 MEDIUM_SIZE = 12
 BIGGER_SIZE = 14
