@@ -585,9 +585,9 @@ lam_val = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
 c10 = G_val / 2
 c20 = - G_val / 10
 c30 = G_val / 30
-D1 = 0.02 # 1 / MPa
-D2 = 0.01
-D3 = 0.01
+D1 = 0.02e-6 # 1 / Pa
+D2 = 0.01e-6
+D3 = 0.01e-6
 
 # ------------------------------------------------------------------
 # Yeoh
@@ -596,8 +596,11 @@ def generate_yeoh_functions():
     # Deformation gradient components 
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
-    F = sp.Matrix([[Fv[0], Fv[2]], 
-                   [Fv[1], Fv[3]]])
+    F = sp.Matrix([
+        [Fv[0], Fv[2], 0],
+        [Fv[1], Fv[3], 0], 
+        [0,     0,     1]
+    ])
     
     # Large deformation kinematics
     C = F.T * F
@@ -610,14 +613,26 @@ def generate_yeoh_functions():
             + (1/D2) * (J - 1)**4 \
             + (1/D3) * (J - 1)**6
 
-    P = sp.diff(U0_val, Fv)
+    P_vec = sp.diff(U0_val, Fv)
     
-    A = P.jacobian(Fv)
+    A = P_vec.jacobian(Fv)
+    
+    P_mat = sp.Matrix([
+        [P_vec[0], P_vec[2], 0],
+        [P_vec[1], P_vec[3], 0],
+        [0,        0,        0]
+    ])
+    
+    S_mat = F.inv() * P_mat
 
-    P_func = sp.lambdify(Fv, P, modules="numpy")
-    A_func = sp.lambdify(Fv, A, modules="numpy")
+    S_vec_out = sp.Matrix([S_mat[0,0], S_mat[1,1], S_mat[0,1], S_mat[1,0]])
     
-    return P_func, A_func
+    # Lambdify
+    P_func = sp.lambdify(Fv, P_vec, modules="numpy")
+    A_func = sp.lambdify(Fv, A, modules="numpy")
+    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy')
+    
+    return P_func, A_func, S_func
 
 # ------------------------------------------------------------------
 # Neo-Hooke
@@ -632,7 +647,7 @@ def generate_neohooke_functions():
     # MATLAB: F=[Fv(1) Fv(3) 0; Fv(4) Fv(2) 0; 0 0 1];
     F = sp.Matrix([
         [Fv[0], Fv[2], 0],
-        [Fv[3], Fv[1], 0],
+        [Fv[1], Fv[3], 0],
         [0,     0,     1]
     ])
 
@@ -655,170 +670,81 @@ def generate_neohooke_functions():
     # Python indices: (0,0), (1,1), (0,1), (1,0)
     Pv = sp.Matrix([P[0,0], P[1,1], P[0,1], P[1,0]])
 
-    P_func = sp.lambdify(Fv, Pv, modules='numpy')
-
     # MATLAB: dPvdFv=sym(dPvFv,[4,4], real )
     # Loop i=1:4 ... gradient(Pv(i),Fv)
     
     # In SymPy, we can calculate the Jacobian matrix directly without a loop
     dPvdFv = Pv.jacobian(Fv)
 
+    S_vec_out = sp.Matrix([S[0,0], S[1,1], S[0,1], S[1,0]])
+    
+    # Lambdify
     dPdF_func = sp.lambdify(Fv, dPvdFv, modules='numpy')
+    P_func = sp.lambdify(Fv, Pv, modules='numpy')
+    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy')
 
-    return P_func, dPdF_func
-
-# --- Usage Example ---
-# calc_P, calc_dPdF = generate_deformation_gradient_functions()
-
-# Fv_val = np.array([1.1, 1.1, 0.1, 0.1]) 
-# G_val = 100.0
-# lam_val = 500.0
-
-# P_result = calc_P(Fv_val, G_val, lam_val)
-# print("\nCalculated P vector (Voigt):")
-# print(P_result)
-
-# K_result = calc_dPdF(Fv_val, G_val, lam_val)
-# print("\nCalculated Tangent Stiffness Matrix:")
-# print(K_result)
-
-
-
-# def generate_neohooke_functions():
-#     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
-    
-#     F = sp.Matrix([[Fv[0], Fv[2]], 
-#                    [Fv[1], Fv[3]]])
-    
-#     C = F.T * F
-#     J = F.det()
-    
-#     U0 = (G_val / 2) * (sp.trace(C) - 3) - G_val * sp.log(J) + (lam_val / 2) * (sp.log(J))**2
-    
-#     P = sp.diff(U0, Fv)
-    
-#     A = P.jacobian(Fv)
-
-#     P_func = sp.lambdify((Fv), P, modules="numpy")
-#     A_func = sp.lambdify((Fv), A, modules="numpy")
-    
-#     return P_func, A_func
+    return P_func, dPdF_func, S_func
 
 # ------------------------------------------------------------------
 # Generate the functions once
 # ------------------------------------------------------------------
+P_Yeoh_func, A_Yeoh_func, S_Yeoh_func = generate_yeoh_functions()
+P_Neo_func, A_Neo_func, S_Neo_func = generate_neohooke_functions()
 
-
-P_Yeoh_func, A_Yeoh_func = generate_yeoh_functions()
-P_Neo_func, A_Neo_func = generate_neohooke_functions()
-
-
-def get_material_parameters():
-    E = 20.0
-    nu = 0.45
-    
-    # Lame parameters
-    mu = E / (2 * (1 + nu))
-    lam = (E * nu) / ((1 + nu) * (1 - 2 * nu))
-    
-    # Yeoh parameters (derived from G=mu)
-    # c10 = G/2, c20 = -G/10, c30 = G/30
-    G = mu
-    c10 = G / 2.0
-    c20 = -G / 10.0
-    c30 = G / 30.0
-    
-    # Compressibility parameters
-    D1 = 0.02
-    D2 = 0.01
-    D3 = 0.01
-    
-    props_yeoh = {'c10': c10, 'c20': c20, 'c30': c30, 'D1': D1, 'D2': D2, 'D3': D3}
-    props_nh = {'mu': mu, 'lam': lam}
-    
-    return props_yeoh, props_nh
-
-def piola_kirchhoff_stress(F, props, model='yeoh'):
-    # Standard 3x3 kinematics
-    J = np.linalg.det(F)
-    C = F.T @ F
-    C_inv = np.linalg.inv(C)
-    I1 = np.trace(C)
-    
-    if model == 'yeoh':
-        c10, c20, c30 = props['c10'], props['c20'], props['c30']
-        D1, D2, D3 = props['D1'], props['D2'], props['D3']
-        
-        I1_bar = J**(-2/3) * I1
-        
-        # Deviatoric derivatives dW_dev/dI1_bar
-        dW_dI1bar = c10 + 2*c20*(I1_bar - 3) + 3*c30*(I1_bar - 3)**2
-        
-        # Volumetric derivative dW_vol/dJ
-        p = (2/D1)*(J-1) + (4/D2)*(J-1)**3 + (6/D3)*(J-1)**5
-        
-        # S = 2 * ( dev_term + vol_term )
-        # Note: term2 in previous code had factor (p/2) to cancel the 2. 
-        # Here we write it explicitly: S_vol = J * p * C^-1
-        
-        term1 = dW_dI1bar * J**(-2/3) * (np.eye(3) - (1/3)*I1*C_inv)
-        term2 = (p/2) * J * C_inv
-        
-        S = 2 * (term1 + term2)
-        
-    elif model == 'neohooke':
-        mu, lam = props['mu'], props['lam']
-        S = mu * (np.eye(3) - C_inv) + lam * np.log(J) * C_inv
-
-    return S
-
-props_yeoh, props_nh = get_material_parameters()
+# ------------------------------------------------------------------
+# Solve
+# ------------------------------------------------------------------
 sigma11_yeoh = []
 sigma11_nh = []
 
 for f11 in F_11_vals:
-    # Pure Elongation (Uniaxial Strain): F22 = 1, F33 = 1
-    # No root finding needed!
-    F = np.diag([f11, 1.0, 1.0])
+    # Uniaxial Strain Condition:
+    # F11 = varying, F22 = 1.0 (constrained), F33 = 1.0
+    # Shears are 0.
+    F_vec_input = [f11, 0.0, 0.0, 1.0] 
     
-    # --- Yeoh ---
-    S_y = piola_kirchhoff_stress(F, props_yeoh, model='yeoh')
-    J = np.linalg.det(F)
-    # Cauchy Stress: sigma = 1/J * F * S * F^T
-    sig_y = (1/J) * F @ S_y @ F.T
-    sigma11_yeoh.append(sig_y[0,0])
+    # ------------------------------------------------------------------
+    # Yeoh
+    # ------------------------------------------------------------------
+    s_vals_yeoh = S_Yeoh_func(F_vec_input)
+    s11_yeoh = s_vals_yeoh[0][0]
     
-    # --- Neo-Hooke ---
-    S_nh = piola_kirchhoff_stress(F, props_nh, model='neohooke')
-    sig_nh = (1/J) * F @ S_nh @ F.T
-    sigma11_nh.append(sig_nh[0,0])
-
-# Convert to arrays
-sigma11_Yeoh_vals = np.array(sigma11_yeoh)
-sigma11_Neo_vals = np.array(sigma11_nh)
+    # Calculate Cauchy stress
+    J = f11 * 1.0
+    sig_yeoh = (1/J) * f11 * s11_yeoh * f11
+    sigma11_yeoh.append(sig_yeoh)
+    
+    # ------------------------------------------------------------------
+    # Neo-Hooke
+    # ------------------------------------------------------------------
+    s_vals_nh = S_Neo_func(F_vec_input)
+    s11_nh = s_vals_nh[0][0]
+    
+    sig_nh = (1/J) * f11 * s11_nh * f11
+    sigma11_nh.append(sig_nh)
 
 printt('Validate results:')
-print(f'Yeoh sigma11: {sigma11_Yeoh_vals[-1]:.4e} MPa (Ref: 1.2142e02)')
-print(f'Neo-Hooke sigma11:   {sigma11_Neo_vals[-1]:.4e} MPa (Ref: 2.2525e01)')
+print(f'Yeoh sigma11: {sigma11_yeoh[-1]:.4e} MPa (Ref: 1.2142e02)')
+print(f'Neo-Hooke sigma11:   {sigma11_nh[-1]:.4e} MPa (Ref: 2.2525e01)')
 
 # ------------------------------------------------------------------
 # Plot graphs
 # ------------------------------------------------------------------
-title = 'Cauchy stress component σ11 vs F11 - pure elongation'
+title = 'Cauchy stress component sigma11 vs F11 - pure elongation'
 plt.figure()
-plt.plot(F_11_vals, sigma11_Yeoh_vals, 'o-')
+plt.plot(F_11_vals, sigma11_yeoh, 'o-')
 plt.title(title)
 plt.xlabel('F_11')
-plt.ylabel('σ11')
+plt.ylabel('sigma11')
 sfig(title)
 plt.show()
 
-title = 'Cauchy stress component σ11 vs F11 - pure contraction'
+title = 'Cauchy stress component sigma11 vs F11 - pure contraction'
 plt.figure()
-plt.plot(F_11_vals, sigma11_Yeoh_vals, 'o-')
+plt.plot(F_11_vals, sigma11_yeoh, 'o-')
 plt.title(title)
 plt.xlabel('F_11')
-plt.ylabel('σ11')
+plt.ylabel('sigma11')
 sfig(title)
 plt.show()
 
