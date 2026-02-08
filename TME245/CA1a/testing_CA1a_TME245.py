@@ -497,9 +497,9 @@ for step in range(1, n_steps + 1):
     u_vals.append(current_u_gamma)
     force_history.append(Ry_sum)
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # Plot deformed mesh
-# -------------------------------------------------
+# ------------------------------------------------------------------
 def_polygons = np.zeros((nelem, 3, 2))
 
 # Magnification factor
@@ -524,9 +524,9 @@ ax2.add_collection(pc2)
 ax2.autoscale()
 ax2.set_title("Deformed mesh")
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # Plot stress
-# -------------------------------------------------
+# ------------------------------------------------------------------
 Es = np.zeros((nelem, 3))
 
 for el in range(nelem):
@@ -551,9 +551,9 @@ ax3.autoscale()
 ax3.set_title("sigma xx")
 fig2.colorbar(pc3, ax=ax3)
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # Plot graph
-# -------------------------------------------------
+# ------------------------------------------------------------------
 title = 'vertical reaction force vs uΓ'
 plt.figure()
 plt.plot(u_vals, force_history, 'X-')
@@ -570,6 +570,9 @@ new_subtask('Task 2 b) - Yeoh hyperelsatic material model')
 ####################################################################################################
 #===================================================================================================
 
+# ------------------------------------------------------------------
+# Define inputs
+# ------------------------------------------------------------------
 F_11_min = 0.5
 F_11_max = 1.5
 
@@ -584,7 +587,9 @@ D1 = 0.02 # 1 / MPa
 D2 = 0.01
 D3 = 0.01
 
-# Translation of matlab code in section 5.2.10:
+# ------------------------------------------------------------------
+# Translation of matlab code in section 5.2.10
+# ------------------------------------------------------------------
 def generate_deformation_gradient_functions():
     # Fv = sym(Fv,[4,1], real)
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) # Fv0, Fv1, Fv2, Fv3
@@ -645,6 +650,9 @@ def generate_deformation_gradient_functions():
 # print("\nCalculated Tangent Stiffness Matrix:")
 # print(K_result)
 
+# ------------------------------------------------------------------
+# Yeoh
+# ------------------------------------------------------------------
 def generate_yeoh_functions():
     # Deformation gradient components 
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
@@ -672,7 +680,9 @@ def generate_yeoh_functions():
     
     return P_func, A_func
 
-
+# ------------------------------------------------------------------
+# Neo-Hooke
+# ------------------------------------------------------------------
 def generate_neohooke_functions():
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
@@ -693,8 +703,9 @@ def generate_neohooke_functions():
     
     return P_func, A_func
 
-
+# ------------------------------------------------------------------
 # Generate the functions once
+# ------------------------------------------------------------------
 P_Yeoh_func, A_Yeoh_func = generate_yeoh_functions()
 P_Neo_func, A_Neo_func = generate_neohooke_functions()
 
@@ -702,9 +713,9 @@ printt('REFERENCE RESULTS, FOR VALIDATION:')
 print('Neo-Hooke: Cauchy stress sigma11 for F11 = 1.5 is ', 2.2525e01, ' MPa')
 print('Yeoh: Cauchy stress sigma11 for F11 = 1.5 is ',1.2142e02, ' MPa')
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # Plot graphs
-# -------------------------------------------------
+# ------------------------------------------------------------------
 title = 'Cauchy stress component σ11 vs F11 - pure elongation'
 plt.figure()
 plt.plot(1, 1)
@@ -732,7 +743,7 @@ new_subtask('Task 2 c) - Own element function')
 
 
 def deformation_gradient_2d(ae, Ex_el, Ey_el, xi, eta):
-    """Computes F at a specific point (xi, eta) in a T6 element."""
+    
     ue = ae.reshape(6, 2).T
     X_nodes = np.vstack([Ex_el, Ey_el])
     x_nodes = X_nodes + ue
@@ -775,31 +786,32 @@ new_subtask('Task 2 d) - Combine routines')
 ####################################################################################################
 #===================================================================================================
 
-# title = 'total vertical on the upper boundary of the rubber profile vs uΓ'
-# plt.figure()
-# plt.plot(..., ...)
-# plt.title(title)
-# plt.xlabel('uΓ [m]')
-# plt.ylabel('total vertical [m]')
-# plt.show()
-# sfig(title)
+title = 'total vertical on the upper boundary of the rubber profile vs uΓ'
+plt.figure()
+plt.plot(1, 1)
+plt.title(title)
+plt.xlabel('uΓ [m]')
+plt.ylabel('total vertical [m]')
+sfig(title)
+plt.show()
 
-# title = 'von Mises equivalent stress - coarse mesh'
-# plt.figure()
-# plt.plot(..., ...)
-# plt.title(title)
-# plt.xlabel('uΓ [m]')
-# plt.ylabel('total vertical [m]')
-# plt.show()
-# sfig(title)
+title = 'von Mises equivalent stress - coarse mesh'
+plt.figure()
+plt.plot(1, 1)
+plt.title(title)
+plt.xlabel('uΓ [m]')
+plt.ylabel('total vertical [m]')
+sfig(title)
+plt.show()
 
-# title = 'von Mises equivalent stress - fine mesh'
-# plt.figure()
-# plt.plot(..., ...)
-# plt.title(title)
-# plt.xlabel('uΓ [m]')
-# plt.ylabel('total vertical [m]')
-# plt.show()
-# sfig(title)
+title = 'von Mises equivalent stress - fine mesh'
+plt.figure()
+plt.plot(1, 1)
+plt.title(title)
+plt.xlabel('uΓ [m]')
+plt.ylabel('total vertical [m]')
+sfig(title)
+plt.show()
+
 
 #%%
