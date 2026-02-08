@@ -387,7 +387,7 @@ plt.ylabel('total vertical [m]')
 plt.show()
 sfig(title)
 
-title = 'on Mises equivalent stress - coarse mesh'
+title = 'von Mises equivalent stress - coarse mesh'
 plt.figure()
 plt.plot(..., ...)
 plt.title(title)
@@ -396,7 +396,7 @@ plt.ylabel('total vertical [m]')
 plt.show()
 sfig(title)
 
-title = 'on Mises equivalent stress - fine mesh'
+title = 'von Mises equivalent stress - fine mesh'
 plt.figure()
 plt.plot(..., ...)
 plt.title(title)
