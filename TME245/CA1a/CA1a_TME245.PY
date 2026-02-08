@@ -183,7 +183,7 @@ def read_toplogy_from_mat_file(filename):
     ey=mat_file['Ey']
     dof_upper=mat_file['dof_upper']
     dof_lower=mat_file['dof_lower']
-    height=mat_file['height']
+    # height=mat_file['height']
     ndofs=(mat_file['ndofs']).item()
     nelem=mat_file['nelem'].item()
     nnodes=mat_file['nnodes'].item()
@@ -191,17 +191,33 @@ def read_toplogy_from_mat_file(filename):
 
 #example 
 filename='topology_coarse_6node.mat'
-ex,ey,edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
+Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
+
+from matplotlib.collections import PolyCollection
+
+polygons = np.zeros((nelem, 3, 2))
+for el in range(nelem):
+    polygons[el,:,:] = [[Ex[el,0],Ey[el,0]], [Ex[el,1],Ey[el,1]], [Ex[el,2],Ey[el,2]]]
+    
+
+fig1, ax1 = plt.subplots()
+pc1 = PolyCollection(
+    polygons,
+    facecolors='none',
+    edgecolors='k'
+)
+ax1.add_collection(pc1)
+ax1.autoscale()
 
 
-title = 'vertical reaction force vs uΓ'
-plt.figure()
-plt.plot(..., ...)
-plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('vertical reaction force [N]')
-plt.show()
-sfig(title)
+# title = 'vertical reaction force vs uΓ'
+# plt.figure()
+# plt.plot(..., ...)
+# plt.title(title)
+# plt.xlabel('uΓ [m]')
+# plt.ylabel('vertical reaction force [N]')
+# plt.show()
+# sfig(title)
 
 #%%
 #===================================================================================================

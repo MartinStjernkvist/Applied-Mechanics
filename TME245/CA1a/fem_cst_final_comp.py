@@ -383,7 +383,7 @@ fig2.colorbar(pc3, ax=ax3)
 #%% For help how to read data from mat files
 import scipy.io as sio
 #mat_file=sio.loadmat('Matlab_solution/topology_coarse_3node.mat')
-mat_file=sio.loadmat('Matlab_solution/topology_fine_3node.mat')
+mat_file=sio.loadmat('topology_fine_3node.mat')
 Edof=mat_file['Edof']; Edof = Edof.astype(int)
 nel=Edof.shape[0]
 Dof=mat_file['Dof']; Dof = Dof.astype(int)  
