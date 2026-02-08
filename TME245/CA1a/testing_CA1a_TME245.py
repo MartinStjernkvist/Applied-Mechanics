@@ -1143,42 +1143,6 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
                 print(f"\n*** ERROR: Some BC DOFs are out of range! ***")
                 print(f"  Out of range DOFs: {bc_dofs[(bc_dofs < 0) | (bc_dofs >= ndof)]}")
         
-        for it in range(max_iter):
-            # ------------------------------------------------------------------
-            # Assembly - EFFICIENT VERSION using precomputed pattern
-            # ------------------------------------------------------------------
-            # Preallocate data array (reuse pattern arrays)
-            data = np.empty(nnz_total, dtype=float)
-            f_int = np.zeros(ndof)
-            
-            # --- Element Loop ---
-            for el in range(nel):
-                # Edof is 1-based from Matlab, convert to 0-based
-                edof_indices = Edof[el, 1:].astype(int) - 1 
-                
-                u_loc = a[edof_indices]
-                ex_el = Ex[el, :]
-                ey_el = Ey[el, :]
-                
-                # CALL ELEMENT ROUTINE
-                Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=100e-3) 
-                
-                # Check for Element Failure (NaN)
-                if np.any(np.isnan(fe)):
-                    print(f"\n[Error] Element {el} inverted (NaN force). Solver stopped.")
-                    return a, disp_history, force_history
-                
-                # Accumulate internal force
-                f_int[edof_indices] += fe
-                
-                # Store stiffness data using precomputed pattern
-                idx_start = el * nnz_per_el
-                idx_end = idx_start + nnz_per_el
-                data[idx_start:idx_end] = Ke.ravel()
-                
-            # Create Global Stiffness using precomputed pattern
-            K_global = coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
-        
         # for it in range(max_iter):
         #     # Assembly
         #     rows, cols, data = [], [], []
@@ -1215,9 +1179,45 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
             
             # Calculate Residual: r = F_ext - F_int
             # For free DOFs, F_ext = 0, so r = -F_int
+            
+        for it in range(max_iter):
+            # ------------------------------------------------------------------
+            # Assembly - EFFICIENT VERSION using precomputed pattern
+            # ------------------------------------------------------------------
+            # Preallocate data array (reuse pattern arrays)
+            data = np.empty(nnz_total, dtype=float)
+            f_int = np.zeros(ndof)
+            
+            # --- Element Loop ---
+            for el in range(nel):
+                # Edof is 1-based from Matlab, convert to 0-based
+                edof_indices = Edof[el, 1:].astype(int) - 1 
+                
+                u_loc = a[edof_indices]
+                ex_el = Ex[el, :]
+                ey_el = Ey[el, :]
+                
+                # CALL ELEMENT ROUTINE
+                Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=100e-3) 
+                
+                # Check for Element Failure (NaN)
+                if np.any(np.isnan(fe)):
+                    print(f"\n[Error] Element {el} inverted (NaN force). Solver stopped.")
+                    return a, disp_history, force_history
+                
+                # Accumulate internal force
+                f_int[edof_indices] += fe
+                
+                # Store stiffness data using precomputed pattern
+                idx_start = el * nnz_per_el
+                idx_end = idx_start + nnz_per_el
+                data[idx_start:idx_end] = Ke.ravel()
+                
+            # Create Global Stiffness using precomputed pattern
+            K_global = coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
+        
             free_dofs = np.setdiff1d(np.arange(ndof), bc_dofs)
             r = -f_int[free_dofs]
-            
             res_norm = np.linalg.norm(r)
             
             # Check Convergence
@@ -1272,7 +1272,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
 # ------------------------------------------------------------------
 printt('Run solver')
 # ------------------------------------------------------------------
-a, disp_history, force_history = solve_task_2d('topology_coarse_6node.mat', n_steps=50, tol=1e-5)
+a, disp_history, force_history = solve_task_2d('topology_coarse_6node.mat', n_steps=30, tol=1e-5, u_final=0.02)
 
 #%%
 
