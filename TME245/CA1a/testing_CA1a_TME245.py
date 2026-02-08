@@ -593,7 +593,6 @@ D3 = 0.01e-6
 # Yeoh
 # ------------------------------------------------------------------
 def generate_yeoh_functions():
-    # Deformation gradient components 
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
     F = sp.Matrix([
@@ -609,13 +608,13 @@ def generate_yeoh_functions():
     U0_val = c10 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3) \
             + c20 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**2 \
             + c30 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**3 \
-            + (1/D1) * (J - 1)**2 \
-            + (1/D2) * (J - 1)**4 \
-            + (1/D3) * (J - 1)**6
+            + (1 / D1) * (J - 1)**2 \
+            + (1 / D2) * (J - 1)**4 \
+            + (1 / D3) * (J - 1)**6
 
     P_vec = sp.diff(U0_val, Fv)
     
-    A = P_vec.jacobian(Fv)
+    dPvdFv = P_vec.jacobian(Fv)
     
     P_mat = sp.Matrix([
         [P_vec[0], P_vec[2], 0],
@@ -629,10 +628,10 @@ def generate_yeoh_functions():
     
     # Lambdify
     P_func = sp.lambdify(Fv, P_vec, modules="numpy")
-    A_func = sp.lambdify(Fv, A, modules="numpy")
+    dPvdFv_func = sp.lambdify(Fv, dPvdFv, modules="numpy")
     S_func = sp.lambdify([Fv], S_vec_out, modules='numpy')
     
-    return P_func, A_func, S_func
+    return P_func, dPvdFv_func, S_func
 
 # ------------------------------------------------------------------
 # Neo-Hooke
@@ -688,20 +687,21 @@ def generate_neohooke_functions():
 # ------------------------------------------------------------------
 # Generate the functions once
 # ------------------------------------------------------------------
-P_Yeoh_func, A_Yeoh_func, S_Yeoh_func = generate_yeoh_functions()
-P_Neo_func, A_Neo_func, S_Neo_func = generate_neohooke_functions()
+P_Yeoh_func, dPvdFv_Yeoh_func, S_Yeoh_func = generate_yeoh_functions()
+P_Neo_func, dPvdFv_Neo_func, S_Neo_func = generate_neohooke_functions()
 
 # ------------------------------------------------------------------
 # Solve
 # ------------------------------------------------------------------
 sigma11_yeoh = []
-sigma11_nh = []
+sigma11_neo = []
 
 for f11 in F_11_vals:
-    # Uniaxial Strain Condition:
-    # F11 = varying, F22 = 1.0 (constrained), F33 = 1.0
-    # Shears are 0.
+    # F11 = varying, F22 = 1.0, F33 = 1.0
     F_vec_input = [f11, 0.0, 0.0, 1.0] 
+    
+    # Calculate Cauchy stress
+    J = f11 * 1.0
     
     # ------------------------------------------------------------------
     # Yeoh
@@ -709,23 +709,21 @@ for f11 in F_11_vals:
     s_vals_yeoh = S_Yeoh_func(F_vec_input)
     s11_yeoh = s_vals_yeoh[0][0]
     
-    # Calculate Cauchy stress
-    J = f11 * 1.0
-    sig_yeoh = (1/J) * f11 * s11_yeoh * f11
+    sig_yeoh = (1 / J) * f11 * s11_yeoh * f11
     sigma11_yeoh.append(sig_yeoh)
     
     # ------------------------------------------------------------------
     # Neo-Hooke
     # ------------------------------------------------------------------
-    s_vals_nh = S_Neo_func(F_vec_input)
-    s11_nh = s_vals_nh[0][0]
+    s_vals_neo = S_Neo_func(F_vec_input)
+    s11_neo = s_vals_neo[0][0]
     
-    sig_nh = (1/J) * f11 * s11_nh * f11
-    sigma11_nh.append(sig_nh)
+    sig_neo = (1 / J) * f11 * s11_neo * f11
+    sigma11_neo.append(sig_neo)
 
 printt('Validate results:')
-print(f'Yeoh sigma11: {sigma11_yeoh[-1]:.4e} MPa (Ref: 1.2142e02)')
-print(f'Neo-Hooke sigma11:   {sigma11_nh[-1]:.4e} MPa (Ref: 2.2525e01)')
+print(f'Yeoh sigma11: {sigma11_yeoh[-1]:.4e} MPa (ref: 1.2142e02)')
+print(f'Neo-Hooke sigma11: {sigma11_neo[-1]:.4e} MPa (ref: 2.2525e01)')
 
 # ------------------------------------------------------------------
 # Plot graphs
@@ -755,43 +753,166 @@ new_subtask('Task 2 c) - Own element function')
 ####################################################################################################
 #===================================================================================================
 
-
-def deformation_gradient_2d(ae, Ex_el, Ey_el, xi, eta):
+def shape_fun_tri6(xi, eta):
     
-    ue = ae.reshape(6, 2).T
-    X_nodes = np.vstack([Ex_el, Ey_el])
-    x_nodes = X_nodes + ue
+    L = 1.0 - xi - eta
     
-    # Derivatives dN/dxi (Same as in t6_element above)
-    dN_dxi = np.array([
-            [4*xi + 4*eta - 3,  4*xi + 4*eta - 3],
-            [4*xi - 1,          0               ],
-            [0,                 4*eta - 1       ],
-            [4 - 8*xi - 4*eta, -4*xi            ],
-            [4*eta,             4*xi            ],
-            [-4*eta,            4 - 4*xi - 8*eta]
-    ]).T
+    # Shape functions
+    N = np.zeros(6)
+    N[0] = L * (2 * L - 1)      # Node 1 (0,      0)
+    N[1] = xi * (2 * xi - 1)    # Node 2 (1,      0)
+    N[2] = eta * (2 * eta - 1)  # Node 3 (0,      1)
+    N[3] = 4 * xi * L         # Node 4 (0.5,    0)
+    N[4] = 4 * xi * eta       # Node 5 (0.5,    0.5)
+    N[5] = 4 * eta * L        # Node 6 (0,      0.5)
     
-    J_mat = X_nodes @ dN_dxi.T
-    detJ = J_mat[0,0]*J_mat[1,1] - J_mat[0,1]*J_mat[1,0]
-    J_inv = np.array([[J_mat[1,1], -J_mat[0,1]], [-J_mat[1,0], J_mat[0,0]]]) / detJ
-    dN_dX = J_inv @ dN_dxi
+    dN = np.zeros((2, 6))
     
-    F = x_nodes @ dN_dX.T
-    return F
+    # dN/dxi
+    dN[0, 0] = 1 - 4 * L
+    dN[0, 1] = 4 * xi - 1
+    dN[0, 2] = 0
+    dN[0, 3] = 4 * (L - xi)
+    dN[0, 4] = 4 * eta
+    dN[0, 5] = -4 * eta
+    
+    # dN/deta
+    dN[1, 0] = 1 - 4 * L
+    dN[1, 1] = 0
+    dN[1, 2] = 4 * eta - 1
+    dN[1, 3] = -4 * xi
+    dN[1, 4] = 4 * xi
+    dN[1, 5] = 4 * (L - eta)
+    
+    return N, dN
 
-def Piola_Kirchoff_2d():
-    pass
+def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
+    
+    Ke = np.zeros((12, 12))
+    fe = np.zeros(12)
+    
+    # Gauss integration
+    gps = [
+        (1.0/6.0, 1.0/6.0),
+        (2.0/3.0, 1.0/6.0),
+        (1.0/6.0, 2.0/3.0)
+    ]
+    w_gp = 1.0/6.0
+    
+    # For validation storage
+    F_list = []
+    P_list = []
+    
+    # Current coordinates
+    x_nodes = ex + u[0::2]
+    y_nodes = ey + u[1::2]
+    
+    # Reference coordinates matrix
+    X_ref = np.vstack([ex, ey])
+    # Current coordinates matrix
+    x_curr = np.vstack([x_nodes, y_nodes])
+    
+    for (xi, eta) in gps:
+        # Shape functions
+        N, dN_dxi = shape_fun_tri6(xi, eta)
+        
+        # Jacobian of mapping
+        J_geo = X_ref @ dN_dxi.T
+        det_J = np.linalg.det(J_geo)
+        
+        # Derivatives w.r.t Physical Reference Coordinates X
+        inv_J = np.linalg.inv(J_geo)
+        dN_dX = inv_J.T @ dN_dxi  # (2x6)
+        
+        # Deformation Gradient F
+        F_mat = x_curr @ dN_dX.T
+        F_vec = np.array([F_mat[0,0], F_mat[1,0], F_mat[0,1], F_mat[1,1]])
+        
+        # Lambdified functions
+        P_out = P_Yeoh_func(*F_vec)
+        A_out = dPvdFv_Yeoh_func(*F_vec)
 
-def fe_int():
-    pass
+        # Convert outputs to numpy arrays with expected shapes
+        P_vec_val = np.asarray(P_out).reshape(-1)
+        A_mat_val = np.asarray(A_out).reshape((4,4))
+        
+        # Reconstruct P matrix (2x2) from P_vec
+        P_tensor = np.array([
+            [P_vec_val[0], P_vec_val[2]],
+            [P_vec_val[1], P_vec_val[3]]
+        ])
+        
+        # Store for validation
+        if return_validation:
+            F_list.append(F_vec.copy())
+            P_list.append(P_vec_val.copy())
+        
+        # fe = integral(B^T * P)
+        dv = det_J * w_gp * thickness
+        
+        f_local = P_tensor @ dN_dX 
+        fe += f_local.flatten('F') * dv
+        
+        B_gen = np.zeros((4, 12))
+        for a in range(6):
+            # u_a is at index 2*a, v_a is at 2*a+1
+            dN_dX1 = dN_dX[0, a]
+            dN_dX2 = dN_dX[1, a]
+            
+            # Row 0 (F11): corresponds to u_a * dN/dX1
+            B_gen[0, 2*a]   = dN_dX1
+            
+            # Row 1 (F21): corresponds to v_a * dN/dX1
+            B_gen[1, 2*a+1] = dN_dX1
+            
+            # Row 2 (F12): corresponds to u_a * dN/dX2
+            B_gen[2, 2*a]   = dN_dX2
+            
+            # Row 3 (F22): corresponds to v_a * dN/dX2
+            B_gen[3, 2*a+1] = dN_dX2
+            
+        # Ke contribution
+        Ke += B_gen.T @ A_mat_val @ B_gen * dv
 
-def Ke_int():
-    pass
+    if return_validation:
+        return Ke, fe, np.array(F_list), np.array(P_list)
+    return Ke, fe
+
+
+X_ref = np.array([
+    [0.0, 0.0], # 1
+    [3.0, 0.0], # 2
+    [0.0, 2.0], # 3
+    [1.5, 0.0], # 4
+    [1.5, 1.0], # 5
+    [0.0, 1.0]  # 6
+])
+
+x_curr = np.array([
+    [6.0, 0.7], # 1
+    [7.0, 2.3], # 2
+    [4.5, 1.8],  # 3
+    [6.4, 1.2], # 4
+    [5.6, 2.0], # 5
+    [5.2, 1.1]  # 6
+])
+
+ex_ref = X_ref[:, 0].T
+ey_ref = X_ref[:, 1].T
+
+u = (x_curr - X_ref).flatten()
+
+Ke_val, fe_val, F_res, P_res = el6_yeoh(ex_ref, ey_ref, u, thickness=0.001, return_validation=True)
 
 printt('REFERENCE RESULTS, FOR VALIDATION:')
-print('See problem formulation')
-
+print('deformation_gradient_2d:')
+print(F_res.T)
+print('\nPiola_Kirchoff_2d:')
+print(P_res.T)
+print('\nfe_int:')
+print(fe_val)
+print('\nKe_int top (8x8):')
+print(Ke_val[0:8, 0:8])
 
 #%%
 #===================================================================================================
