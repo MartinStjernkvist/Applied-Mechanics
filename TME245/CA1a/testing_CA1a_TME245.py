@@ -551,14 +551,17 @@ ax3.autoscale()
 ax3.set_title("sigma xx")
 fig2.colorbar(pc3, ax=ax3)
 
-# title = 'vertical reaction force vs uΓ'
-# plt.figure()
-# plt.plot(..., ...)
-# plt.title(title)
-# plt.xlabel('uΓ [m]')
-# plt.ylabel('vertical reaction force [N]')
-# plt.show()
-# sfig(title)
+# -------------------------------------------------
+# Plot graph
+# -------------------------------------------------
+title = 'vertical reaction force vs uΓ'
+plt.figure()
+plt.plot(u_vals, force_history, 'X-')
+plt.title(title)
+plt.xlabel('uΓ [m]')
+plt.ylabel('vertical reaction force [N]')
+plt.show()
+sfig(title)
 
 #%%
 #===================================================================================================
@@ -572,21 +575,14 @@ F_11_max = 1.5
 
 G_val = E_val / (2 * (1 + nu_val))
 lam_val = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
+
+# Yeoh Parameters
 c10 = G_val / 2
 c20 = - G_val / 10
 c30 = G_val / 30
 D1 = 0.02 # 1 / MPa
 D2 = 0.01
 D3 = 0.01
-
-def U0(C, J):
-    ans = c10 * (J**(-2/3) * np.trace(C) -3) 
-    + c20 * (J**(-2/3) * np.trace(C) -3)**2 
-    + c30 * (J**(-2/3) * np.trace(C) -3)**3 
-    + (1 / D1) * (J -1)**2 
-    + (1 / D2) * (J -1)**4 
-    + (1 / D3) * (J - 1)**6
-    return ans
 
 # Translation of matlab code in section 5.2.10:
 def generate_deformation_gradient_functions():
@@ -649,38 +645,8 @@ def generate_deformation_gradient_functions():
 # print("\nCalculated Tangent Stiffness Matrix:")
 # print(K_result)
 
-
-
-# Matlab example 8
-# Xe1n=[0 0];Xe2n=[40];Xe3n=[03];
-# Be0n=Be0_cst_largedef_func(Xe1n,Xe2n,Xe3n);
-# ae=[4+3/2 3/2 3/2+3 3 4+3/2+3/2 3/2];
-# F2d=[1 1 0 0]+Be0n*ae;
-# %material model
-# mu=3; lambda=2;
-# Pn=P_NH_func(F2d,mu,lambda)
-# =-5.1291e+00-2.5343e+00
-# 4.2672e+00
-# 4.8145e+00
-# dPdFn=dPdF_NH_func(F2d,mu,lambda)
-# 2.2439e+01 7.2004e+00-7.2898e+00-9.7197e+00
-# 7.2004e+00 1.3935e+01-5.4673e+00-7.2898e+00-7.2898e+00-5.4673e+00 5.7337e+00 1.1024e+01-9.7197e+00-7.2898e+00 1.1024e+01 7.8598e+00
-# %element area
-# Ae=Ae_cst_func(Xe1n,Xe2n,Xe3n);
-# %element thickness
-# h0=1;
-# %node forces due to deformation
-# fe_int=Be0n*Pn*Ae*h0-8.4070e-01-2.1532e+00-7.6936e+00
-# 7.2218e+00
-# 8.5343e+00-5.0686e+00
-# %corresponding stiffness
-# Ke_int=Be0n*dPdFn*Be0n*Ae*h0
-# 4.9474e+00 1.8224e+00-4.7699e+00-1.8671e+00-1.7756e-01 4.4660e-02
-# 1.8224e+00 4.9474e+00 4.4660e-02 6.9744e-01-1.8671e+00-5.6449e+00-4.7699e+00 4.4660e-02 8.4148e+00-3.6449e+00-3.6449e+00 3.6002e+00-1.8671e+00 6.9744e-01-3.6449e+00 2.9474e+00 5.5120e+00-3.6449e+00-1.7756e-01-1.8671e+00-3.6449e+00 5.5120e+00 3.8224e+00-3.6449e+00
-# 4.4660e-02-5.6449e+00 3.6002e+00-3.6449e+00-3.6449e+00 9.2898e+00
-
 def generate_yeoh_functions():
-    # Deformation gradient components (column-major vector form F11, F21, F12, F22)
+    # Deformation gradient components 
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
     # Reconstruct 2x2 F matrix
@@ -690,15 +656,10 @@ def generate_yeoh_functions():
     # Large deformation kinematics
     C = F.T * F
     J = F.det()
-    
-    # Yeoh Strain Energy Potential U0(C, J)
-    # Invariants for compressible Yeoh model
-    # I1_bar = J^(-2/3) * tr(C)
-    I1_bar = J**(-sp.Rational(2, 3)) * sp.trace(C)
             
-    U0_val = c10 * (I1_bar - 3) + \
-            c20 * (I1_bar - 3)**2 + \
-            c30 * (I1_bar - 3)**3 + \
+    U0_val = c10 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3) + \
+            c20 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**2 + \
+            c30 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**3 + \
             (1/D1) * (J - 1)**2 + \
             (1/D2) * (J - 1)**4 + \
             (1/D3) * (J - 1)**6
@@ -706,10 +667,10 @@ def generate_yeoh_functions():
     # Derivatives
     P = sp.diff(U0_val, Fv)
     
-    # Tangent Stiffness A = dP/dF (4x4 matrix in Voigt notation)
+    # Tangent Stiffness A = dP/dF
     A = P.jacobian(Fv)
 
-    # Lambdify for numerical efficiency
+    # Lambdify
     P_func = sp.lambdify((Fv), P, modules="numpy")
     A_func = sp.lambdify((Fv), A, modules="numpy")
     
@@ -717,13 +678,8 @@ def generate_yeoh_functions():
 
 
 def generate_neohooke_functions():
-    # -------------------------------------------------
-    # Symbol definitions
-    # -------------------------------------------------
-    # Deformation gradient components (column-major F11, F21, F12, F22)
+    # Deformation gradient components
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
-    # Material parameters
-    mu, lam = sp.symbols('mu lam', real=True)
     
     # Reconstruct 2x2 F matrix
     F = sp.Matrix([[Fv[0], Fv[2]], 
@@ -734,35 +690,24 @@ def generate_neohooke_functions():
     J = F.det()
     I1 = sp.trace(C)
     
-    # -------------------------------------------------
     # Strain Energy Potential U0(C, J)
-    # -------------------------------------------------
-    # Standard Compressible Neo-Hooke
-    U0 = (mu / 2) * (I1 - 3) - mu * sp.log(J) + (lam / 2) * (sp.log(J))**2
+    U0 = (G_val / 2) * (I1 - 3) - G_val * sp.log(J) + (lam_val / 2) * (sp.log(J))**2
     
-    # -------------------------------------------------
     # Derivatives
-    # -------------------------------------------------
-    # First Piola-Kirchhoff stress P = dU0/dF
     P = sp.diff(U0, Fv)
     
     # Material Tangent Stiffness A = dP/dF (4x4 matrix)
     A = P.jacobian(Fv)
 
-    # -------------------------------------------------
     # Lambdify
-    # -------------------------------------------------
-    print("Generating Neo-Hooke numerical functions...")
-    P_func = sp.lambdify((Fv, mu, lam), P, modules="numpy")
-    A_func = sp.lambdify((Fv, mu, lam), A, modules="numpy")
+    P_func = sp.lambdify((Fv), P, modules="numpy")
+    A_func = sp.lambdify((Fv), A, modules="numpy")
     
     return P_func, A_func
 
 
 # Generate the functions once
 P_Yeoh_func, A_Yeoh_func = generate_yeoh_functions()
-
-# Create the functions globally
 P_Neo_func, A_Neo_func = generate_neohooke_functions()
 
 printt('REFERENCE RESULTS, FOR VALIDATION:')
