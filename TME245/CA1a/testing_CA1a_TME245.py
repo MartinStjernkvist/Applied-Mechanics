@@ -163,14 +163,14 @@ new_subtask('Task 2 - CE1 ')
 ####################################################################################################
 #===================================================================================================
 
-# -------------------------------------------------
+# ------------------------------------------------------------------
+# Be, Ae
+# ------------------------------------------------------------------
+
 # Isoparametric coordinates
-# -------------------------------------------------
 xi1, xi2 = sp.symbols('xi1 xi2', real=True)
 
-# -------------------------------------------------
 # Node positions (vectors)
-# -------------------------------------------------
 xi = sp.Matrix([xi1, xi2])
 xe1_1, xe1_2 = sp.symbols('xe1_1 xe1_2', real=True)
 xe2_1, xe2_2 = sp.symbols('xe2_1 xe2_2', real=True)
@@ -190,9 +190,7 @@ dN1_dxi = sp.Matrix([sp.diff(N1, xi1), sp.diff(N1, xi2)])
 dN2_dxi = sp.Matrix([sp.diff(N2, xi1), sp.diff(N2, xi2)])
 dN3_dxi = sp.Matrix([sp.diff(N3, xi1), sp.diff(N3, xi2)])
 
-# -------------------------------------------------
 # Mapping and Jacobian
-# -------------------------------------------------
 x = N1*xe1 + N2*xe2 + N3*xe3
 J = x.jacobian(xi)
 J_inv_T = J.inv().T
@@ -202,9 +200,7 @@ dN1_dx = sp.simplify(J_inv_T * dN1_dxi)
 dN2_dx = sp.simplify(J_inv_T * dN2_dxi)
 dN3_dx = sp.simplify(J_inv_T * dN3_dxi)
 
-# -------------------------------------------------
 # B-matrix
-# -------------------------------------------------
 Be = sp.Matrix([
 [dN1_dx[0], 0, dN2_dx[0], 0, dN3_dx[0], 0],
 [0, dN1_dx[1], 0, dN2_dx[1], 0, dN3_dx[1]],
@@ -213,13 +209,14 @@ Be = sp.Matrix([
 
 Ae = sp.simplify(0.5 * J.det())
 
-# -------------------------------------------------
 # Callable functions
-# -------------------------------------------------
 Be_func_cst = sp.lambdify((xe1, xe2, xe3), Be, modules="numpy")
 Ae_func = sp.lambdify((xe1, xe2, xe3), Ae, modules="numpy")
 
-# Precompute sparse pattern once to save computation time during assembly
+# ------------------------------------------------------------------
+# To save computation time during assembly:
+# Precompute sparse pattern once
+# ------------------------------------------------------------------
 def precompute_pattern(Edof):
     Edof0 = Edof[:, 1:].astype(np.int64) - 1
     nel, ndofe = Edof0.shape
@@ -241,7 +238,10 @@ def precompute_pattern(Edof):
 
     return rows, cols
 
-# To save computation time, we precompute Be and Ae matrices for all elements and gauss points
+# ------------------------------------------------------------------
+# To save computation time:
+# precompute Be and Ae matrices for all elements and gauss points
+# ------------------------------------------------------------------
 def create_Be_Ae_matrix(nel, Ex, Ey):
     
     ngp=1 #number of Gauss points
@@ -262,14 +262,15 @@ def create_Be_Ae_matrix(nel, Ex, Ey):
             
     return Be_matrix, Ae_matrix
 
-# This assembling routine uses precomputed COO pattern and precomputed Be and Ae matrices
+# ------------------------------------------------------------------
+# Assembling routine uses precomputed COO pattern 
+# and precomputed Be and Ae matrices
+# ------------------------------------------------------------------
 def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickness,my_element):
     
     Be_matrix, Ae_matrix = create_Be_Ae_matrix(nel, Ex, Ey)
     
-    # ------------------------------------------------------------------
     # Initialize global internal force vector
-    # ------------------------------------------------------------------
     f_ext = np.zeros(ndof, dtype=float)
 
     # Number of DOFs per element (e.g. 12 for tri6 with 2 DOF/node)
@@ -278,16 +279,13 @@ def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickne
     # Each element contributes a dense (ndofe x ndofe) stiffness block
     nnz_per_el = ndofe * ndofe
     nnz_total = nel * nnz_per_el
-    # ------------------------------------------------------------------
+    
     # Preallocate COO triplet arrays (row, col, value)
-    # ------------------------------------------------------------------
     data = np.empty(nnz_total, dtype=float)
     # Pointer into the preallocated triplet arrays
     p = 0
 
-    # ------------------------------------------------------------------
     # Element loop
-    # ------------------------------------------------------------------
     for el in range(nel):
         # Element DOF indices
         edof = Edof[el, 1:].astype(np.int64) -1
@@ -299,15 +297,11 @@ def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickne
         # Assemble internal force contributions
         f_ext[edof] += fe
 
-        # ------------------------------------------------------------------
         # Assemble stiffness using COO triplets
-        # ------------------------------------------------------------------
         data[p:p + nnz_per_el] = Ke.ravel()
         p += nnz_per_el
 
-    # ------------------------------------------------------------------
     # Build global stiffness matrix and convert to CSR for efficient slicing/solves
-    # ------------------------------------------------------------------
     K = coo_matrix((data, (rows, cols)), shape=(ndof, ndof)).tocsr()
 
     # Sum duplicate entries (multiple elements contribute to same (i,j) location)
@@ -315,34 +309,19 @@ def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickne
 
     return K, f_ext
 
-def cst_element(ae, el, Be_matrix, Ae_matrix, D, body, h): # Ex, Ey, D, body, h):
+# ------------------------------------------------------------------
+# Constant strain element
+# ------------------------------------------------------------------
+def cst_element(ae, el, Be_matrix, Ae_matrix, D, body, h):
     ngp=1; fe=np.zeros(6); Ke=np.zeros((6,6))
-    #x1 = np.array([Ex[el,0], Ey[el,0]])
-    #x2 = np.array([Ex[el,1], Ey[el,1]])
-    #x3 = np.array([Ex[el,2], Ey[el,2]])
 
     for gp in range(ngp):
         Ae = Ae_matrix[el, gp]
-        Be = Be_matrix[el, gp, :, :]  # Be_func_cst(x1, x2, x3)
+        Be = Be_matrix[el, gp, :, :]
         fe = np.tile(body[el], 3) * Ae / 3
         Ke = Be.T @ D @ Be * Ae * h  
              
     return fe, Ke
-
-# Edge load contribution function
-def fe_edge(coords1, coords2, p, h=1):
-    
-    vec = coords2 - coords1
-    n = np.array([vec[1], -vec[0]]).T
-    n_unit = n / np.linalg.norm(n)
-    
-    tn = -p * n_unit
-    Le = np.linalg.norm(vec)
-    
-    force = tn * h * Le / 2
-    fe = np.array([force[0], force[1], force[0], force[1]])
-    return fe
-
 
 #%%
 #===================================================================================================
@@ -398,6 +377,9 @@ def read_toplogy_from_mat_file(filename):
 filename='topology_coarse_3node.mat'
 Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
 
+# ------------------------------------------------------------------
+# Plot undeformed mesh
+# ------------------------------------------------------------------
 from matplotlib.collections import PolyCollection
 
 polygons = np.zeros((nelem, 3, 2))
@@ -406,9 +388,6 @@ for el in range(nelem):
                         [Ex[el,1], Ey[el,1]], 
                         [Ex[el,2], Ey[el,2]]]
     
-# ------------------------------------------------------------------
-# Plot undeformed mesh
-# ------------------------------------------------------------------
 fig1, ax1 = plt.subplots()
 pc1 = PolyCollection(
     polygons,
@@ -425,7 +404,7 @@ ndofs = 2 * nnodes
 rows, cols= precompute_pattern(Edof)
 
 # ------------------------------------------------------------------
-# Simulation parameters
+# Simulation parameters, store results
 # ------------------------------------------------------------------
 n_steps = 10 # Number of time steps
 tol = 1e-6 # Newton tolerance
@@ -433,16 +412,10 @@ max_iter = 10 # Max iterations
 thickness = h_val # Thickness h
 body = np.zeros(nelem) # No body force
 
-# ------------------------------------------------------------------
-# Store results
-# ------------------------------------------------------------------
 disp_history = []
 force_history = []
 u_vals = []
 
-# ------------------------------------------------------------------
-# Target displacement
-# ------------------------------------------------------------------
 # LC1: u_gamma = +20mm
 # LC2: u_gamma = -15mm
 target_displacement = 20e-3
@@ -484,7 +457,7 @@ for step in range(1, n_steps + 1):
     a[bc_dofs] = bc_vals
     
     # Newton-Raphson Loop
-    print(f"Step {step}/{n_steps}, disp: {current_u_gamma:.4e} m")
+    print(f"\nStep {step}/{n_steps}, disp: {current_u_gamma:.2e} m")
     
     for i in range(max_iter):
         K, f_ext = assemble_K_fint_coo(a, Edof, rows, cols, ndofs, nelem, Ex, Ey, D, body, h_val, my_element=cst_element)
@@ -569,9 +542,10 @@ for el in range(nelem):
 fig3, ax3 = plt.subplots()
 pc3 = PolyCollection(
     polygons,
-    array=Es[:,0], # values used for coloring 
+    array=Es[:,0], 
     cmap='turbo', 
-    edgecolors='k')
+    edgecolors='k'
+)
 ax3.add_collection(pc3)
 ax3.autoscale()
 ax3.set_title("sigma xx")
@@ -706,9 +680,6 @@ def generate_deformation_gradient_functions():
 # 4.4660e-02-5.6449e+00 3.6002e+00-3.6449e+00-3.6449e+00 9.2898e+00
 
 def generate_yeoh_functions():
-    # -------------------------------------------------
-    # Symbol definitions
-    # -------------------------------------------------
     # Deformation gradient components (column-major vector form F11, F21, F12, F22)
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
@@ -720,51 +691,32 @@ def generate_yeoh_functions():
     C = F.T * F
     J = F.det()
     
-    # -------------------------------------------------
     # Yeoh Strain Energy Potential U0(C, J)
-    # -------------------------------------------------
     # Invariants for compressible Yeoh model
     # I1_bar = J^(-2/3) * tr(C)
     I1_bar = J**(-sp.Rational(2, 3)) * sp.trace(C)
-    
-    # Deviatoric part
-    W_dev = c10 * (I1_bar - 3) + \
-            c20 * (I1_bar - 3)**2 + \
-            c30 * (I1_bar - 3)**3
             
-    # Volumetric part
-    W_vol = (1/D1) * (J - 1)**2 + \
+    U0_val = c10 * (I1_bar - 3) + \
+            c20 * (I1_bar - 3)**2 + \
+            c30 * (I1_bar - 3)**3 + \
+            (1/D1) * (J - 1)**2 + \
             (1/D2) * (J - 1)**4 + \
             (1/D3) * (J - 1)**6
-            
-    U0_val = W_dev + W_vol
 
-    # -------------------------------------------------
     # Derivatives
-    # -------------------------------------------------
-    # First Piola-Kirchhoff stress P = dU0/dF
     P = sp.diff(U0_val, Fv)
     
     # Tangent Stiffness A = dP/dF (4x4 matrix in Voigt notation)
     A = P.jacobian(Fv)
 
-    # -------------------------------------------------
     # Lambdify for numerical efficiency
-    # -------------------------------------------------
-    print("Generating Yeoh numerical functions...")
     P_func = sp.lambdify((Fv), P, modules="numpy")
-    A_func = sp.lambdify((Fv, c10, c20, c30, D1, D2, D3), A, modules="numpy")
+    A_func = sp.lambdify((Fv), A, modules="numpy")
     
     return P_func, A_func
 
 
 def generate_neohooke_functions():
-    """
-    Generates numerical functions for the Neo-Hooke material model 
-    using SymPy differentiation.
-    """
-    import sympy as sp
-    
     # -------------------------------------------------
     # Symbol definitions
     # -------------------------------------------------
