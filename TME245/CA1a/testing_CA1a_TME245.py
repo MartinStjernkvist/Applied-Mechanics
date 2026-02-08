@@ -474,7 +474,7 @@ for step in range(1, n_steps + 1):
         # Check convergence
         res_norm = np.linalg.norm(r_F)
         if res_norm < tol:
-            print(f'Converged in {i} iterations, residual: {res_norm:.2e}')
+            print(f'Converged in {i} iterations, \nresidual: {res_norm:.2e}')
             break
             
         # Solve for increment
@@ -560,8 +560,8 @@ plt.plot(u_vals, force_history, 'X-')
 plt.title(title)
 plt.xlabel('uΓ [m]')
 plt.ylabel('vertical reaction force [N]')
-plt.show()
 sfig(title)
+plt.show()
 
 #%%
 #===================================================================================================
@@ -599,7 +599,7 @@ def generate_deformation_gradient_functions():
         [0,     0,     1]
     ])
 
-    # MATLAB: C=F*F (Note: Standard mechanics is usually F.T * F, but translating literally)
+    # MATLAB: C=F*F
     C = F * F 
     
     # MATLAB: invC=simplify(inv(C))
@@ -649,7 +649,6 @@ def generate_yeoh_functions():
     # Deformation gradient components 
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
-    # Reconstruct 2x2 F matrix
     F = sp.Matrix([[Fv[0], Fv[2]], 
                    [Fv[1], Fv[3]]])
     
@@ -657,20 +656,17 @@ def generate_yeoh_functions():
     C = F.T * F
     J = F.det()
             
-    U0_val = c10 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3) + \
-            c20 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**2 + \
-            c30 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**3 + \
-            (1/D1) * (J - 1)**2 + \
-            (1/D2) * (J - 1)**4 + \
-            (1/D3) * (J - 1)**6
+    U0_val = c10 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3) \
+            + c20 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**2 \
+            + c30 * (J**(-sp.Rational(2, 3)) * sp.trace(C) - 3)**3 \
+            + (1/D1) * (J - 1)**2 \
+            + (1/D2) * (J - 1)**4 \
+            + (1/D3) * (J - 1)**6
 
-    # Derivatives
     P = sp.diff(U0_val, Fv)
     
-    # Tangent Stiffness A = dP/dF
     A = P.jacobian(Fv)
 
-    # Lambdify
     P_func = sp.lambdify((Fv), P, modules="numpy")
     A_func = sp.lambdify((Fv), A, modules="numpy")
     
@@ -678,28 +674,20 @@ def generate_yeoh_functions():
 
 
 def generate_neohooke_functions():
-    # Deformation gradient components
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
-    # Reconstruct 2x2 F matrix
     F = sp.Matrix([[Fv[0], Fv[2]], 
                    [Fv[1], Fv[3]]])
     
-    # Kinematics
     C = F.T * F
     J = F.det()
-    I1 = sp.trace(C)
     
-    # Strain Energy Potential U0(C, J)
-    U0 = (G_val / 2) * (I1 - 3) - G_val * sp.log(J) + (lam_val / 2) * (sp.log(J))**2
+    U0 = (G_val / 2) * (sp.trace(C) - 3) - G_val * sp.log(J) + (lam_val / 2) * (sp.log(J))**2
     
-    # Derivatives
     P = sp.diff(U0, Fv)
     
-    # Material Tangent Stiffness A = dP/dF (4x4 matrix)
     A = P.jacobian(Fv)
 
-    # Lambdify
     P_func = sp.lambdify((Fv), P, modules="numpy")
     A_func = sp.lambdify((Fv), A, modules="numpy")
     
@@ -714,25 +702,26 @@ printt('REFERENCE RESULTS, FOR VALIDATION:')
 print('Neo-Hooke: Cauchy stress sigma11 for F11 = 1.5 is ', 2.2525e01, ' MPa')
 print('Yeoh: Cauchy stress sigma11 for F11 = 1.5 is ',1.2142e02, ' MPa')
 
+# -------------------------------------------------
+# Plot graphs
+# -------------------------------------------------
+title = 'Cauchy stress component σ11 vs F11 - pure elongation'
+plt.figure()
+plt.plot(1, 1)
+plt.title(title)
+plt.xlabel('uΓ [m]')
+plt.ylabel('total vertical [m]')
+sfig(title)
+plt.show()
 
-# title = 'Cauchy stress component σ11 vs F11 - pure elongation'
-# plt.figure()
-# plt.plot(..., ...)
-# plt.title(title)
-# plt.xlabel('uΓ [m]')
-# plt.ylabel('total vertical [m]')
-# plt.show()
-# sfig(title)
-
-# title = 'Cauchy stress component σ11 vs F11 - pure contraction'
-# plt.figure()
-# plt.plot(..., ...)
-# plt.title(title)
-# plt.xlabel('uΓ [m]')
-# plt.ylabel('total vertical [m]')
-# plt.show()
-# sfig(title)
-
+title = 'Cauchy stress component σ11 vs F11 - pure contraction'
+plt.figure()
+plt.plot(1, 1)
+plt.title(title)
+plt.xlabel('uΓ [m]')
+plt.ylabel('total vertical [m]')
+sfig(title)
+plt.show()
 
 #%%
 #===================================================================================================
