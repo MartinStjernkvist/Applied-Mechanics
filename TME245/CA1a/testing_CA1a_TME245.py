@@ -757,14 +757,14 @@ def shape_fun_tri6(xi, eta):
     
     L = 1.0 - xi - eta
     
-    # Shape functions
+    # Shape functions, node numberring in lecture notes
     N = np.zeros(6)
-    N[0] = L * (2 * L - 1)      # Node 1 (0,      0)
-    N[1] = xi * (2 * xi - 1)    # Node 2 (1,      0)
-    N[2] = eta * (2 * eta - 1)  # Node 3 (0,      1)
-    N[3] = 4 * xi * L         # Node 4 (0.5,    0)
-    N[4] = 4 * xi * eta       # Node 5 (0.5,    0.5)
-    N[5] = 4 * eta * L        # Node 6 (0,      0.5)
+    N[0] = L * (2 * L - 1)
+    N[1] = xi * (2 * xi - 1)
+    N[2] = eta * (2 * eta - 1)
+    N[3] = 4 * xi * L
+    N[4] = 4 * xi * eta
+    N[5] = 4 * eta * L
     
     dN = np.zeros((2, 6))
     
@@ -799,7 +799,7 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
     ]
     w_gp = 1.0/6.0
     
-    # For validation storage
+    # Validation storage
     F_list = []
     P_list = []
     
@@ -820,7 +820,6 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
         J_geo = X_ref @ dN_dxi.T
         det_J = np.linalg.det(J_geo)
         
-        # Derivatives w.r.t Physical Reference Coordinates X
         inv_J = np.linalg.inv(J_geo)
         dN_dX = inv_J.T @ dN_dxi  # (2x6)
         
@@ -828,15 +827,15 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
         F_mat = x_curr @ dN_dX.T
         F_vec = np.array([F_mat[0,0], F_mat[1,0], F_mat[0,1], F_mat[1,1]])
         
-        # Lambdified functions
+        # Lambdified Yeoh functions
         P_out = P_Yeoh_func(*F_vec)
         A_out = dPvdFv_Yeoh_func(*F_vec)
 
-        # Convert outputs to numpy arrays with expected shapes
+        # Convert outputs
         P_vec_val = np.asarray(P_out).reshape(-1)
         A_mat_val = np.asarray(A_out).reshape((4,4))
         
-        # Reconstruct P matrix (2x2) from P_vec
+        # Reconstruct P matrix
         P_tensor = np.array([
             [P_vec_val[0], P_vec_val[2]],
             [P_vec_val[1], P_vec_val[3]]
@@ -855,21 +854,13 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
         
         B_gen = np.zeros((4, 12))
         for a in range(6):
-            # u_a is at index 2*a, v_a is at 2*a+1
             dN_dX1 = dN_dX[0, a]
             dN_dX2 = dN_dX[1, a]
             
-            # Row 0 (F11): corresponds to u_a * dN/dX1
-            B_gen[0, 2*a]   = dN_dX1
-            
-            # Row 1 (F21): corresponds to v_a * dN/dX1
-            B_gen[1, 2*a+1] = dN_dX1
-            
-            # Row 2 (F12): corresponds to u_a * dN/dX2
-            B_gen[2, 2*a]   = dN_dX2
-            
-            # Row 3 (F22): corresponds to v_a * dN/dX2
-            B_gen[3, 2*a+1] = dN_dX2
+            B_gen[0, 2 * a] = dN_dX1
+            B_gen[1, 2 * a + 1] = dN_dX1
+            B_gen[2, 2 * a] = dN_dX2
+            B_gen[3, 2 * a + 1] = dN_dX2
             
         # Ke contribution
         Ke += B_gen.T @ A_mat_val @ B_gen * dv
@@ -877,7 +868,6 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
     if return_validation:
         return Ke, fe, np.array(F_list), np.array(P_list)
     return Ke, fe
-
 
 X_ref = np.array([
     [0.0, 0.0], # 1
