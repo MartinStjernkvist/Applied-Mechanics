@@ -318,7 +318,7 @@ def cst_element(ae, el, Be_matrix, Ae_matrix, D, body, h):
     for gp in range(ngp):
         Ae = Ae_matrix[el, gp]
         Be = Be_matrix[el, gp, :, :]
-        fe = np.tile(body[el], 3) * Ae / 3
+        fe = np.tile([body[el], body[el]], 3) * Ae / 3
         Ke = Be.T @ D @ Be * Ae * h  
              
     return fe, Ke
@@ -575,6 +575,8 @@ new_subtask('Task 2 b) - Yeoh hyperelsatic material model')
 # ------------------------------------------------------------------
 F_11_min = 0.5
 F_11_max = 1.5
+F_11_list = np.linspace(F_11_min, F_11_max, 100)
+placeholder_sigma11_list = np.linspace(0, 100, 100)
 
 G_val = E_val / (2 * (1 + nu_val))
 lam_val = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
@@ -586,69 +588,6 @@ c30 = G_val / 30
 D1 = 0.02 # 1 / MPa
 D2 = 0.01
 D3 = 0.01
-
-# ------------------------------------------------------------------
-# Translation of matlab code in section 5.2.10
-# ------------------------------------------------------------------
-def generate_deformation_gradient_functions():
-    # Fv = sym(Fv,[4,1], real)
-    Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) # Fv0, Fv1, Fv2, Fv3
-    
-    Gmod, lam = sp.symbols('Gmod lambda', real=True)
-
-    # MATLAB: F=[Fv(1) Fv(3) 0; Fv(4) Fv(2) 0; 0 0 1];
-    # Mapping indices: 1->0, 2->1, 3->2, 4->3
-    F = sp.Matrix([
-        [Fv[0], Fv[2], 0],
-        [Fv[3], Fv[1], 0],
-        [0,     0,     1]
-    ])
-
-    # MATLAB: C=F*F
-    C = F * F 
-    
-    # MATLAB: invC=simplify(inv(C))
-    invC = sp.simplify(C.inv())
-    
-    # MATLAB: J=det(F)
-    J = F.det()
-
-    # MATLAB: S=Gmod*( eye(3)-invC)+lambda*log(J)*invC;
-    S = Gmod * (sp.eye(3) - invC) + lam * sp.log(J) * invC
-    
-    # MATLAB: P=F*S
-    P = F * S
-
-    # MATLAB: Pv=[P(1,1) P(2,2) P(1,2) P(2,1)]
-    # Python indices: (0,0), (1,1), (0,1), (1,0)
-    Pv = sp.Matrix([P[0,0], P[1,1], P[0,1], P[1,0]])
-
-    P_NH_func = sp.lambdify((Fv, Gmod, lam), Pv, modules='numpy')
-
-    # MATLAB: dPvdFv=sym(dPvFv,[4,4], real )
-    # Loop i=1:4 ... gradient(Pv(i),Fv)
-    
-    # In SymPy, we can calculate the Jacobian matrix directly without a loop
-    dPvdFv = Pv.jacobian(Fv)
-
-    dPdF_NH_func = sp.lambdify((Fv, Gmod, lam), dPvdFv, modules='numpy')
-
-    return P_NH_func, dPdF_NH_func
-
-# --- Usage Example ---
-# calc_P, calc_dPdF = generate_deformation_gradient_functions()
-
-# Fv_val = np.array([1.1, 1.1, 0.1, 0.1]) 
-# G_val = 100.0
-# lam_val = 500.0
-
-# P_result = calc_P(Fv_val, G_val, lam_val)
-# print("\nCalculated P vector (Voigt):")
-# print(P_result)
-
-# K_result = calc_dPdF(Fv_val, G_val, lam_val)
-# print("\nCalculated Tangent Stiffness Matrix:")
-# print(K_result)
 
 # ------------------------------------------------------------------
 # Yeoh
@@ -683,25 +622,87 @@ def generate_yeoh_functions():
 # ------------------------------------------------------------------
 # Neo-Hooke
 # ------------------------------------------------------------------
-def generate_neohooke_functions():
-    Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
-    
-    F = sp.Matrix([[Fv[0], Fv[2]], 
-                   [Fv[1], Fv[3]]])
-    
-    C = F.T * F
-    J = F.det()
-    
-    U0 = (G_val / 2) * (sp.trace(C) - 3) - G_val * sp.log(J) + (lam_val / 2) * (sp.log(J))**2
-    
-    P = sp.diff(U0, Fv)
-    
-    A = P.jacobian(Fv)
 
-    P_func = sp.lambdify((Fv), P, modules="numpy")
-    A_func = sp.lambdify((Fv), A, modules="numpy")
+# Translation of matlab code in section 5.2.10
+def generate_neohooke_functions():
     
-    return P_func, A_func
+    # MATLAB: Fv = sym(Fv,[4,1], real)
+    Fv = sp.Matrix(sp.symbols('Fv0:4', real=True))
+
+    # MATLAB: F=[Fv(1) Fv(3) 0; Fv(4) Fv(2) 0; 0 0 1];
+    F = sp.Matrix([
+        [Fv[0], Fv[2], 0],
+        [Fv[3], Fv[1], 0],
+        [0,     0,     1]
+    ])
+
+    # MATLAB: C=F*F
+    C = F.T * F 
+    
+    # MATLAB: invC=simplify(inv(C))
+    invC = sp.simplify(C.inv())
+    
+    # MATLAB: J=det(F)
+    J = F.det()
+
+    # MATLAB: S=Gmod*( eye(3)-invC)+lambda*log(J)*invC;
+    S = G_val * (sp.eye(3) - invC) + lam_val * sp.log(J) * invC
+    
+    # MATLAB: P=F*S
+    P = F * S
+
+    # MATLAB: Pv=[P(1,1) P(2,2) P(1,2) P(2,1)]
+    # Python indices: (0,0), (1,1), (0,1), (1,0)
+    Pv = sp.Matrix([P[0,0], P[1,1], P[0,1], P[1,0]])
+
+    P_NH_func = sp.lambdify((Fv), Pv, modules='numpy')
+
+    # MATLAB: dPvdFv=sym(dPvFv,[4,4], real )
+    # Loop i=1:4 ... gradient(Pv(i),Fv)
+    
+    # In SymPy, we can calculate the Jacobian matrix directly without a loop
+    dPvdFv = Pv.jacobian(Fv)
+
+    dPdF_NH_func = sp.lambdify((Fv), dPvdFv, modules='numpy')
+
+    return P_NH_func, dPdF_NH_func
+
+# --- Usage Example ---
+# calc_P, calc_dPdF = generate_deformation_gradient_functions()
+
+# Fv_val = np.array([1.1, 1.1, 0.1, 0.1]) 
+# G_val = 100.0
+# lam_val = 500.0
+
+# P_result = calc_P(Fv_val, G_val, lam_val)
+# print("\nCalculated P vector (Voigt):")
+# print(P_result)
+
+# K_result = calc_dPdF(Fv_val, G_val, lam_val)
+# print("\nCalculated Tangent Stiffness Matrix:")
+# print(K_result)
+
+
+
+# def generate_neohooke_functions():
+#     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
+    
+#     F = sp.Matrix([[Fv[0], Fv[2]], 
+#                    [Fv[1], Fv[3]]])
+    
+#     C = F.T * F
+#     J = F.det()
+    
+#     U0 = (G_val / 2) * (sp.trace(C) - 3) - G_val * sp.log(J) + (lam_val / 2) * (sp.log(J))**2
+    
+#     P = sp.diff(U0, Fv)
+    
+#     A = P.jacobian(Fv)
+
+#     P_func = sp.lambdify((Fv), P, modules="numpy")
+#     A_func = sp.lambdify((Fv), A, modules="numpy")
+    
+#     return P_func, A_func
 
 # ------------------------------------------------------------------
 # Generate the functions once
@@ -709,28 +710,34 @@ def generate_neohooke_functions():
 P_Yeoh_func, A_Yeoh_func = generate_yeoh_functions()
 P_Neo_func, A_Neo_func = generate_neohooke_functions()
 
-printt('REFERENCE RESULTS, FOR VALIDATION:')
-print('Neo-Hooke: Cauchy stress sigma11 for F11 = 1.5 is ', 2.2525e01, ' MPa')
-print('Yeoh: Cauchy stress sigma11 for F11 = 1.5 is ',1.2142e02, ' MPa')
+
+
+
+val_yeoh_15 = get_sigma11(1.5, P_Yeoh_func)
+val_nh_15 = get_sigma11(1.5, P_Neo_func, params=(G_val, lam_val))
+
+printt('Validate results:')
+print(f'Yeoh sigma11: {val_yeoh_15:.4e} MPa (Ref: 1.2142e02)')
+print(f'Neo-Hooke sigma11:   {val_nh_15:.4e} MPa (Ref: 2.2525e01)')
 
 # ------------------------------------------------------------------
 # Plot graphs
 # ------------------------------------------------------------------
 title = 'Cauchy stress component σ11 vs F11 - pure elongation'
 plt.figure()
-plt.plot(1, 1)
+plt.plot(F_11_list, placeholder_sigma11_list, 'o-')
 plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('total vertical [m]')
+plt.xlabel('F_11')
+plt.ylabel('σ11')
 sfig(title)
 plt.show()
 
 title = 'Cauchy stress component σ11 vs F11 - pure contraction'
 plt.figure()
-plt.plot(1, 1)
+plt.plot(F_11_list, placeholder_sigma11_list, 'o-')
 plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('total vertical [m]')
+plt.xlabel('F_11')
+plt.ylabel('σ11')
 sfig(title)
 plt.show()
 
