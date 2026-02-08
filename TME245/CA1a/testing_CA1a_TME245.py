@@ -219,7 +219,7 @@ Ae = sp.simplify(0.5 * J.det())
 Be_func_cst = sp.lambdify((xe1, xe2, xe3), Be, modules="numpy")
 Ae_func = sp.lambdify((xe1, xe2, xe3), Ae, modules="numpy")
 
-#precompute sparse pattern once to save computation time during assembly
+# Precompute sparse pattern once to save computation time during assembly
 def precompute_pattern(Edof):
     Edof0 = Edof[:, 1:].astype(np.int64) - 1
     nel, ndofe = Edof0.shape
@@ -316,16 +316,16 @@ def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickne
     return K, f_ext
 
 def cst_element(ae, el, Be_matrix, Ae_matrix, D, body, h): # Ex, Ey, D, body, h):
-    ngp=1
-    fe = np.zeros(12)  # 6 nodes × 2 DOFs
-    Ke = np.zeros((12,12))  # 6 nodes × 2 DOFs
-    
+    ngp=1; fe=np.zeros(6); Ke=np.zeros((6,6))
+    #x1 = np.array([Ex[el,0], Ey[el,0]])
+    #x2 = np.array([Ex[el,1], Ey[el,1]])
+    #x3 = np.array([Ex[el,2], Ey[el,2]])
+
     for gp in range(ngp):
         Ae = Ae_matrix[el, gp]
-        Be = Be_matrix[el, gp, :, :]  # Be_func_cst(x1, x2, x3) - 3x6 for 3 corner nodes
-        Ke_corners = Be.T @ D @ Be * Ae * h  # 6x6 stiffness for corner nodes
-        # Place corner stiffness in upper-left 6x6 block of 12x12 matrix
-        Ke[:6, :6] = Ke_corners
+        Be = Be_matrix[el, gp, :, :]  # Be_func_cst(x1, x2, x3)
+        fe = np.tile(body[el], 3) * Ae / 3
+        Ke = Be.T @ D @ Be * Ae * h  
              
     return fe, Ke
 
@@ -351,14 +351,24 @@ new_subtask('Task 2 a) - Extension of CE1')
 ####################################################################################################
 #===================================================================================================
 
+# ------------------------------------------------------------------
 # Define inputs
+# ------------------------------------------------------------------
 E_val = 20e6 # Pa
 nu_val = 0.45 
 
 # ------------------------------------------------------------------
-# Read matlab file
+# Constitutive matrix
 # ------------------------------------------------------------------
-# From read_matfiles-1.py
+D = (E_val / (1 - nu_val**2)) * np.array([
+            [1,   nu_val,       0],
+            [nu_val,   1,       0],
+            [0,   0,  (1-nu_val)/2]
+        ])
+
+# ------------------------------------------------------------------
+# Read matlab file (from read_matfiles-1.py)
+# ------------------------------------------------------------------
 def read_toplogy_from_mat_file(filename):
     mat_file = sio.loadmat(filename)
     # edof_x=mat_file['Edof'] #note that edof matlab contains one column too much
@@ -368,8 +378,6 @@ def read_toplogy_from_mat_file(filename):
     Ex=mat_file['Ex']
     Ey=mat_file['Ey']
     
-    # dof_upper=mat_file['dof_upper']
-    # dof_lower=mat_file['dof_lower']
     dof_lower=mat_file['dof_lower'].ravel() 
     dof_lower=dof_lower.astype(int)
     dof_upper=mat_file['dof_upper'].ravel()
@@ -411,15 +419,6 @@ ax1.add_collection(pc1)
 ax1.autoscale()
 
 # ------------------------------------------------------------------
-# Constitutive matrix
-# ------------------------------------------------------------------
-D = (E_val / (1 - nu_val**2)) * np.array([
-            [1,   nu_val,       0],
-            [nu_val,   1,       0],
-            [0,   0,  (1-nu_val)/2]
-        ])
-
-# ------------------------------------------------------------------
 # Precompute pattern
 # ------------------------------------------------------------------
 ndofs = 2 * nnodes
@@ -441,6 +440,9 @@ disp_history = []
 force_history = []
 u_vals = []
 
+# ------------------------------------------------------------------
+# Target displacement
+# ------------------------------------------------------------------
 # LC1: u_gamma = +20mm
 # LC2: u_gamma = -15mm
 target_displacement = 20e-3
@@ -521,50 +523,6 @@ for step in range(1, n_steps + 1):
     # Store results
     u_vals.append(current_u_gamma)
     force_history.append(Ry_sum)
-    
-
-# # -------------------------------------------------
-# # Global matrices
-# # -------------------------------------------------
-
-# f_ext = np.zeros(ndofs)
-# a = np.zeros(ndofs)
-
-# # -------------------------------------------------
-# # Boundary conditions
-# # -------------------------------------------------
-# dof_C = np.array([...]) - 1
-# dof_F = np.setdiff1d(np.arange(ndofs), dof_C)
-
-# a_C = np.array([...])
-
-# # -------------------------------------------------
-# # Body forces
-# # -------------------------------------------------
-# body = np.zeros((nelem, 2))
-
-# # -------------------------------------------------
-# # Assembly 
-# # -------------------------------------------------
-# K, f_ext =assemble_K_fint_coo(a, Edof, rows, cols, ndofs, nelem, Ex, Ey, D, body, h_val, my_element=cst_element)
-
-# # -------------------------------------------------
-# # Solve system
-# # -------------------------------------------------
-# a_F = spla.spsolve(
-#     K[np.ix_(dof_F, dof_F)],
-#     f_ext[dof_F] - K[np.ix_(dof_F, dof_C)] @ a_C
-# )
-
-# f_extC = (
-#     K[np.ix_(dof_C, dof_F)] @ a_F +
-#     K[np.ix_(dof_C, dof_C)] @ a_C -
-#     f_ext[dof_C]
-# )
-
-# a[dof_F] = a_F
-# a[dof_C] = a_C
-
 
 # -------------------------------------------------
 # Plot deformed mesh
@@ -576,10 +534,6 @@ mag = 1000
 
 for el in range(nelem):
     edofs = Edof[el,1:] - 1
-    # def_polygons[el,:,:] = [[Ex[el,0]+a[edofs[0]],Ey[el,0]+a[edofs[1]]],\
-    #                         [Ex[el,1]+a[edofs[2]],Ey[el,1]+a[edofs[3]]],\
-    #                         [Ex[el,2]+a[edofs[4]],Ey[el,2]+a[edofs[5]]]\
-    #                        ]
     
     def_polygons[el,:,:] = [
         [Ex[el,0] + mag * a[edofs[0]], Ey[el,0] + mag * a[edofs[1]]],
@@ -587,7 +541,6 @@ for el in range(nelem):
         [Ex[el,2] + mag * a[edofs[4]], Ey[el,2] + mag * a[edofs[5]]]
     ]
 
-# Example. Plot polygons without colouring (e.g. undeformed and deformed mesh)
 fig2, ax2 = plt.subplots()
 pc2 = PolyCollection(
     def_polygons,
@@ -597,6 +550,32 @@ pc2 = PolyCollection(
 ax2.add_collection(pc2)
 ax2.autoscale()
 ax2.set_title("Deformed mesh")
+
+# -------------------------------------------------
+# Plot stress
+# -------------------------------------------------
+Es = np.zeros((nelem, 3))
+
+for el in range(nelem):
+    x1 = np.array([Ex[el,0], Ey[el,0]])
+    x2 = np.array([Ex[el,1], Ey[el,1]])
+    x3 = np.array([Ex[el,2], Ey[el,2]])
+
+    Be = Be_func_cst(x1, x2, x3)
+    edofs = Edof[el,1:] - 1
+
+    Es[el,:] = D @ Be @ a[edofs]
+
+fig3, ax3 = plt.subplots()
+pc3 = PolyCollection(
+    polygons,
+    array=Es[:,0], # values used for coloring 
+    cmap='turbo', 
+    edgecolors='k')
+ax3.add_collection(pc3)
+ax3.autoscale()
+ax3.set_title("sigma xx")
+fig2.colorbar(pc3, ax=ax3)
 
 # title = 'vertical reaction force vs uΓ'
 # plt.figure()
