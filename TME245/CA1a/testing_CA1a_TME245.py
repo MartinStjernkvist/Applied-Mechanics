@@ -333,7 +333,7 @@ new_subtask('Task 2 a) - Extension of CE1')
 # ------------------------------------------------------------------
 # Define inputs
 # ------------------------------------------------------------------
-E_val = 20e6 # Pa
+E_val = 20 # MPa
 nu_val = 0.45 
 
 # ------------------------------------------------------------------
@@ -585,9 +585,9 @@ lam_val = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
 c10 = G_val / 2
 c20 = - G_val / 10
 c30 = G_val / 30
-D1 = 0.02e-6 # 1 / Pa
-D2 = 0.01e-6
-D3 = 0.01e-6
+D1 = 0.02 # 1 / Pa
+D2 = 0.01
+D3 = 0.01
 
 # ------------------------------------------------------------------
 # Yeoh
@@ -826,6 +826,7 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
         # Deformation Gradient F
         F_mat = x_curr @ dN_dX.T
         F_vec = np.array([F_mat[0,0], F_mat[1,0], F_mat[0,1], F_mat[1,1]])
+        # F_vec = np.array([F_mat[0,0], F_mat[0,1], F_mat[1,0], F_mat[1,1]])
         
         # Lambdified Yeoh functions
         P_out = P_Yeoh_func(*F_vec)
@@ -840,6 +841,10 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
             [P_vec_val[0], P_vec_val[2]],
             [P_vec_val[1], P_vec_val[3]]
         ])
+        # P_tensor = np.array([
+        #     [P_vec_val[0], P_vec_val[1]], # 11, 12
+        #     [P_vec_val[2], P_vec_val[3]]  # 21, 22
+        # ])
         
         # Store for validation
         if return_validation:
@@ -862,6 +867,18 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
             B_gen[1, 2 * a + 1] = dN_dX1
             B_gen[2, 2 * a] = dN_dX2
             B_gen[3, 2 * a + 1] = dN_dX2
+            
+            # # Row 0: F11 (du/dX) -> use dN_dX1 on u_x (col 2*a)
+            # B_gen[0, 2 * a]     = dN_dX1
+            
+            # # Row 1: F12 (du/dY) -> use dN_dX2 on u_x (col 2*a)
+            # B_gen[1, 2 * a]     = dN_dX2  # Changed from index 2 to 1
+            
+            # # Row 2: F21 (dv/dX) -> use dN_dX1 on u_y (col 2*a+1)
+            # B_gen[2, 2 * a + 1] = dN_dX1  # Changed from index 1 to 2
+            
+            # # Row 3: F22 (dv/dY) -> use dN_dX2 on u_y (col 2*a+1)
+            # B_gen[3, 2 * a + 1] = dN_dX2
             
         # Ke contribution
         Ke += B_gen.T @ A_mat_val @ B_gen * dv
@@ -911,135 +928,8 @@ print(Ke_val[0:8, 0:8])
 new_subtask('Task 2 d) - Combine routines')
 ####################################################################################################
 #===================================================================================================
-
-
-"""
-def solve_task_2d(filename, n_steps = 20, u_final = 0.02, tol = 1e-6, max_iter = 10):
     
-    # ------------------------------------------------------------------
-    # Load mesh
-    # ------------------------------------------------------------------
-    try:
-        Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
-    except FileNotFoundError:
-        print(f"Error: {filename} not found.")
-        return
-
-    ndof = int(np.max(Edof[:, 1:]) + 1)
-    nel = Edof.shape[0]
-    
-    # Initializate global displacements
-    a = np.zeros(ndof)
-    
-    # ------------------------------------------------------------------
-    # Time stepping
-    # ------------------------------------------------------------------
-    u_steps = np.linspace(0, u_final, n_steps + 1)
-    
-    force_history = []
-    disp_history = []
-
-    print(f"Starting Solver: {n_steps} steps, Target u_y = {u_final} mm")
-
-    for step, u_app in enumerate(u_steps):
-        if step == 0: 
-            force_history.append(0)
-            disp_history.append(0)
-            continue
-            
-        print(f"Step {step}/{n_steps}, Applied Disp: {u_app:.2f} mm")
-        
-        bc_dofs = []
-        bc_vals = []
-        
-        top_y_dofs = [d for d in dof_upper if d % 2 == 1]
-        bot_y_dofs = [d for d in dof_lower if d % 2 == 1]
-        
-        # Fix Bottom Y
-        bc_dofs.extend(bot_y_dofs)
-        bc_vals.extend([0.0] * len(bot_y_dofs))
-        
-        # Fix Top Y
-        bc_dofs.extend(top_y_dofs)
-        bc_vals.extend([u_app] * len(top_y_dofs))
-        
-        # Fix Rigid Body X (Fix first X dof found in bottom set)
-        if len(dof_lower) > 0:
-            # Find an X dof (even index)
-            bot_x_dofs = [d for d in dof_lower if d % 2 == 0]
-            if bot_x_dofs:
-                 bc_dofs.append(bot_x_dofs[0])
-                 bc_vals.append(0.0)
-        
-        bc_dofs = np.array(bc_dofs, dtype=int)
-        bc_vals = np.array(bc_vals)
-        
-        # ------------------------------------------------------------------
-        # Newton-Raphson Loop
-        # ------------------------------------------------------------------
-    
-        # Update Dirichlet BCs in current displacement vector a
-        a[bc_dofs] = bc_vals
-        
-        for it in range(max_iter):
-            # Assembly
-            rows, cols, data = [], [], []
-            f_int = np.zeros(ndof)
-            
-            for el in range(nel):
-                edof = Edof[el, 1:].astype(int) - 1  # Convert to 0-based indices
-                u_loc = a[edof]
-                
-                # Extract element-specific coordinates
-                ex_el = Ex[el, :]
-                ey_el = Ey[el, :]
-                
-                Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=0.001)
-                
-                f_int[edof] += fe
-                
-                # ------------------------------------------------------------------
-                # Sparse matrix assembly data
-                # ------------------------------------------------------------------
-                for i in range(12):
-                    for j in range(12):
-                        rows.append(edof[i])
-                        cols.append(edof[j])
-                        data.append(Ke[i, j])
-            
-            K_global = coo_matrix((data, (rows, cols)), shape=(ndof, ndof)).tocsr()
-            
-            free_dofs = np.setdiff1d(np.arange(ndof), bc_dofs)
-            
-            r = f_int[free_dofs]
-            
-            res_norm = np.linalg.norm(r)
-            
-            if res_norm < tol:
-                print(f"  Converged in {it} iterations.")
-                break
-            
-            # ------------------------------------------------------------------
-            # Solve Linear System
-            # ------------------------------------------------------------------
-            K_free = K_global[free_dofs, :][:, free_dofs]
-            
-            da_free = spla.spsolve(K_free, -r)
-            
-            a[free_dofs] += da_free
-        
-        # ------------------------------------------------------------------
-        # Store results
-        # ------------------------------------------------------------------
-        Ry_top = np.sum(f_int[top_y_dofs])
-        force_history.append(Ry_top)
-        print(f'Sum of reaction forces: {Ry_top:.2f}')
-        disp_history.append(u_app)
-    
-    return a, disp_history, force_history
-    """
-    
-def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
+def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
     
     # ------------------------------------------------------------------
     # 1. Load Mesh
@@ -1057,19 +947,6 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
     
     # Initialize global displacements
     a = np.zeros(ndof)
-    
-    print("\n" + "="*80)
-    print("DEBUGGING BOUNDARY DOF INFORMATION")
-    print("="*80)
-    print(f"Total DOFs in system: {ndof}")
-    print(f"\ndof_upper (1-based from MATLAB):")
-    print(f"  First 20: {dof_upper[:20]}")
-    print(f"  Length: {len(dof_upper)}")
-    print(f"  Min: {np.min(dof_upper)}, Max: {np.max(dof_upper)}")
-    print(f"\ndof_lower (1-based from MATLAB):")
-    print(f"  First 20: {dof_lower[:20]}")
-    print(f"  Length: {len(dof_lower)}")
-    print(f"  Min: {np.min(dof_lower)}, Max: {np.max(dof_lower)}")
     
     # ------------------------------------------------------------------
     # PRECOMPUTE SPARSE PATTERN ONCE (THIS IS THE KEY OPTIMIZATION!)
@@ -1128,58 +1005,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
         # 4. Newton-Raphson Loop
         # ------------------------------------------------------------------
         converged = False
-        
-        if step == 1:  # Only print for first step
-            print(f"\nAfter filtering for Y-DOFs:")
-            print(f"  top_y_dofs (0-based): {top_y_dofs[:20]}")
-            print(f"  bot_y_dofs (0-based): {bot_y_dofs[:20]}")
-            print(f"  bot_x_dofs (0-based): {bot_x_dofs[:20] if len(bot_x_dofs) > 20 else bot_x_dofs}")
-            print(f"\nTotal BC DOFs: {len(bc_dofs)}")
-            print(f"Total Free DOFs: {ndof - len(bc_dofs)}")
-            print(f"BC DOFs as % of total: {100*len(bc_dofs)/ndof:.1f}%")
-            
-            # Check if any BC DOFs are out of range
-            if np.any(bc_dofs < 0) or np.any(bc_dofs >= ndof):
-                print(f"\n*** ERROR: Some BC DOFs are out of range! ***")
-                print(f"  Out of range DOFs: {bc_dofs[(bc_dofs < 0) | (bc_dofs >= ndof)]}")
-        
-        # for it in range(max_iter):
-        #     # Assembly
-        #     rows, cols, data = [], [], []
-        #     f_int = np.zeros(ndof)
-            
-        #     # --- Element Loop ---
-        #     for el in range(nel):
-        #         # Edof is likely 1-based from Matlab, convert to 0-based
-        #         edof_indices = Edof[el, 1:].astype(int) - 1 
-                
-        #         u_loc = a[edof_indices]
-        #         ex_el = Ex[el, :]
-        #         ey_el = Ey[el, :]
-                
-        #         # CALL ELEMENT ROUTINE
-        #         Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=100e-3) 
-                
-        #         # Check for Element Failure (NaN)
-        #         if np.any(np.isnan(fe)):
-        #             print(f"\n[Error] Element {el} inverted (NaN force). Solver stopped.")
-        #             return a, disp_history, force_history
-                
-        #         f_int[edof_indices] += fe
-                
-        #         # Store sparse data
-        #         for i in range(12):
-        #             for j in range(12):
-        #                 rows.append(edof_indices[i])
-        #                 cols.append(edof_indices[j])
-        #                 data.append(Ke[i, j])
-            
-            # # Create Global Stiffness
-            # K_global = coo_matrix((data, (rows, cols)), shape=(ndof, ndof)).tocsr()
-            
-            # Calculate Residual: r = F_ext - F_int
-            # For free DOFs, F_ext = 0, so r = -F_int
-            
+                    
         for it in range(max_iter):
             # ------------------------------------------------------------------
             # Assembly - EFFICIENT VERSION using precomputed pattern
@@ -1198,7 +1024,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
                 ey_el = Ey[el, :]
                 
                 # CALL ELEMENT ROUTINE
-                Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=100e-3) 
+                Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=h) 
                 
                 # Check for Element Failure (NaN)
                 if np.any(np.isnan(fe)):
@@ -1267,24 +1093,27 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=0.02, max_iter=25):
             break
 
     return a, disp_history, force_history
+#%%
 
 #%%
 # ------------------------------------------------------------------
 printt('Run solver')
 # ------------------------------------------------------------------
-a, disp_history, force_history = solve_task_2d('topology_coarse_6node.mat', n_steps=30, tol=1e-5, u_final=0.02)
+a, disp_history, force_history = solve_task_2d('topology_coarse_6node.mat', n_steps=300, tol=1e-5, u_final=100, h=100)
 
 #%%
 
 # ------------------------------------------------------------------
 # Plot graphs
 # ------------------------------------------------------------------
+title = 'Total Vertical Reaction Force vs Displacement'
 plt.figure()
 plt.plot(disp_history, force_history, '-o')
-plt.title('Total Vertical Reaction Force vs Displacement')
+plt.title(title)
 plt.xlabel('Displacement u_Gamma [m]')
 plt.ylabel('Reaction Force [N]')
 plt.grid(True)
+sfig(title)
 plt.show()
 
 title = 'total vertical on the upper boundary of the rubber profile vs uΓ'
