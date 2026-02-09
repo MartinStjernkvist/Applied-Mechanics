@@ -87,60 +87,12 @@ def sfig(fig_name):
 
 
 def displayvar(name: str, var, post: Optional[str] = None, accuracy: Optional[int] = None) -> None:
-    """Display a variable as LaTeX: ``name = value``.
-
-    Uses SymPy's LaTeX printer. If ``var`` is a NumPy array, it is converted to
-    a SymPy Matrix for crisp typesetting. If ``accuracy`` is given, the value is
-    shown approximately with that many significant digits.
-
-    Parameters
-    ----------
-    name : str
-        Symbolic name to display.
-    var : Any
-        Value to display (number, array, sympy expression, ...).
-    accuracy : int, optional
-        Number of significant digits for approximate print. If ``None``, exact
-        expressions are printed when possible.
-
-    Examples
-    --------
-    >>> displayvar("P", 1)
-    >>> import numpy as np; displayvar("K", np.eye(2))
-    >>> displayvar("pi", sp.pi, accuracy=5)
-    """
     if isinstance(var, np.ndarray):
         var = sp.Matrix(var)
     if accuracy is None:
         display(Math(f"{name} = {sp.latex(var)}") )
     else:
         display(Math(f"{name} \\approx {sp.latex(sp.sympify(var).evalf(accuracy))}"))
-
-#%%
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-new_task('Task 1 - Nonlinear elastic analysis in 2D using Matlab/Python')
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-#===================================================================================================
-#===================================================================================================
-new_subtask('Task 1')
-#===================================================================================================
-#===================================================================================================
-
-H_val = 0.1 # m
-B_val = 0.1 # m
-h_val = 0.1 # m
-
 
 #%%
 ####################################################################################################
@@ -333,6 +285,10 @@ new_subtask('Task 2 a) - Extension of CE1')
 # ------------------------------------------------------------------
 # Define inputs
 # ------------------------------------------------------------------
+
+H_val = 0.1 # m
+B_val = 0.1 # m
+h_val = 0.1 # m
 E_val = 20 # MPa
 nu_val = 0.45 
 
@@ -949,29 +905,29 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     a = np.zeros(ndof)
     
     # ------------------------------------------------------------------
-    # PRECOMPUTE SPARSE PATTERN ONCE (THIS IS THE KEY OPTIMIZATION!)
+    # Precompute sparse pattern once
     # ------------------------------------------------------------------
     rows_pattern, cols_pattern = precompute_pattern(Edof)
-    nnz_per_el = 12 * 12  # 144 entries per 6-node triangle element
+    nnz_per_el = 12 * 12
     nnz_total = nel * nnz_per_el
     
     # ------------------------------------------------------------------
-    # 2. Time Stepping Setup
+    # Time Stepping Setup
     # ------------------------------------------------------------------
     u_steps = np.linspace(0, u_final, n_steps + 1)
     
     force_history = [0.0]
     disp_history = [0.0]
 
-    print(f"Starting Solver: {n_steps} steps, Target u_y = {u_final*1000:.1f} mm")
+    print(f"Starting Solver: {n_steps} steps, Target u_y = {u_final:.1f} mm")
 
     # ------------------------------------------------------------------
-    # 3. Load Step Loop
+    # Load step loop
     # ------------------------------------------------------------------
     for step, u_app in enumerate(u_steps):
         if step == 0: continue # Skip initial state (already 0)
             
-        print(f"Step {step}/{n_steps}, Applied Disp: {u_app*1000:.2f} mm ... ", end="")
+        print(f"Step {step}/{n_steps}, Applied Disp: {u_app:.2f} mm ... ", end="")
         
         # Boundary Conditions
         bc_dofs = []
@@ -1002,19 +958,17 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
         a[bc_dofs] = bc_vals
         
         # ------------------------------------------------------------------
-        # 4. Newton-Raphson Loop
+        # Newton-Raphson loop
         # ------------------------------------------------------------------
         converged = False
                     
         for it in range(max_iter):
             # ------------------------------------------------------------------
-            # Assembly - EFFICIENT VERSION using precomputed pattern
+            # Assembly
             # ------------------------------------------------------------------
-            # Preallocate data array (reuse pattern arrays)
             data = np.empty(nnz_total, dtype=float)
             f_int = np.zeros(ndof)
             
-            # --- Element Loop ---
             for el in range(nel):
                 # Edof is 1-based from Matlab, convert to 0-based
                 edof_indices = Edof[el, 1:].astype(int) - 1 
@@ -1023,10 +977,8 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
                 ex_el = Ex[el, :]
                 ey_el = Ey[el, :]
                 
-                # CALL ELEMENT ROUTINE
                 Ke, fe = el6_yeoh(ex_el, ey_el, u_loc, thickness=h) 
                 
-                # Check for Element Failure (NaN)
                 if np.any(np.isnan(fe)):
                     print(f"\n[Error] Element {el} inverted (NaN force). Solver stopped.")
                     return a, disp_history, force_history
@@ -1039,20 +991,20 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
                 idx_end = idx_start + nnz_per_el
                 data[idx_start:idx_end] = Ke.ravel()
                 
-            # Create Global Stiffness using precomputed pattern
+            # Create global stiffness
             K_global = coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
         
             free_dofs = np.setdiff1d(np.arange(ndof), bc_dofs)
             r = -f_int[free_dofs]
             res_norm = np.linalg.norm(r)
             
-            # Check Convergence
+            # Check convergence
             if res_norm < tol:
                 converged = True
                 print(f"Converged (Iter {it}, Res {res_norm:.2e})")
                 break
             
-            # Solve Linear System: K * da = r
+            # Solve system
             K_free = K_global[free_dofs, :][:, free_dofs]
             
             try:
@@ -1093,20 +1045,102 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
             break
 
     return a, disp_history, force_history
-#%%
+
+
+def plot_stress(a, filename='topology_coarse_6node.mat', plot_title='coarse'):
+    # -------------------------------------------------
+    # Stress computation
+    # -------------------------------------------------
+    Ex, Ey, Edof, _, _, _, _, _ = read_toplogy_from_mat_file(filename)
+    nel = Edof.shape[0]
+
+    Es = np.zeros((nel, 4)) 
+    polygons = []
+
+    # Centroid integration point for visualization
+    xi, eta = 1.0/3.0, 1.0/3.0
+    N, dN_dxi = shape_fun_tri6(xi, eta)
+
+    for el in range(nel):
+        # Get Displacements and Coordinates
+        edofs = Edof[el, 1:].astype(int) - 1
+        u_el = a[edofs]
+        
+        ex = Ex[el, :]
+        ey = Ey[el, :]
+        
+        # Deformed coordinates
+        x_nodes = ex + u_el[0::2]
+        y_nodes = ey + u_el[1::2]
+        
+        # Compute kinematics at centroid
+        X_ref = np.vstack([ex, ey])
+        x_curr = np.vstack([x_nodes, y_nodes])
+        
+        # Jacobian and gradient
+        J_geo = X_ref @ dN_dxi.T
+        dN_dX = np.linalg.inv(J_geo).T @ dN_dxi
+        F_mat = x_curr @ dN_dX.T
+        J = np.linalg.det(F_mat)
+        
+        F_vec = np.array([F_mat[0,0], F_mat[1,0], F_mat[0,1], F_mat[1,1]])
+        P_out = P_Yeoh_func(*F_vec)
+        P_vals = np.array(P_out).flatten()
+        
+        # Reconstruct P
+        P_tensor = np.array([
+            [P_vals[0], P_vals[2]], 
+            [P_vals[1], P_vals[3]]
+        ])
+        
+        # Compute Cauchy stress
+        Sigma = (1.0/J) * P_tensor @ F_mat.T
+        
+        s11 = Sigma[0,0]
+        s22 = Sigma[1,1]
+        s12 = Sigma[0,1]
+        s_vm = np.sqrt(s11**2 + s22**2 - s11*s22 + 3*s12**2)
+        
+        Es[el, :] = [s11, s22, s12, s_vm]
+        
+        # Store Polygon for Plotting
+        poly_coords = np.column_stack([x_nodes[[0, 1, 2]], y_nodes[[0, 1, 2]]])
+        polygons.append(poly_coords)
+
+    # -------------------------------------------------
+    # Stress plot
+    # -------------------------------------------------
+    fig, ax = plt.subplots(figsize=(10, 8))
+    pc = PolyCollection(
+        polygons,
+        array=Es[:, 3],
+        cmap='turbo',
+        edgecolors='black',
+        linewidths=0.2
+    )
+    ax.add_collection(pc)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    ax.set_title(f'Von Mises stress [MPa]\nDeformed State ($u_y$={20} mm) + {plot_title}')
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
+    cb = fig.colorbar(pc, ax=ax)
+    cb.set_label('Von Mises Stress [MPa]')
+    plt.show()
 
 #%%
 # ------------------------------------------------------------------
-printt('Run solver')
+printt('Run solver - coarse mesh')
 # ------------------------------------------------------------------
-a, disp_history, force_history = solve_task_2d('topology_coarse_6node.mat', n_steps=300, tol=1e-5, u_final=100, h=100)
+filename = 'topology_coarse_6node.mat'
+
+a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
 
 #%%
-
 # ------------------------------------------------------------------
-# Plot graphs
+printt('Postprocess - coarse mesh')
 # ------------------------------------------------------------------
-title = 'Total Vertical Reaction Force vs Displacement'
+title = 'Coarse mesh - Total Vertical Reaction Force vs Displacement'
 plt.figure()
 plt.plot(disp_history, force_history, '-o')
 plt.title(title)
@@ -1116,30 +1150,28 @@ plt.grid(True)
 sfig(title)
 plt.show()
 
-title = 'total vertical on the upper boundary of the rubber profile vs uΓ'
-plt.figure()
-plt.plot(1, 1)
-plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('total vertical [m]')
-sfig(title)
-plt.show()
+plot_stress(a, filename, plot_title='coarse')
+#%%
+# ------------------------------------------------------------------
+printt('Run solver - fine mesh')
+# ------------------------------------------------------------------
+filename = 'topology_fine_6node.mat'
 
-title = 'von Mises equivalent stress - coarse mesh'
-plt.figure()
-plt.plot(1, 1)
-plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('total vertical [m]')
-sfig(title)
-plt.show()
+a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
 
-title = 'von Mises equivalent stress - fine mesh'
+#%%
+# ------------------------------------------------------------------
+printt('Postprocess - fine mesh')
+# ------------------------------------------------------------------
+title = 'Fine mesh - Total Vertical Reaction Force vs Displacement'
 plt.figure()
-plt.plot(1, 1)
+plt.plot(disp_history, force_history, '-o')
 plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('total vertical [m]')
+plt.xlabel('Displacement u_Gamma [m]')
+plt.ylabel('Reaction Force [N]')
+plt.grid(True)
 sfig(title)
 plt.show()
+plot_stress(a, filename, plot_title='coarse')
+
 #%%
