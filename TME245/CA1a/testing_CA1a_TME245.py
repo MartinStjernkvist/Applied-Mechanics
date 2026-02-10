@@ -94,21 +94,6 @@ def displayvar(name: str, var, post: Optional[str] = None, accuracy: Optional[in
     else:
         display(Math(f"{name} \\approx {sp.latex(sp.sympify(var).evalf(accuracy))}"))
 
-#%%
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
-
-
-new_task('Task 2 - Nonlinear elastic analysis in 2D using Matlab/Python')
-
-
-
-####################################################################################################
-####################################################################################################
-####################################################################################################
-
 #===================================================================================================
 ####################################################################################################
 new_subtask('Task 2 - CE1 ')
@@ -281,20 +266,14 @@ def cst_element(ae, el, Be_matrix, Ae_matrix, D, body, h):
 new_subtask('Task 2 a) - Extension of CE1')
 ####################################################################################################
 #===================================================================================================
-
-# ------------------------------------------------------------------
 # Define inputs
-# ------------------------------------------------------------------
-
 H_val = 0.1 # m
 B_val = 0.1 # m
 h_val = 0.1 # m
 E_val = 20 # MPa
 nu_val = 0.45 
 
-# ------------------------------------------------------------------
 # Constitutive matrix
-# ------------------------------------------------------------------
 D = (E_val / (1 - nu_val**2)) * np.array([
             [1,   nu_val,       0],
             [nu_val,   1,       0],
@@ -592,7 +571,6 @@ def generate_yeoh_functions():
 # ------------------------------------------------------------------
 # Neo-Hooke
 # ------------------------------------------------------------------
-
 # Translation of matlab code in section 5.2.10
 def generate_neohooke_functions():
     
@@ -640,15 +618,11 @@ def generate_neohooke_functions():
 
     return P_func, dPdF_func, S_func
 
-# ------------------------------------------------------------------
 # Generate the functions once
-# ------------------------------------------------------------------
 P_Yeoh_func, dPvdFv_Yeoh_func, S_Yeoh_func = generate_yeoh_functions()
 P_Neo_func, dPvdFv_Neo_func, S_Neo_func = generate_neohooke_functions()
 
-# ------------------------------------------------------------------
 # Solve
-# ------------------------------------------------------------------
 sigma11_yeoh = []
 sigma11_neo = []
 
@@ -659,18 +633,14 @@ for f11 in F_11_vals:
     # Calculate Cauchy stress
     J = f11 * 1.0
     
-    # ------------------------------------------------------------------
     # Yeoh
-    # ------------------------------------------------------------------
     s_vals_yeoh = S_Yeoh_func(F_vec_input)
     s11_yeoh = s_vals_yeoh[0][0]
     
     sig_yeoh = (1 / J) * f11 * s11_yeoh * f11
     sigma11_yeoh.append(sig_yeoh)
     
-    # ------------------------------------------------------------------
     # Neo-Hooke
-    # ------------------------------------------------------------------
     s_vals_neo = S_Neo_func(F_vec_input)
     s11_neo = s_vals_neo[0][0]
     
@@ -888,7 +858,7 @@ new_subtask('Task 2 d) - Combine routines')
 def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
     
     # ------------------------------------------------------------------
-    # 1. Load Mesh
+    # Load mesh
     # ------------------------------------------------------------------
     try:
         # Assuming read_toplogy_from_mat_file returns these exact 8 values
@@ -933,19 +903,19 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
         bc_dofs = []
         bc_vals = []
         
-        # 1. Fix Bottom Y (Y-dofs are odd indices if X=0, Y=1)
+        # Fix bottom Y (Y-dofs are odd indices if X=0, Y=1)
         top_y_dofs = [d - 1 for d in dof_upper if d % 2 == 0]  # Even 1-based = Y-DOFs
         bot_y_dofs = [d - 1 for d in dof_lower if d % 2 == 0]
 
-        # Fix Bottom Y
+        # Fix bottom Y
         bc_dofs.extend(bot_y_dofs)
         bc_vals.extend([0.0] * len(bot_y_dofs))
         
-        # Fix Top Y
+        # Fix top Y
         bc_dofs.extend(top_y_dofs)
         bc_vals.extend([u_app] * len(top_y_dofs))
         
-        # Fix Rigid Body X (Fix first X dof found in bottom set)
+        # Fix rigid body X (fix first X dof found in bottom set)
         bot_x_dofs = [d - 1 for d in dof_lower if d % 2 == 1]  # Odd 1-based = X-DOFs
         if bot_x_dofs:
             bc_dofs.append(bot_x_dofs[0])
@@ -954,7 +924,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
         bc_dofs = np.array(bc_dofs, dtype=int)
         bc_vals = np.array(bc_vals)
         
-        # Enforce BCs on displacement vector 'a' before iterating
+        # Enforce BCs on displacement before iterating
         a[bc_dofs] = bc_vals
         
         # ------------------------------------------------------------------
