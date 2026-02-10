@@ -780,6 +780,9 @@ new_subtask('Task 2 d) - Combine routines')
 import scipy.sparse as sps
 
 def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
+    # ------------------------------------------------------------------
+    # Solver setup
+    # ------------------------------------------------------------------
     
     # Load mesh
     Ex, Ey, Edof, dof_upper, dof_lower, ndof, nel, nnodes = read_toplogy_from_mat_file(filename)
@@ -811,8 +814,9 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     force_history = [0.0]
     disp_history = [0.0]
 
+    # ------------------------------------------------------------------
     print(f'Starting Solver')
-
+    # ------------------------------------------------------------------
     for step, u_app in enumerate(u_steps):
         if step == 0: continue 
         
@@ -847,7 +851,9 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
         free_mask[bc_dofs] = False
         free_dofs = np.where(free_mask)[0]
 
+        # ------------------------------------------------------------------
         # Newton-Raphson loop
+        # ------------------------------------------------------------------
         converged = False
         
         for it in range(max_iter):
@@ -869,8 +875,10 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
                 # Store stiffness data
                 idx_start = el * nnz_per_el
                 data[idx_start : idx_start + nnz_per_el] = Ke.ravel()
-                
+            
+            # ------------------------------------------------------------------
             # Global solve
+            # ------------------------------------------------------------------
             
             # Create CSR matrix
             K_global = sps.coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
@@ -890,16 +898,18 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
             try:
                 da_free = spla.spsolve(K_free, r)
             except Exception as e:
-                print(f"\n[Error] Solver failed: {e}")
+                print(f"\n[Error] solver failed: {e}")
                 return a, disp_history, force_history
             
             a[free_dofs] += da_free
 
         if not converged:
-            print(f"\n[Warning] Step {step} did not converge.")
+            print(f'\n[Warning] step {step} did not converge.')
             break
-            
+        
+        # ------------------------------------------------------------------
         # Store reaction force
+        # ------------------------------------------------------------------
         Ry_top = np.sum(f_int[top_y_dofs])
         force_history.append(Ry_top)
         disp_history.append(u_app)
@@ -976,6 +986,7 @@ def plot_stress(a, filename, plot_title=''):
         polygons.append(poly_coords)
 
     # Plotting
+    title = 'Von Mises Stress' + plot_title
     fig, ax = plt.subplots(figsize=(10, 8))
     pc = PolyCollection(
         polygons,
@@ -987,11 +998,12 @@ def plot_stress(a, filename, plot_title=''):
     ax.add_collection(pc)
     ax.autoscale()
     ax.set_aspect('equal')
-    ax.set_title(f'Von Mises Stress [MPa]\n{plot_title}')
+    ax.set_title(f'Von Mises Stress\n{plot_title}')
     ax.set_xlabel('X [mm]')
     ax.set_ylabel('Y [mm]')
     cb = fig.colorbar(pc, ax=ax)
     cb.set_label('Von Mises Stress [MPa]')
+    sfig(title)
     plt.show()
 
 #%%
@@ -1052,7 +1064,7 @@ a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, 
 # ------------------------------------------------------------------
 printt('Postprocess - fine mesh')
 # ------------------------------------------------------------------
-title = 'Medium mesh - Total Vertical Reaction Force vs Displacement'
+title = 'Fine mesh - Total Vertical Reaction Force vs Displacement'
 plt.figure()
 plt.plot(disp_history, force_history, '-o')
 plt.title(title)
