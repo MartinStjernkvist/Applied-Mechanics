@@ -546,7 +546,10 @@ def yeoh_functions():
     dPvdFv = P_vec.jacobian(Fv)
     
     # Validation helper
-    P_mat = sp.Matrix([[P_vec[0], P_vec[2], 0], [P_vec[1], P_vec[3], 0], [0,0,0]])
+    P_mat = sp.Matrix([
+        [P_vec[0], P_vec[2], 0], 
+        [P_vec[1], P_vec[3], 0], 
+        [0,0,0]])
     S_mat = F.inv() * P_mat
     S_vec_out = sp.Matrix([S_mat[0,0], S_mat[1,1], S_mat[0,1], S_mat[1,0]])
     
@@ -779,14 +782,7 @@ import scipy.sparse as sps
 def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
     
     # Load mesh
-    try:
-        Ex, Ey, Edof, dof_upper, dof_lower, ndofs, nelem, nnodes = read_toplogy_from_mat_file(filename)
-    except FileNotFoundError:
-        print(f"Error: {filename} not found.")
-        return None, None, None
-    
-    ndof = int(np.max(Edof[:, 1:])) 
-    nel = Edof.shape[0]
+    Ex, Ey, Edof, dof_upper, dof_lower, ndof, nel, nnodes = read_toplogy_from_mat_file(filename)
     
     # Pre-processing
     Edof_indices = Edof[:, 1:].astype(np.int64) - 1
@@ -801,7 +797,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
 
     # Element Data Storage
     tri6_func = generate_fast_tri6()
-    print("Pre-computing element matrices...")
+    print('Pre-computing element matrices')
     element_store = []
     
     for el in range(nel):
@@ -815,7 +811,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     force_history = [0.0]
     disp_history = [0.0]
 
-    print(f"Starting Solver: {n_steps} steps, Target u_y = {u_final:.1f} mm")
+    print(f'Starting Solver')
 
     for step, u_app in enumerate(u_steps):
         if step == 0: continue 
@@ -874,7 +870,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
                 idx_start = el * nnz_per_el
                 data[idx_start : idx_start + nnz_per_el] = Ke.ravel()
                 
-            # --- Global Solve ---
+            # Global solve
             
             # Create CSR matrix
             K_global = sps.coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
@@ -885,8 +881,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
             
             if res_norm < tol:
                 converged = True
-                if step % 5 == 0:
-                    print(f"Step {step}: Converged (Iter {it}, Res {res_norm:.2e})")
+                print(f"Step {step}: Converged (Iter {it}, Res {res_norm:.2e})")
                 break
             
             # Solve system
@@ -1005,7 +1000,7 @@ printt('Run solver - coarse mesh')
 # ------------------------------------------------------------------
 filename = 'topology_coarse_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=200, tol=1e-5, u_final=20, h=100)
+a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
 
 #%%
 # ------------------------------------------------------------------
@@ -1028,7 +1023,7 @@ printt('Run solver - medium mesh')
 # ------------------------------------------------------------------
 filename = 'topology_medium_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=200, tol=1e-5, u_final=20, h=100)
+a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
 
 #%%
 # ------------------------------------------------------------------
@@ -1044,5 +1039,28 @@ plt.grid(True)
 sfig(title)
 plt.show()
 plot_stress(a, filename, plot_title='medium ')
+
+#%%
+# ------------------------------------------------------------------
+printt('Run solver - fine mesh')
+# ------------------------------------------------------------------
+filename = 'topology_fine_6node.mat'
+
+a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
+
+#%%
+# ------------------------------------------------------------------
+printt('Postprocess - fine mesh')
+# ------------------------------------------------------------------
+title = 'Medium mesh - Total Vertical Reaction Force vs Displacement'
+plt.figure()
+plt.plot(disp_history, force_history, '-o')
+plt.title(title)
+plt.xlabel('Displacement u_Gamma [m]')
+plt.ylabel('Reaction Force [N]')
+plt.grid(True)
+sfig(title)
+plt.show()
+plot_stress(a, filename, plot_title='fine')
 
 #%%
