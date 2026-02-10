@@ -505,9 +505,7 @@ new_subtask('Task 2 b) - Yeoh hyperelsatic material model')
 ####################################################################################################
 #===================================================================================================
 
-# ------------------------------------------------------------------
 # Define inputs
-# ------------------------------------------------------------------
 F_11_min = 0.5
 F_11_max = 1.5
 F_11_vals = np.linspace(F_11_min, F_11_max, 100)
@@ -524,10 +522,7 @@ D1 = 0.02 # 1 / Pa
 D2 = 0.01
 D3 = 0.01
 
-# ------------------------------------------------------------------
-# Yeoh
-# ------------------------------------------------------------------
-def generate_yeoh_functions():
+def yeoh_functions():
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
     F = sp.Matrix([
@@ -548,79 +543,42 @@ def generate_yeoh_functions():
             + (1 / D3) * (J - 1)**6
 
     P_vec = sp.diff(U0_val, Fv)
-    
     dPvdFv = P_vec.jacobian(Fv)
     
-    P_mat = sp.Matrix([
-        [P_vec[0], P_vec[2], 0],
-        [P_vec[1], P_vec[3], 0],
-        [0,        0,        0]
-    ])
-    
+    # Validation helper
+    P_mat = sp.Matrix([[P_vec[0], P_vec[2], 0], [P_vec[1], P_vec[3], 0], [0,0,0]])
     S_mat = F.inv() * P_mat
-
     S_vec_out = sp.Matrix([S_mat[0,0], S_mat[1,1], S_mat[0,1], S_mat[1,0]])
     
-    # Lambdify
-    P_func = sp.lambdify(Fv, P_vec, modules="numpy")
-    dPvdFv_func = sp.lambdify(Fv, dPvdFv, modules="numpy")
-    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy')
+    P_func = sp.lambdify([Fv], P_vec, modules="numpy", cse=True)
+    dPvdFv_func = sp.lambdify([Fv], dPvdFv, modules="numpy", cse=True)
+    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy', cse=True)
     
     return P_func, dPvdFv_func, S_func
 
-# ------------------------------------------------------------------
-# Neo-Hooke
-# ------------------------------------------------------------------
-# Translation of matlab code in section 5.2.10
-def generate_neohooke_functions():
-    
-    # MATLAB: Fv = sym(Fv,[4,1], real)
+def neohooke_functions():
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True))
-
-    # MATLAB: F=[Fv(1) Fv(3) 0; Fv(4) Fv(2) 0; 0 0 1];
-    F = sp.Matrix([
-        [Fv[0], Fv[2], 0],
-        [Fv[1], Fv[3], 0],
-        [0,     0,     1]
-    ])
-
-    # MATLAB: C=F*F
+    F = sp.Matrix([[Fv[0], Fv[2], 0], [Fv[1], Fv[3], 0], [0, 0, 1]])
     C = F.T * F 
-    
-    # MATLAB: invC=simplify(inv(C))
     invC = sp.simplify(C.inv())
-    
-    # MATLAB: J=det(F)
     J = F.det()
 
-    # MATLAB: S=Gmod*( eye(3)-invC)+lambda*log(J)*invC;
     S = G_val * (sp.eye(3) - invC) + lam_val * sp.log(J) * invC
-    
-    # MATLAB: P=F*S
     P = F * S
-
-    # MATLAB: Pv=[P(1,1) P(2,2) P(1,2) P(2,1)]
-    # Python indices: (0,0), (1,1), (0,1), (1,0)
     Pv = sp.Matrix([P[0,0], P[1,1], P[0,1], P[1,0]])
-
-    # MATLAB: dPvdFv=sym(dPvFv,[4,4], real )
-    # Loop i=1:4 ... gradient(Pv(i),Fv)
-    
-    # In SymPy, we can calculate the Jacobian matrix directly without a loop
     dPvdFv = Pv.jacobian(Fv)
 
     S_vec_out = sp.Matrix([S[0,0], S[1,1], S[0,1], S[1,0]])
     
-    # Lambdify
-    dPdF_func = sp.lambdify(Fv, dPvdFv, modules='numpy')
-    P_func = sp.lambdify(Fv, Pv, modules='numpy')
-    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy')
+    dPdF_func = sp.lambdify([Fv], dPvdFv, modules='numpy', cse=True)
+    P_func = sp.lambdify([Fv], Pv, modules='numpy', cse=True)
+    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy', cse=True)
 
     return P_func, dPdF_func, S_func
 
-# Generate the functions once
-P_Yeoh_func, dPvdFv_Yeoh_func, S_Yeoh_func = generate_yeoh_functions()
-P_Neo_func, dPvdFv_Neo_func, S_Neo_func = generate_neohooke_functions()
+# Generate functions
+P_Yeoh_func, dPvdFv_Yeoh_func, S_Yeoh_func = yeoh_functions()
+P_Neo_func, dPvdFv_Neo_func, S_Neo_func = neohooke_functions()
 
 # Solve
 sigma11_yeoh = []
@@ -745,18 +703,20 @@ def precompute_element(X_ref, fast_func, thickness=1.0):
 
 
 def el6_yeoh(u, element_data):
+    # Pre-allocate output arrays
     Ke = np.zeros((12, 12))
     fe = np.zeros(12)
-    I_vec = np.array([1.0, 0.0, 0.0, 1.0]) # Identity F
-
+    
+    # Loop over pre-computed Gauss points
     for B, dv in element_data:
         # Kinematics
-        grad_u = B @ u
-        F_vec = I_vec + grad_u
+        F_vec = B @ u
+        F_vec[0] += 1.0
+        F_vec[3] += 1.0
         
-        # Material
-        P = P_Yeoh_func(*F_vec).flatten()       # (4,)
-        A = dPvdFv_Yeoh_func(*F_vec).reshape(4,4) # (4,4)
+        # Material Evaluation
+        P = P_Yeoh_func(F_vec).flatten() 
+        A = dPvdFv_Yeoh_func(F_vec)      
         
         # Integration
         fe += (B.T @ P) * dv
@@ -818,9 +778,7 @@ import scipy.sparse as sps
 
 def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
     
-    # ------------------------------------------------------------------
     # Load mesh
-    # ------------------------------------------------------------------
     try:
         Ex, Ey, Edof, dof_upper, dof_lower, ndofs, nelem, nnodes = read_toplogy_from_mat_file(filename)
     except FileNotFoundError:
@@ -830,140 +788,130 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     ndof = int(np.max(Edof[:, 1:])) 
     nel = Edof.shape[0]
     
-    # Initialize global displacements
-    a = np.zeros(ndof)
+    # Pre-processing
+    Edof_indices = Edof[:, 1:].astype(np.int64) - 1
     
-    # ------------------------------------------------------------------
-    # Precompute sparse pattern once
-    # ------------------------------------------------------------------
+    # Precompute pattern
     rows_pattern, cols_pattern = precompute_pattern(Edof)
     nnz_per_el = 12 * 12
     nnz_total = nel * nnz_per_el
-
-    # Compile the symbolic function once
-    tri6_func = generate_fast_tri6()
     
-    # Store constant data for every element
+    # Pre-allocate data array for COO matrix
+    data = np.empty(nnz_total, dtype=float)
+
+    # Element Data Storage
+    tri6_func = generate_fast_tri6()
     print("Pre-computing element matrices...")
-    element_store = [] # List to hold data for all elements
+    element_store = []
     
     for el in range(nel):
-        # Extract coordinates for this element
-        ex_el = Ex[el, :]
-        ey_el = Ey[el, :]
-        X_ref = np.vstack([ex_el, ey_el]).T # Shape (6, 2)
-        
-        # Generate B-matrices and volumes
-        # Calculate once
-        data = precompute_element(X_ref, tri6_func, thickness=h)
-        element_store.append(data)
+        X_ref = np.vstack([Ex[el, :], Ey[el, :]]).T
+        # Calculate B and detJ constants once
+        element_store.append(precompute_element(X_ref, tri6_func, thickness=h))
     
-    # ------------------------------------------------------------------
-    # Time Stepping Setup
-    # ------------------------------------------------------------------
+    # Time stepping
+    a = np.zeros(ndof)
     u_steps = np.linspace(0, u_final, n_steps + 1)
     force_history = [0.0]
     disp_history = [0.0]
 
     print(f"Starting Solver: {n_steps} steps, Target u_y = {u_final:.1f} mm")
 
-    # ------------------------------------------------------------------
-    # Load step loop
-    # ------------------------------------------------------------------
     for step, u_app in enumerate(u_steps):
         if step == 0: continue 
-            
-        print(f"Step {step}/{n_steps}, Applied Disp: {u_app:.2f} mm ... ", end="")
         
-        # Boundary conditions
+        # Boundary Conditions
         bc_dofs = []
         bc_vals = []
         
+        # Dofs
         top_y_dofs = [d - 1 for d in dof_upper if d % 2 == 0]
         bot_y_dofs = [d - 1 for d in dof_lower if d % 2 == 0]
+        bot_x_dofs = [d - 1 for d in dof_lower if d % 2 == 1]
 
+        # Values
         bc_dofs.extend(bot_y_dofs)
         bc_vals.extend([0.0] * len(bot_y_dofs))
         
         bc_dofs.extend(top_y_dofs)
         bc_vals.extend([u_app] * len(top_y_dofs))
         
-        bot_x_dofs = [d - 1 for d in dof_lower if d % 2 == 1]
         if bot_x_dofs:
             bc_dofs.append(bot_x_dofs[0])
             bc_vals.append(0.0)
-        
+            
         bc_dofs = np.array(bc_dofs, dtype=int)
         bc_vals = np.array(bc_vals)
+        
+        # Apply BCs
         a[bc_dofs] = bc_vals
         
-        # ------------------------------------------------------------------
+        # Free DOFs mask
+        free_mask = np.ones(ndof, dtype=bool)
+        free_mask[bc_dofs] = False
+        free_dofs = np.where(free_mask)[0]
+
         # Newton-Raphson loop
-        # ------------------------------------------------------------------
         converged = False
         
         for it in range(max_iter):
-            # ------------------------------------------------------------------
-            # Assembly
-            # ------------------------------------------------------------------
-            data = np.empty(nnz_total, dtype=float)
+            
+            # Reset global force
             f_int = np.zeros(ndof)
             
+            # Element Loop
             for el in range(nel):
-                edof_indices = Edof[el, 1:].astype(int) - 1 
-                u_loc = a[edof_indices]
+                # Use pre-calculated indices
+                edof_idx = Edof_indices[el]
+                u_loc = a[edof_idx]
                 
                 Ke, fe = el6_yeoh(u_loc, element_store[el])
                 
-                if np.any(np.isnan(fe)):
-                    print(f"\n[Error] Element {el} inverted (NaN force).")
-                    return a, disp_history, force_history
+                # Assemble force
+                f_int[edof_idx] += fe
                 
-                f_int[edof_indices] += fe
-                
+                # Store stiffness data
                 idx_start = el * nnz_per_el
-                idx_end = idx_start + nnz_per_el
-                data[idx_start:idx_end] = Ke.ravel()
+                data[idx_start : idx_start + nnz_per_el] = Ke.ravel()
                 
+            # --- Global Solve ---
+            
+            # Create CSR matrix
             K_global = sps.coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
-        
-            free_dofs = np.setdiff1d(np.arange(ndof), bc_dofs)
+            
+            # Residual
             r = -f_int[free_dofs]
             res_norm = np.linalg.norm(r)
             
             if res_norm < tol:
                 converged = True
-                print(f"Converged (Iter {it}, Res {res_norm:.2e})")
+                if step % 5 == 0:
+                    print(f"Step {step}: Converged (Iter {it}, Res {res_norm:.2e})")
                 break
             
+            # Solve system
             K_free = K_global[free_dofs, :][:, free_dofs]
             
             try:
                 da_free = spla.spsolve(K_free, r)
-            except RuntimeError:
-                print("\n[Error] Matrix is singular.")
+            except Exception as e:
+                print(f"\n[Error] Solver failed: {e}")
                 return a, disp_history, force_history
             
             a[free_dofs] += da_free
-            a[bc_dofs] = bc_vals
-            
-            if it < 10 and it > 0:
-                 pass
 
-        if converged:
-            Ry_top = np.sum(f_int[top_y_dofs])
-            force_history.append(Ry_top)
-            disp_history.append(u_app)
-        else:
+        if not converged:
             print(f"\n[Warning] Step {step} did not converge.")
             break
+            
+        # Store reaction force
+        Ry_top = np.sum(f_int[top_y_dofs])
+        force_history.append(Ry_top)
+        disp_history.append(u_app)
 
     return a, disp_history, force_history
 
 def plot_stress(a, filename, plot_title=''):
-    # -------------------------------------------------
-    # Setup
-    # -------------------------------------------------
     # Load mesh
     Ex, Ey, Edof, _, _, _, _, _ = read_toplogy_from_mat_file(filename)
     nel = Edof.shape[0]
@@ -976,14 +924,8 @@ def plot_stress(a, filename, plot_title=''):
     
     Es = np.zeros((nel, 4))
     polygons = []
-
-    # -------------------------------------------------
-    # Element loop
-    # -------------------------------------------------
-    print("Computing stresses for visualization...")
     
     for el in range(nel):
-        # -- Get Element Data --
         edofs = Edof[el, 1:].astype(int) - 1
         u_el = a[edofs]
         
@@ -997,12 +939,10 @@ def plot_stress(a, filename, plot_title=''):
         B_cent, detJ_cent = tri6_func(xi_c, eta_c, *coords)
         
         # Compute kinematics
-        # F_vec = I + B * u  -> [F11, F21, F12, F22]
         grad_u = B_cent @ u_el
         F_vec = np.array([1.0, 0.0, 0.0, 1.0]) + grad_u
         
         # Reconstruct F Matrix (2x2) for stress push-forward
-        # F_vec is [F11, F21, F12, F22] (Column-Major)
         F_mat = np.array([
             [F_vec[0], F_vec[2]],
             [F_vec[1], F_vec[3]]
@@ -1012,7 +952,7 @@ def plot_stress(a, filename, plot_title=''):
         J = F_mat[0,0]*F_mat[1,1] - F_mat[0,1]*F_mat[1,0]
         
         # Get First Piola-Kirchhoff stress (vector)
-        P_out = P_Yeoh_func(*F_vec) # Returns [P11, P21, P12, P22]
+        P_out = P_Yeoh_func(F_vec)
         P_vals = np.array(P_out).flatten()
         
         P_tensor = np.array([
@@ -1032,7 +972,7 @@ def plot_stress(a, filename, plot_title=''):
         
         Es[el, :] = [s11, s22, s12, s_vm]
         
-        # Deformed coordinates: x = X + u
+        # Deformed coordinates
         x_nodes = ex + u_el[0::2]
         y_nodes = ey + u_el[1::2]
         
@@ -1040,9 +980,7 @@ def plot_stress(a, filename, plot_title=''):
         poly_coords = np.column_stack([x_nodes[[0, 1, 2]], y_nodes[[0, 1, 2]]])
         polygons.append(poly_coords)
 
-    # -------------------------------------------------
     # Plotting
-    # -------------------------------------------------
     fig, ax = plt.subplots(figsize=(10, 8))
     pc = PolyCollection(
         polygons,
@@ -1096,7 +1034,7 @@ a, disp_history, force_history = solve_task_2d(filename, n_steps=200, tol=1e-5, 
 # ------------------------------------------------------------------
 printt('Postprocess - medium mesh')
 # ------------------------------------------------------------------
-title = 'Fine mesh - Total Vertical Reaction Force vs Displacement'
+title = 'Medium mesh - Total Vertical Reaction Force vs Displacement'
 plt.figure()
 plt.plot(disp_history, force_history, '-o')
 plt.title(title)
@@ -1105,6 +1043,6 @@ plt.ylabel('Reaction Force [N]')
 plt.grid(True)
 sfig(title)
 plt.show()
-plot_stress(a, filename, plot_title='coarse')
+plot_stress(a, filename, plot_title='medium ')
 
 #%%
