@@ -679,6 +679,7 @@ new_subtask('Task 2 c) - Own element function')
 ####################################################################################################
 #===================================================================================================
 
+"""
 def shape_fun_tri6(xi, eta):
     
     L = 1.0 - xi - eta
@@ -812,6 +813,93 @@ def el6_yeoh(ex, ey, u, thickness=1.0, return_validation=False):
     if return_validation:
         return Ke, fe, np.array(F_list), np.array(P_list)
     return Ke, fe
+"""
+
+def generate_fast_tri6():
+    print("Compiling symbolic element function (runs once)...")
+    
+    xi, eta = sp.symbols('xi eta')
+    x_nodes = [sp.symbols(f'x{i}') for i in range(6)] # x1..x6
+    y_nodes = [sp.symbols(f'y{i}') for i in range(6)] # y1..y6
+    
+    # Shape Functions
+    L = 1.0 - xi - eta
+    Ns = [
+        L*(2*L-1),       # N1
+        xi*(2*xi-1),     # N2
+        eta*(2*eta-1),   # N3
+        4*xi*L,          # N4
+        4*xi*eta,        # N5
+        4*eta*L          # N6
+    ]
+    
+    # Mappings
+    x_map = sum(N*x for N, x in zip(Ns, x_nodes))
+    y_map = sum(N*y for N, y in zip(Ns, y_nodes))
+    
+    # Jacobian
+    J = sp.Matrix([[sp.diff(x_map, xi), sp.diff(x_map, eta)],
+                   [sp.diff(y_map, xi), sp.diff(y_map, eta)]])
+    detJ = J.det()
+    invJ = J.inv()
+    
+    # Derivatives dN/dX (Reference Config)
+    dN_dxi_list = [sp.Matrix([sp.diff(N, xi), sp.diff(N, eta)]) for N in Ns]
+    dN_dX_list = [invJ.T @ dN for dN in dN_dxi_list]
+    
+    B = sp.zeros(4, 12)
+    for i in range(6):
+        dN_dX = dN_dX_list[i]
+        # F11 (row 0), F21 (row 1) use dN/dX
+        B[0, 2*i]   = dN_dX[0] # u
+        B[1, 2*i+1] = dN_dX[0] # v
+        # F12 (row 2), F22 (row 3) use dN/dY
+        B[2, 2*i]   = dN_dX[1] # u
+        B[3, 2*i+1] = dN_dX[1] # v
+
+    # Compile
+    return sp.lambdify([xi, eta] + x_nodes + y_nodes, [B, detJ], 'numpy')
+
+
+def precompute_element(X_ref, fast_func, thickness=1.0):
+    # Gauss points
+    gps = [(1./6, 1./6, 1./6), (2./3, 1./6, 1./6), (1./6, 2./3, 1./6)]
+    
+    # Flatten coordinates: x1, x2... y1, y2...
+    coords = list(X_ref[:, 0]) + list(X_ref[:, 1])
+    
+    element_data = []
+    for xi, eta, w in gps:
+        # Call the compiled function
+        B_val, detJ_val = fast_func(xi, eta, *coords)
+        
+        # Store constant data
+        dv = detJ_val * w * thickness
+        element_data.append((B_val, dv))
+        
+    return element_data
+
+
+def el6_yeoh(u, element_data):
+    Ke = np.zeros((12, 12))
+    fe = np.zeros(12)
+    I_vec = np.array([1.0, 0.0, 0.0, 1.0]) # Identity F
+
+    for B, dv in element_data:
+        # Kinematics
+        grad_u = B @ u
+        F_vec = I_vec + grad_u
+        
+        # Material
+        P = P_Yeoh_func(*F_vec).flatten()       # (4,)
+        A = dPvdFv_Yeoh_func(*F_vec).reshape(4,4) # (4,4)
+        
+        # Integration
+        fe += (B.T @ P) * dv
+        
+        Ke += (B.T @ A @ B) * dv
+        
+    return Ke, fe
 
 X_ref = np.array([
     [0.0, 0.0], # 1
@@ -836,7 +924,14 @@ ey_ref = X_ref[:, 1].T
 
 u = (x_curr - X_ref).flatten()
 
-Ke_val, fe_val, F_res, P_res = el6_yeoh(ex_ref, ey_ref, u, thickness=0.001, return_validation=True)
+# Run once
+tri6_func = generate_fast_tri6()
+
+# Run once for each mesh
+element_data = precompute_element(X_ref, tri6_func, thickness=0.001)
+    
+Ke_val, fe_val, F_res, P_res = el6_yeoh(u, element_data)
+# Ke_val, fe_val, F_res, P_res = el6_yeoh(ex_ref, ey_ref, u, thickness=0.001, return_validation=True)
 
 printt('REFERENCE RESULTS, FOR VALIDATION:')
 print('deformation_gradient_2d:')
@@ -854,7 +949,10 @@ print(Ke_val[0:8, 0:8])
 new_subtask('Task 2 d) - Combine routines')
 ####################################################################################################
 #===================================================================================================
-    
+
+import scipy.sparse as sps
+
+"""
 def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
     
     # ------------------------------------------------------------------
@@ -1008,8 +1106,152 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
             break
 
     return a, disp_history, force_history
+"""
+def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
+    
+    # ------------------------------------------------------------------
+    # Load mesh
+    # ------------------------------------------------------------------
+    try:
+        Ex, Ey, Edof, dof_upper, dof_lower, ndofs, nelem, nnodes = read_toplogy_from_mat_file(filename)
+    except FileNotFoundError:
+        print(f"Error: {filename} not found.")
+        return None, None, None
+    
+    ndof = int(np.max(Edof[:, 1:])) 
+    nel = Edof.shape[0]
+    
+    # Initialize global displacements
+    a = np.zeros(ndof)
+    
+    # ------------------------------------------------------------------
+    # Precompute sparse pattern once
+    # ------------------------------------------------------------------
+    rows_pattern, cols_pattern = precompute_pattern(Edof)
+    nnz_per_el = 12 * 12
+    nnz_total = nel * nnz_per_el
 
+    # Compile the symbolic function once
+    tri6_func = generate_fast_tri6()
+    
+    # Store constant data for every element
+    print("Pre-computing element matrices...")
+    element_store = [] # List to hold data for all elements
+    
+    for el in range(nel):
+        # Extract coordinates for this element
+        ex_el = Ex[el, :]
+        ey_el = Ey[el, :]
+        X_ref = np.vstack([ex_el, ey_el]).T # Shape (6, 2)
+        
+        # Generate B-matrices and volumes
+        # Calculate once
+        data = precompute_element(X_ref, tri6_func, thickness=h)
+        element_store.append(data)
+    
+    # ------------------------------------------------------------------
+    # Time Stepping Setup
+    # ------------------------------------------------------------------
+    u_steps = np.linspace(0, u_final, n_steps + 1)
+    force_history = [0.0]
+    disp_history = [0.0]
 
+    print(f"Starting Solver: {n_steps} steps, Target u_y = {u_final:.1f} mm")
+
+    # ------------------------------------------------------------------
+    # Load step loop
+    # ------------------------------------------------------------------
+    for step, u_app in enumerate(u_steps):
+        if step == 0: continue 
+            
+        print(f"Step {step}/{n_steps}, Applied Disp: {u_app:.2f} mm ... ", end="")
+        
+        # Boundary conditions
+        bc_dofs = []
+        bc_vals = []
+        
+        top_y_dofs = [d - 1 for d in dof_upper if d % 2 == 0]
+        bot_y_dofs = [d - 1 for d in dof_lower if d % 2 == 0]
+
+        bc_dofs.extend(bot_y_dofs)
+        bc_vals.extend([0.0] * len(bot_y_dofs))
+        
+        bc_dofs.extend(top_y_dofs)
+        bc_vals.extend([u_app] * len(top_y_dofs))
+        
+        bot_x_dofs = [d - 1 for d in dof_lower if d % 2 == 1]
+        if bot_x_dofs:
+            bc_dofs.append(bot_x_dofs[0])
+            bc_vals.append(0.0)
+        
+        bc_dofs = np.array(bc_dofs, dtype=int)
+        bc_vals = np.array(bc_vals)
+        a[bc_dofs] = bc_vals
+        
+        # ------------------------------------------------------------------
+        # Newton-Raphson loop
+        # ------------------------------------------------------------------
+        converged = False
+        
+        for it in range(max_iter):
+            # ------------------------------------------------------------------
+            # Assembly
+            # ------------------------------------------------------------------
+            data = np.empty(nnz_total, dtype=float)
+            f_int = np.zeros(ndof)
+            
+            for el in range(nel):
+                edof_indices = Edof[el, 1:].astype(int) - 1 
+                u_loc = a[edof_indices]
+                
+                Ke, fe = el6_yeoh(u_loc, element_store[el])
+                
+                if np.any(np.isnan(fe)):
+                    print(f"\n[Error] Element {el} inverted (NaN force).")
+                    return a, disp_history, force_history
+                
+                f_int[edof_indices] += fe
+                
+                idx_start = el * nnz_per_el
+                idx_end = idx_start + nnz_per_el
+                data[idx_start:idx_end] = Ke.ravel()
+                
+            K_global = sps.coo_matrix((data, (rows_pattern, cols_pattern)), shape=(ndof, ndof)).tocsr()
+        
+            free_dofs = np.setdiff1d(np.arange(ndof), bc_dofs)
+            r = -f_int[free_dofs]
+            res_norm = np.linalg.norm(r)
+            
+            if res_norm < tol:
+                converged = True
+                print(f"Converged (Iter {it}, Res {res_norm:.2e})")
+                break
+            
+            K_free = K_global[free_dofs, :][:, free_dofs]
+            
+            try:
+                da_free = spla.spsolve(K_free, r)
+            except RuntimeError:
+                print("\n[Error] Matrix is singular.")
+                return a, disp_history, force_history
+            
+            a[free_dofs] += da_free
+            a[bc_dofs] = bc_vals
+            
+            if it < 10 and it > 0:
+                 pass
+
+        if converged:
+            Ry_top = np.sum(f_int[top_y_dofs])
+            force_history.append(Ry_top)
+            disp_history.append(u_app)
+        else:
+            print(f"\n[Warning] Step {step} did not converge.")
+            break
+
+    return a, disp_history, force_history
+
+"""
 def plot_stress(a, filename='topology_coarse_6node.mat', plot_title='coarse'):
     # -------------------------------------------------
     # Stress computation
@@ -1090,6 +1332,112 @@ def plot_stress(a, filename='topology_coarse_6node.mat', plot_title='coarse'):
     cb = fig.colorbar(pc, ax=ax)
     cb.set_label('Von Mises Stress [MPa]')
     plt.show()
+"""    
+
+def plot_stress(a, filename, plot_title=''):
+    """
+    Plots the Von Mises stress at the element centroids.
+    Reuses the fast symbolic function and material model.
+    """
+    # -------------------------------------------------
+    # Setup
+    # -------------------------------------------------
+    # Load mesh
+    Ex, Ey, Edof, _, _, _, _, _ = read_toplogy_from_mat_file(filename)
+    nel = Edof.shape[0]
+
+    # Compile/Get the fast element function
+    tri6_func = generate_fast_tri6()
+    
+    # Centroid coordinates
+    xi_c, eta_c = 1.0/3.0, 1.0/3.0
+    
+    Es = np.zeros((nel, 4))
+    polygons = []
+
+    # -------------------------------------------------
+    # Element loop
+    # -------------------------------------------------
+    print("Computing stresses for visualization...")
+    
+    for el in range(nel):
+        # -- Get Element Data --
+        edofs = Edof[el, 1:].astype(int) - 1
+        u_el = a[edofs]
+        
+        ex = Ex[el, :]
+        ey = Ey[el, :]
+        
+        # Flatten coords for the function call
+        coords = list(ex) + list(ey)
+        
+        # Get B-matrix and detJ at the centroid
+        B_cent, detJ_cent = tri6_func(xi_c, eta_c, *coords)
+        
+        # Compute kinematics
+        # F_vec = I + B * u  -> [F11, F21, F12, F22]
+        grad_u = B_cent @ u_el
+        F_vec = np.array([1.0, 0.0, 0.0, 1.0]) + grad_u
+        
+        # Reconstruct F Matrix (2x2) for stress push-forward
+        # F_vec is [F11, F21, F12, F22] (Column-Major)
+        F_mat = np.array([
+            [F_vec[0], F_vec[2]],
+            [F_vec[1], F_vec[3]]
+        ])
+        
+        # Jacobian determinant
+        J = F_mat[0,0]*F_mat[1,1] - F_mat[0,1]*F_mat[1,0]
+        
+        # Get First Piola-Kirchhoff stress (vector)
+        P_out = P_Yeoh_func(*F_vec) # Returns [P11, P21, P12, P22]
+        P_vals = np.array(P_out).flatten()
+        
+        P_tensor = np.array([
+            [P_vals[0], P_vals[2]],
+            [P_vals[1], P_vals[3]]
+        ])
+        
+        # Compute Cauchy stress
+        Sigma = (1.0/J) * P_tensor @ F_mat.T
+        
+        s11 = Sigma[0,0]
+        s22 = Sigma[1,1]
+        s12 = Sigma[0,1]
+        
+        # Von Mises
+        s_vm = np.sqrt(s11**2 + s22**2 - s11*s22 + 3*s12**2)
+        
+        Es[el, :] = [s11, s22, s12, s_vm]
+        
+        # Deformed coordinates: x = X + u
+        x_nodes = ex + u_el[0::2]
+        y_nodes = ey + u_el[1::2]
+        
+        # Create polygon
+        poly_coords = np.column_stack([x_nodes[[0, 1, 2]], y_nodes[[0, 1, 2]]])
+        polygons.append(poly_coords)
+
+    # -------------------------------------------------
+    # Plotting
+    # -------------------------------------------------
+    fig, ax = plt.subplots(figsize=(10, 8))
+    pc = PolyCollection(
+        polygons,
+        array=Es[:, 3], # Plot Von Mises
+        cmap='turbo',
+        edgecolors='black',
+        linewidths=0.2
+    )
+    ax.add_collection(pc)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    ax.set_title(f'Von Mises Stress [MPa]\n{plot_title}')
+    ax.set_xlabel('X [mm]')
+    ax.set_ylabel('Y [mm]')
+    cb = fig.colorbar(pc, ax=ax)
+    cb.set_label('Von Mises Stress [MPa]')
+    plt.show()
 
 #%%
 # ------------------------------------------------------------------
@@ -1097,7 +1445,7 @@ printt('Run solver - coarse mesh')
 # ------------------------------------------------------------------
 filename = 'topology_coarse_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
+a, disp_history, force_history = solve_task_2d(filename, n_steps=200, tol=1e-5, u_final=20, h=100)
 
 #%%
 # ------------------------------------------------------------------
@@ -1120,7 +1468,7 @@ printt('Run solver - medium mesh')
 # ------------------------------------------------------------------
 filename = 'topology_medium_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
+a, disp_history, force_history = solve_task_2d(filename, n_steps=200, tol=1e-5, u_final=20, h=100)
 
 #%%
 # ------------------------------------------------------------------
