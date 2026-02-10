@@ -1017,26 +1017,19 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
             a[free_dofs] += da_free
             a[bc_dofs] = bc_vals
             
-            if it < 5 or it % 5 == 0:  # Print first 5 iterations and every 5th
-                print(f"\n  Iter {it}: res = {res_norm:.2e}")
+            if it < 10:
+                print(f'\nIter {it}: \nres = {res_norm:.2e}')
                 if it > 0:
-                    print(f"    max|da| = {np.max(np.abs(da_free)):.2e}")
-                    print(f"    max|a_free| = {np.max(np.abs(a[free_dofs])):.2e}")
+                    print(f'    max|da| = {np.max(np.abs(da_free)):.2e}')
+                    print(f'    max|a_free| = {np.max(np.abs(a[free_dofs])):.2e}')
                     # Check if K is singular
                     K_cond = np.linalg.cond(K_free.toarray()) if K_free.shape[0] < 1000 else -1
                     if K_cond > 0:
-                        print(f"    K condition number: {K_cond:.2e}")
-                  
-            if it == 0:
-                print(f"\n  Initial residual: {res_norm:.2e}")
+                        print(f'    K condition number: {K_cond:.2e}')
         
-        # ------------------------------------------------------------------
-        # 5. Post-Processing (Only if converged)
-        # ------------------------------------------------------------------
         if converged:
-            # Reaction force is the sum of internal forces at constrained nodes
             Ry_top = np.sum(f_int[top_y_dofs])
-            print(f'Ry_top: {Ry_top}')
+            print(f'Ry_top: {Ry_top:.2e}')
             
             force_history.append(Ry_top)
             disp_history.append(u_app)
@@ -1153,15 +1146,15 @@ plt.show()
 plot_stress(a, filename, plot_title='coarse')
 #%%
 # ------------------------------------------------------------------
-printt('Run solver - fine mesh')
+printt('Run solver - medium mesh')
 # ------------------------------------------------------------------
-filename = 'topology_fine_6node.mat'
+filename = 'topology_medium_6node.mat'
 
 a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
 
 #%%
 # ------------------------------------------------------------------
-printt('Postprocess - fine mesh')
+printt('Postprocess - medium mesh')
 # ------------------------------------------------------------------
 title = 'Fine mesh - Total Vertical Reaction Force vs Displacement'
 plt.figure()
