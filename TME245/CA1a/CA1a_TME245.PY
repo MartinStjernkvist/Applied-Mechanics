@@ -93,6 +93,37 @@ def displayvar(name: str, var, post: Optional[str] = None, accuracy: Optional[in
         display(Math(f"{name} = {sp.latex(var)}") )
     else:
         display(Math(f"{name} \\approx {sp.latex(sp.sympify(var).evalf(accuracy))}"))
+        
+#===================================================================================================
+####################################################################################################
+new_subtask('Task 1 - Force vs displacement plot ')
+####################################################################################################
+#===================================================================================================
+
+tens_time_vals = [0, 0.25, 0.5, 0.59375, 0.744375, 0.945312, 1]
+tens_u_vals = [i * 20 for i in tens_time_vals]
+tens_vals = [0, 3487.1, 6546.13, 7585.47, 9045.55, 11036.1, 11517.2]
+
+comp_time_vals = [0, 0.25, 0.5, 0.875, 1]
+comp_u_vals = [i * (-15) for i in comp_time_vals]
+comp_vals = [0, -2872.04, -5897.17, -10491.7, -11999.8] 
+
+title = 'Reaction force vs displacement - tension (Abaqus)'
+plt.figure()
+plt.plot(tens_u_vals, tens_vals, 'o-')
+plt.xlabel('uΓ [mm]')
+plt.ylabel('vertical reaction force [N]')
+sfig(title)
+plt.show()
+
+title = 'Reaction force vs displacement - compression (Abaqus)'
+plt.figure()
+plt.plot(comp_u_vals, comp_vals, 'o-')
+plt.xlabel('uΓ [mm]')
+plt.ylabel('vertical reaction force [N]')
+sfig(title)
+plt.show()
+
 
 #===================================================================================================
 ####################################################################################################
@@ -151,7 +182,6 @@ Be_func_cst = sp.lambdify((xe1, xe2, xe3), Be, modules="numpy")
 Ae_func = sp.lambdify((xe1, xe2, xe3), Ae, modules="numpy")
 
 # ------------------------------------------------------------------
-# To save computation time during assembly:
 # Precompute sparse pattern once
 # ------------------------------------------------------------------
 def precompute_pattern(Edof):
@@ -176,8 +206,7 @@ def precompute_pattern(Edof):
     return rows, cols
 
 # ------------------------------------------------------------------
-# To save computation time:
-# precompute Be and Ae matrices for all elements and gauss points
+# Precompute Be and Ae matrices for all elements and gauss points
 # ------------------------------------------------------------------
 def create_Be_Ae_matrix(nel, Ex, Ey):
     
@@ -281,7 +310,10 @@ D = (E_val / (1 - nu_val**2)) * np.array([
         ])
 
 # ------------------------------------------------------------------
-# Read matlab file (from read_matfiles-1.py)
+# Read matlab file 
+# &
+# Plot undeformed mesh
+# (from read_matfiles-1.py)
 # ------------------------------------------------------------------
 def read_toplogy_from_mat_file(filename):
     mat_file = sio.loadmat(filename)
@@ -312,9 +344,6 @@ def read_toplogy_from_mat_file(filename):
 filename='topology_coarse_3node.mat'
 Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
 
-# ------------------------------------------------------------------
-# Plot undeformed mesh
-# ------------------------------------------------------------------
 from matplotlib.collections import PolyCollection
 
 polygons = np.zeros((nelem, 3, 2))
@@ -333,14 +362,9 @@ ax1.add_collection(pc1)
 ax1.autoscale()
 
 # ------------------------------------------------------------------
-# Precompute pattern
-# ------------------------------------------------------------------
-ndofs = 2 * nnodes
-rows, cols= precompute_pattern(Edof)
-
-# ------------------------------------------------------------------
 # Simulation parameters, store results
 # ------------------------------------------------------------------
+rows, cols= precompute_pattern(Edof)
 n_steps = 10 # Number of time steps
 tol = 1e-6 # Newton tolerance
 max_iter = 10 # Max iterations
@@ -542,42 +566,49 @@ def yeoh_functions():
             + (1 / D2) * (J - 1)**4 \
             + (1 / D3) * (J - 1)**6
 
-    P_vec = sp.diff(U0_val, Fv)
-    dPvdFv = P_vec.jacobian(Fv)
+    Pv = sp.diff(U0_val, Fv)
+    dPvdFv = Pv.jacobian(Fv)
     
     # Validation helper
-    P_mat = sp.Matrix([
-        [P_vec[0], P_vec[2], 0], 
-        [P_vec[1], P_vec[3], 0], 
+    P = sp.Matrix([
+        [Pv[0], Pv[2], 0], 
+        [Pv[1], Pv[3], 0], 
         [0,0,0]])
-    S_mat = F.inv() * P_mat
-    S_vec_out = sp.Matrix([S_mat[0,0], S_mat[1,1], S_mat[0,1], S_mat[1,0]])
+    S = F.inv() * P
     
-    P_func = sp.lambdify([Fv], P_vec, modules="numpy", cse=True)
+    Sv_out = sp.Matrix([S[0,0], S[1,1], S[0,1], S[1,0]])
+    
+    # Lambdify
+    P_func = sp.lambdify([Fv], Pv, modules="numpy", cse=True)
     dPvdFv_func = sp.lambdify([Fv], dPvdFv, modules="numpy", cse=True)
-    S_func = sp.lambdify([Fv], S_vec_out, modules='numpy', cse=True)
+    S_func = sp.lambdify([Fv], Sv_out, modules='numpy', cse=True)
     
     return P_func, dPvdFv_func, S_func
 
 def neohooke_functions():
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True))
+    
     F = sp.Matrix([[Fv[0], Fv[2], 0], [Fv[1], Fv[3], 0], [0, 0, 1]])
+    
     C = F.T * F 
-    invC = sp.simplify(C.inv())
     J = F.det()
+    
+    invC = sp.simplify(C.inv())
 
     S = G_val * (sp.eye(3) - invC) + lam_val * sp.log(J) * invC
     P = F * S
+    
     Pv = sp.Matrix([P[0,0], P[1,1], P[0,1], P[1,0]])
     dPvdFv = Pv.jacobian(Fv)
 
     S_vec_out = sp.Matrix([S[0,0], S[1,1], S[0,1], S[1,0]])
     
-    dPdF_func = sp.lambdify([Fv], dPvdFv, modules='numpy', cse=True)
+    # Lambdify
+    dPvdF_func = sp.lambdify([Fv], dPvdFv, modules='numpy', cse=True)
     P_func = sp.lambdify([Fv], Pv, modules='numpy', cse=True)
     S_func = sp.lambdify([Fv], S_vec_out, modules='numpy', cse=True)
 
-    return P_func, dPdF_func, S_func
+    return P_func, dPvdF_func, S_func
 
 # Generate functions
 P_Yeoh_func, dPvdFv_Yeoh_func, S_Yeoh_func = yeoh_functions()
