@@ -42,6 +42,8 @@ from scipy.sparse import coo_matrix, csr_matrix
 import matplotlib.cm as cm
 from pathlib import Path
 
+from matplotlib.collections import PolyCollection
+
 # Add parent directory to sys.path
 parent_dir = os.path.abspath(os.path.join(os.getcwd(),'..'))
 if parent_dir not in sys.path:
@@ -80,7 +82,7 @@ plt.rc('figure', figsize=(8,4))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file = script_dir / "figures_v2" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     print('figure name: ', fig_name)
@@ -100,25 +102,22 @@ new_subtask('Task 1 - Force vs displacement plot ')
 ####################################################################################################
 #===================================================================================================
 
-df = pd.read_excel('TENSION.xlsx', sheet_name='Sheet1')
-print("Columns found:", df.columns)
-time_vals = df['Time']
-tens_vals = df['Force']
+df = pd.read_excel('TENSION (1).xlsx', sheet_name='Sheet1')
+time_vals = df.iloc[:, 0]
+print('time values:')
+print(time_vals)
+tens_vals = df.iloc[:, 1]
+print('force values tension:')
+print(tens_vals)
 
 df = pd.read_excel('COMPRESSION.xlsx', sheet_name='Sheet1')
 print("Columns found:", df.columns)
-comp_vals = df['Force']
+comp_vals = df.iloc[:, 1]
+print('force values compression:')
+print(comp_vals)
 
 tens_u_vals = [i * 20 for i in time_vals]
 comp_u_vals = [i * (-15) for i in time_vals]
-
-# tens_time_vals = [0, 0.25, 0.5, 0.59375, 0.744375, 0.945312, 1]
-# tens_u_vals = [i * 20 for i in tens_time_vals]
-# tens_vals = [0, 3487.1, 6546.13, 7585.47, 9045.55, 11036.1, 11517.2]
-
-# comp_time_vals = [0, 0.25, 0.5, 0.875, 1]
-# comp_u_vals = [i * (-15) for i in comp_time_vals]
-# comp_vals = [0, -2872.04, -5897.17, -10491.7, -11999.8] 
 
 title = 'Reaction force vs displacement - tension (Abaqus)'
 plt.figure()
@@ -306,21 +305,26 @@ def cst_element(ae, el, Be_matrix, Ae_matrix, D, body, h):
 new_subtask('Task 2 a) - Extension of CE1')
 ####################################################################################################
 #===================================================================================================
+
+# ------------------------------------------------------------------
 # Define inputs
-H_val = 0.1 # m
-B_val = 0.1 # m
-h_val = 0.1 # m
+# ------------------------------------------------------------------
+h_val = 100 # mm
 E_val = 20 # MPa
 nu_val = 0.45 
 
 # Constitutive matrix
-D = (E_val / (1 - nu_val**2)) * np.array([
-            [1,   nu_val,       0],
-            [nu_val,   1,       0],
-            [0,   0,  (1-nu_val)/2]
+factor = E_val / ((1 + nu_val) * (1 - 2 * nu_val))
+D = factor * np.array([
+            [1 - nu_val, nu_val, 0],
+            [nu_val, 1 - nu_val, 0],
+            [0, 0, (1 - 2*nu_val)/2]
         ])
 
+filename='topology_coarse_3node.mat'
+
 # ------------------------------------------------------------------
+# Define function
 # Read matlab file 
 # &
 # Plot undeformed mesh
@@ -328,8 +332,6 @@ D = (E_val / (1 - nu_val**2)) * np.array([
 # ------------------------------------------------------------------
 def read_toplogy_from_mat_file(filename):
     mat_file = sio.loadmat(filename)
-    # edof_x=mat_file['Edof'] #note that edof matlab contains one column too much
-    # Edof=edof_x[:,1:13]
     
     Edof=mat_file['Edof']; Edof = Edof.astype(int)
     Ex=mat_file['Ex']
@@ -352,10 +354,15 @@ def read_toplogy_from_mat_file(filename):
     
     return Ex, Ey, Edof, dof_upper, dof_lower, ndofs, nelem, nnodes
 
-filename='topology_coarse_3node.mat'
+# ------------------------------------------------------------------
+# Read file & plot geometry
+# ------------------------------------------------------------------
 Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
 
-from matplotlib.collections import PolyCollection
+# Convert from matlab to python indexing
+# Edof[:, 1:] -= 1 
+dof_upper -= 1
+dof_lower -= 1
 
 polygons = np.zeros((nelem, 3, 2))
 for el in range(nelem):
@@ -382,156 +389,160 @@ max_iter = 10 # Max iterations
 thickness = h_val # Thickness h
 body = np.zeros(nelem) # No body force
 
-disp_history = []
-force_history = []
-u_vals = []
+def solve_task_2a(target_displacement, plot_tag):
 
-# LC1: u_gamma = +20mm
-# LC2: u_gamma = -15mm
-target_displacement = 20e-3
-load_case_name = 'LC1 - Tension'
-# load_case_name = 'LC2 - Compression'
+    disp_history = []
+    force_history = []
+    u_vals = []
 
-# Initialize global displacement vector
-a = np.zeros(ndofs)
+    load_case_name = 'LC1 - Tension'
+    # load_case_name = 'LC2 - Compression'
 
-# ------------------------------------------------------------------
-# Time stepping loop
-# ------------------------------------------------------------------
-for step in range(1, n_steps + 1):
-    t = step / n_steps
-    current_u_gamma = t * target_displacement
-    
-    # -- Define Boundary Conditions for this step --
-    dof_C = [] 
-    
-    # Example BCs (adjust according to "define and motivate your choice" in Task 1a)
-    # Symmetry/Fixed bottom:
-    dof_C.extend(dof_lower) # Fix bottom
-    
-    # Prescribed displacement
-    prescribed_dofs = dof_upper
-    
-    # Combine constrained DOFs
-    bc_dofs = np.concatenate([dof_C, prescribed_dofs])
-    bc_vals = np.zeros(len(bc_dofs))
-    
-    # Set values: 0 for fixed, current_u_gamma for prescribed
-    bc_vals[len(dof_C):] = current_u_gamma
-    
-    # Free DOFs
-    dof_all = np.arange(ndofs)
-    dof_F = np.setdiff1d(dof_all, bc_dofs)
-    
-    # Update 'a' with prescribed values immediately
-    a[bc_dofs] = bc_vals
-    
-    # Newton-Raphson Loop
-    print(f"\nStep {step}/{n_steps}, disp: {current_u_gamma:.2e} m")
-    
-    for i in range(max_iter):
-        K, f_ext = assemble_K_fint_coo(a, Edof, rows, cols, ndofs, nelem, Ex, Ey, D, body, h_val, my_element=cst_element)
+    # Initialize global displacement vector
+    a = np.zeros(ndofs)
 
-        # Internal force vector
-        f_int = K @ a
+    # ------------------------------------------------------------------
+    # Time stepping loop
+    # ------------------------------------------------------------------
+    for step in range(1, n_steps + 1):
+        t = step / n_steps
+        current_u_gamma = t * target_displacement
         
-        # Residual
-        r = f_int - f_ext
+        # Fix Bottom Surface in y-direction
+        dof_lower_y = dof_lower[dof_lower % 2 == 1]
         
-        # Partition residual
-        r_F = r[dof_F]
+        # Fix one corner of bottom surface in x-direction
+        dof_corner_x = np.array(dof_lower[0])
         
-        # Check convergence
-        res_norm = np.linalg.norm(r_F)
-        if res_norm < tol:
-            print(f'Converged in {i} iterations, \nresidual: {res_norm:.2e}')
-            break
+        # Combine fixed DOFs (Val = 0)
+        dof_C = np.concatenate([dof_lower_y, [dof_corner_x]])
+        
+        # Prescribe displacement on top surface in y-direction
+        prescribed_dofs = dof_upper[dof_upper % 2 == 1]    
+        
+        # Combine constrained DOFs
+        bc_dofs = np.concatenate([dof_C, prescribed_dofs])
+        bc_vals = np.zeros(len(bc_dofs))
+        
+        # Set values: 0 for fixed, current_u_gamma for prescribed
+        bc_vals[len(dof_C):] = current_u_gamma
+        
+        # Free DOFs
+        dof_all = np.arange(ndofs)
+        dof_F = np.setdiff1d(dof_all, bc_dofs)
+        
+        # Update with prescribed values immediately
+        a[bc_dofs] = bc_vals
+        
+        for i in range(max_iter):
+            K, f_ext = assemble_K_fint_coo(a, Edof, rows, cols, ndofs, nelem, Ex, Ey, D, body, h_val, my_element=cst_element)
+
+            # Internal force vector
+            f_int = K @ a
             
-        # Solve for increment
-        K_F = K[dof_F, :][:, dof_F]
-        da_F = spla.spsolve(K_F, -r_F)
+            # Residual
+            r = f_int - f_ext
+            
+            # Partition residual
+            r_F = r[dof_F]
+            
+            # Check convergence
+            res_norm = np.linalg.norm(r_F)
+            if res_norm < tol:
+                print(f'Converged in {i} iterations, \nresidual: {res_norm:.2e}')
+                break
+                
+            # Solve for increment
+            K_F = K[dof_F, :][:, dof_F]
+            da_F = spla.spsolve(K_F, -r_F)
+            
+            # Update solution
+            a[dof_F] += da_F
+            
+            if i == max_iter - 1:
+                print('Max iterations reached without convergence.')
+
+        # Post-Processing
+        r_tot = (K @ a) - f_ext
         
-        # Update solution
-        a[dof_F] += da_F
+        # Sum vertical reaction forces on the upper boundary
+        Ry_sum = np.sum(r_tot[dof_upper])
         
-        if i == max_iter - 1:
-            print('Max iterations reached without convergence.')
+        # Store results
+        u_vals.append(current_u_gamma)
+        force_history.append(Ry_sum)
 
-    # Post-Processing
-    r_tot = (K @ a) - f_ext
+    # ------------------------------------------------------------------
+    # Plot deformed mesh
+    # ------------------------------------------------------------------
+    def_polygons = np.zeros((nelem, 3, 2))
+
+    # Magnification factor
+    mag = 1
+
+    for el in range(nelem):
+        edofs = Edof[el,1:] - 1
+        
+        def_polygons[el,:,:] = [
+            [Ex[el,0] + mag * a[edofs[0]], Ey[el,0] + mag * a[edofs[1]]],
+            [Ex[el,1] + mag * a[edofs[2]], Ey[el,1] + mag * a[edofs[3]]],
+            [Ex[el,2] + mag * a[edofs[4]], Ey[el,2] + mag * a[edofs[5]]]
+        ]
+
+    fig2, ax2 = plt.subplots()
+    pc2 = PolyCollection(
+        def_polygons,
+        facecolors='none',
+        edgecolors='r'
+    )
+    ax2.add_collection(pc2)
+    ax2.autoscale()
+    ax2.set_title("Deformed mesh")
+
+    # ------------------------------------------------------------------
+    # Plot stress
+    # ------------------------------------------------------------------
+    Es = np.zeros((nelem, 3))
+
+    for el in range(nelem):
+        x1 = np.array([Ex[el,0], Ey[el,0]])
+        x2 = np.array([Ex[el,1], Ey[el,1]])
+        x3 = np.array([Ex[el,2], Ey[el,2]])
+
+        Be = Be_func_cst(x1, x2, x3)
+        edofs = Edof[el,1:] - 1
+
+        Es[el,:] = D @ Be @ a[edofs]
+
+    fig3, ax3 = plt.subplots()
+    pc3 = PolyCollection(
+        polygons,
+        array=Es[:,0], 
+        cmap='turbo', 
+        edgecolors='k'
+    )
+    ax3.add_collection(pc3)
+    ax3.autoscale()
+    ax3.set_title("sigma xx")
+    fig2.colorbar(pc3, ax=ax3)
+
+    # ------------------------------------------------------------------
+    # Plot graph
+    # ------------------------------------------------------------------
+    title = 'vertical reaction force vs uΓ - ' + plot_tag
+    plt.figure()
+    plt.plot(u_vals, force_history, 'X-')
+    plt.plot()
+    plt.title(title)
+    plt.xlabel('uΓ [m]')
+    plt.ylabel('vertical reaction force [N]')
+    sfig(title)
+    plt.show()
     
-    # Sum vertical reaction forces on the upper boundary
-    Ry_sum = np.sum(r_tot[dof_upper])
-    
-    # Store results
-    u_vals.append(current_u_gamma)
-    force_history.append(Ry_sum)
-
-# ------------------------------------------------------------------
-# Plot deformed mesh
-# ------------------------------------------------------------------
-def_polygons = np.zeros((nelem, 3, 2))
-
-# Magnification factor
-mag = 1000
-
-for el in range(nelem):
-    edofs = Edof[el,1:] - 1
-    
-    def_polygons[el,:,:] = [
-        [Ex[el,0] + mag * a[edofs[0]], Ey[el,0] + mag * a[edofs[1]]],
-        [Ex[el,1] + mag * a[edofs[2]], Ey[el,1] + mag * a[edofs[3]]],
-        [Ex[el,2] + mag * a[edofs[4]], Ey[el,2] + mag * a[edofs[5]]]
-    ]
-
-fig2, ax2 = plt.subplots()
-pc2 = PolyCollection(
-    def_polygons,
-    facecolors='none',
-    edgecolors='r'
-)
-ax2.add_collection(pc2)
-ax2.autoscale()
-ax2.set_title("Deformed mesh")
-
-# ------------------------------------------------------------------
-# Plot stress
-# ------------------------------------------------------------------
-Es = np.zeros((nelem, 3))
-
-for el in range(nelem):
-    x1 = np.array([Ex[el,0], Ey[el,0]])
-    x2 = np.array([Ex[el,1], Ey[el,1]])
-    x3 = np.array([Ex[el,2], Ey[el,2]])
-
-    Be = Be_func_cst(x1, x2, x3)
-    edofs = Edof[el,1:] - 1
-
-    Es[el,:] = D @ Be @ a[edofs]
-
-fig3, ax3 = plt.subplots()
-pc3 = PolyCollection(
-    polygons,
-    array=Es[:,0], 
-    cmap='turbo', 
-    edgecolors='k'
-)
-ax3.add_collection(pc3)
-ax3.autoscale()
-ax3.set_title("sigma xx")
-fig2.colorbar(pc3, ax=ax3)
-
-# ------------------------------------------------------------------
-# Plot graph
-# ------------------------------------------------------------------
-title = 'vertical reaction force vs uΓ'
-plt.figure()
-plt.plot(u_vals, force_history, 'X-')
-plt.title(title)
-plt.xlabel('uΓ [m]')
-plt.ylabel('vertical reaction force [N]')
-sfig(title)
-plt.show()
+printt('LC1 - tension')
+solve_task_2a(target_displacement = 20, plot_tag = 'tension')
+printt('LC2 - compression')
+solve_task_2a(target_displacement = -15, plot_tag = 'compression')
 
 #%%
 #===================================================================================================
@@ -540,16 +551,16 @@ new_subtask('Task 2 b) - Yeoh hyperelsatic material model')
 ####################################################################################################
 #===================================================================================================
 
+# ------------------------------------------------------------------
 # Define inputs
+# ------------------------------------------------------------------
 F_11_min = 0.5
 F_11_max = 1.5
 F_11_vals = np.linspace(F_11_min, F_11_max, 100)
-placeholder_sigma11_list = np.linspace(0, 100, 100)
-
 G_val = E_val / (2 * (1 + nu_val))
 lam_val = E_val * nu_val / ((1 + nu_val) * (1 - 2 * nu_val))
 
-# Yeoh Parameters
+# Yeoh parameters
 c10 = G_val / 2
 c20 = - G_val / 10
 c30 = G_val / 30
@@ -557,6 +568,9 @@ D1 = 0.02 # 1 / Pa
 D2 = 0.01
 D3 = 0.01
 
+# ------------------------------------------------------------------
+# Define functions
+# ------------------------------------------------------------------
 def yeoh_functions():
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True)) 
     
@@ -580,7 +594,6 @@ def yeoh_functions():
     Pv = sp.diff(U0_val, Fv)
     dPvdFv = Pv.jacobian(Fv)
     
-    # Validation helper
     P = sp.Matrix([
         [Pv[0], Pv[2], 0], 
         [Pv[1], Pv[3], 0], 
@@ -625,7 +638,9 @@ def neohooke_functions():
 P_Yeoh_func, dPvdFv_Yeoh_func, S_Yeoh_func = yeoh_functions()
 P_Neo_func, dPvdFv_Neo_func, S_Neo_func = neohooke_functions()
 
+# ------------------------------------------------------------------
 # Solve
+# ------------------------------------------------------------------
 sigma11_yeoh = []
 sigma11_neo = []
 
@@ -650,10 +665,6 @@ for f11 in F_11_vals:
     sig_neo = (1 / J) * f11 * s11_neo * f11
     sigma11_neo.append(sig_neo)
 
-printt('Validate results:')
-print(f'Yeoh sigma11: {sigma11_yeoh[-1]:.4e} MPa (ref: 1.2142e02)')
-print(f'Neo-Hooke sigma11: {sigma11_neo[-1]:.4e} MPa (ref: 2.2525e01)')
-
 # ------------------------------------------------------------------
 # Plot graphs
 # ------------------------------------------------------------------
@@ -675,6 +686,12 @@ plt.ylabel('sigma11')
 sfig(title)
 plt.show()
 
+# ------------------------------------------------------------------
+printt('Validate results:')
+# ------------------------------------------------------------------
+print(f'Yeoh sigma11: {sigma11_yeoh[-1]:.4e} MPa (ref: 1.2142e02)')
+print(f'Neo-Hooke sigma11: {sigma11_neo[-1]:.4e} MPa (ref: 2.2525e01)')
+
 #%%
 #===================================================================================================
 ####################################################################################################
@@ -683,21 +700,20 @@ new_subtask('Task 2 c) - Own element function')
 #===================================================================================================
 
 def generate_fast_tri6():
-    print("Compiling symbolic element function (runs once)...")
     
     xi, eta = sp.symbols('xi eta')
-    x_nodes = [sp.symbols(f'x{i}') for i in range(6)] # x1..x6
-    y_nodes = [sp.symbols(f'y{i}') for i in range(6)] # y1..y6
+    x_nodes = [sp.symbols(f'x{i}') for i in range(6)]
+    y_nodes = [sp.symbols(f'y{i}') for i in range(6)]
     
-    # Shape Functions
+    # Shape functions
     L = 1.0 - xi - eta
     Ns = [
-        L*(2*L-1),       # N1
-        xi*(2*xi-1),     # N2
-        eta*(2*eta-1),   # N3
-        4*xi*L,          # N4
-        4*xi*eta,        # N5
-        4*eta*L          # N6
+        L*(2*L-1),
+        xi*(2*xi-1),
+        eta*(2*eta-1),
+        4*xi*L,
+        4*xi*eta,
+        4*eta*L
     ]
     
     # Mappings
@@ -710,21 +726,20 @@ def generate_fast_tri6():
     detJ = J.det()
     invJ = J.inv()
     
-    # Derivatives dN/dX (Reference Config)
+    # Derivatives dN/dX
     dN_dxi_list = [sp.Matrix([sp.diff(N, xi), sp.diff(N, eta)]) for N in Ns]
     dN_dX_list = [invJ.T @ dN for dN in dN_dxi_list]
     
     B = sp.zeros(4, 12)
     for i in range(6):
         dN_dX = dN_dX_list[i]
-        # F11 (row 0), F21 (row 1) use dN/dX
-        B[0, 2*i]   = dN_dX[0] # u
-        B[1, 2*i+1] = dN_dX[0] # v
-        # F12 (row 2), F22 (row 3) use dN/dY
-        B[2, 2*i]   = dN_dX[1] # u
-        B[3, 2*i+1] = dN_dX[1] # v
+        
+        B[0, 2 * i]   = dN_dX[0]
+        B[1, 2 * i + 1] = dN_dX[0]
+        
+        B[2, 2 * i]   = dN_dX[1]
+        B[3, 2 * i + 1] = dN_dX[1]
 
-    # Compile
     return sp.lambdify([xi, eta] + x_nodes + y_nodes, [B, detJ], 'numpy')
 
 
@@ -732,12 +747,12 @@ def precompute_element(X_ref, fast_func, thickness=1.0):
     # Gauss points
     gps = [(1./6, 1./6, 1./6), (2./3, 1./6, 1./6), (1./6, 2./3, 1./6)]
     
-    # Flatten coordinates: x1, x2... y1, y2...
+    # Flatten coordinates
     coords = list(X_ref[:, 0]) + list(X_ref[:, 1])
     
     element_data = []
     for xi, eta, w in gps:
-        # Call the compiled function
+        # Call the lambdified function
         B_val, detJ_val = fast_func(xi, eta, *coords)
         
         # Store constant data
@@ -759,33 +774,34 @@ def el6_yeoh(u, element_data):
         F_vec[0] += 1.0
         F_vec[3] += 1.0
         
-        # Material Evaluation
+        # Use lambdified functions
         P = P_Yeoh_func(F_vec).flatten() 
-        A = dPvdFv_Yeoh_func(F_vec)      
+        dPvdFv = dPvdFv_Yeoh_func(F_vec)      
         
-        # Integration
         fe += (B.T @ P) * dv
+        Ke += (B.T @ dPvdFv @ B) * dv
         
-        Ke += (B.T @ A @ B) * dv
-        
-    return Ke, fe
+    return Ke, fe, P, dPvdFv
 
+# ------------------------------------------------------------------
+# Validation data
+# ------------------------------------------------------------------
 X_ref = np.array([
-    [0.0, 0.0], # 1
-    [3.0, 0.0], # 2
-    [0.0, 2.0], # 3
-    [1.5, 0.0], # 4
-    [1.5, 1.0], # 5
-    [0.0, 1.0]  # 6
+    [0.0, 0.0],
+    [3.0, 0.0],
+    [0.0, 2.0],
+    [1.5, 0.0],
+    [1.5, 1.0],
+    [0.0, 1.0]
 ])
 
 x_curr = np.array([
-    [6.0, 0.7], # 1
-    [7.0, 2.3], # 2
-    [4.5, 1.8], # 3
-    [6.4, 1.2], # 4
-    [5.6, 2.0], # 5
-    [5.2, 1.1]  # 6
+    [6.0, 0.7],
+    [7.0, 2.3],
+    [4.5, 1.8],
+    [6.4, 1.2],
+    [5.6, 2.0],
+    [5.2, 1.1]
 ])
 
 ex_ref = X_ref[:, 0].T
@@ -800,9 +816,10 @@ tri6_func = generate_fast_tri6()
 element_data = precompute_element(X_ref, tri6_func, thickness=0.001)
     
 Ke_val, fe_val, F_res, P_res = el6_yeoh(u, element_data)
-# Ke_val, fe_val, F_res, P_res = el6_yeoh(ex_ref, ey_ref, u, thickness=0.001, return_validation=True)
 
-printt('REFERENCE RESULTS, FOR VALIDATION:')
+# ------------------------------------------------------------------
+printt('Validate functions')
+# ------------------------------------------------------------------
 print('deformation_gradient_2d:')
 print(F_res.T)
 print('\nPiola_Kirchoff_2d:')
