@@ -277,10 +277,10 @@ def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickne
         data[p:p + nnz_per_el] = Ke.ravel()
         p += nnz_per_el
 
-    # Build global stiffness matrix and convert to CSR for efficient slicing/solves
+    # Build global stiffness matrix and convert to CSR
     K = coo_matrix((data, (rows, cols)), shape=(ndof, ndof)).tocsr()
 
-    # Sum duplicate entries (multiple elements contribute to same (i,j) location)
+    # Sum duplicate entries
     K.sum_duplicates()
 
     return K, f_ext
@@ -352,15 +352,14 @@ def read_toplogy_from_mat_file(filename):
     nelem=mat_file['nelem'].item()
     nnodes=mat_file['nnodes'].item()
     
-    return Ex, Ey, Edof, dof_upper, dof_lower, ndofs, nelem, nnodes
+    return Ex, Ey, Edof, dof_upper, dof_lower, ndofs, nelem, nnodes, dof_corner
 
 # ------------------------------------------------------------------
 # Read file & plot geometry
 # ------------------------------------------------------------------
-Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes=read_toplogy_from_mat_file(filename)
+Ex,Ey,Edof,dof_upper,dof_lower,ndofs,nelem,nnodes, dof_corner=read_toplogy_from_mat_file(filename)
 
 # Convert from matlab to python indexing
-# Edof[:, 1:] -= 1 
 dof_upper -= 1
 dof_lower -= 1
 
@@ -383,22 +382,17 @@ ax1.autoscale()
 # Simulation parameters, store results
 # ------------------------------------------------------------------
 rows, cols= precompute_pattern(Edof)
-n_steps = 10 # Number of time steps
-tol = 1e-6 # Newton tolerance
-max_iter = 10 # Max iterations
-thickness = h_val # Thickness h
-body = np.zeros(nelem) # No body force
+n_steps = 10
+tol = 1e-6
+max_iter = 10
+thickness = h_val
+body = np.zeros(nelem)
 
 def solve_task_2a(target_displacement, plot_tag):
 
     disp_history = []
     force_history = []
     u_vals = []
-
-    load_case_name = 'LC1 - Tension'
-    # load_case_name = 'LC2 - Compression'
-
-    # Initialize global displacement vector
     a = np.zeros(ndofs)
 
     # ------------------------------------------------------------------
@@ -412,10 +406,10 @@ def solve_task_2a(target_displacement, plot_tag):
         dof_lower_y = dof_lower[dof_lower % 2 == 1]
         
         # Fix one corner of bottom surface in x-direction
-        dof_corner_x = np.array(dof_lower[0])
+        dof_corner_x = dof_corner
         
         # Combine fixed DOFs (Val = 0)
-        dof_C = np.concatenate([dof_lower_y, [dof_corner_x]])
+        dof_C = np.concatenate([dof_lower_y, dof_corner_x])
         
         # Prescribe displacement on top surface in y-direction
         prescribed_dofs = dof_upper[dof_upper % 2 == 1]    
@@ -668,21 +662,12 @@ for f11 in F_11_vals:
 # ------------------------------------------------------------------
 # Plot graphs
 # ------------------------------------------------------------------
-title = 'Cauchy stress component sigma11 vs F11 - pure elongation'
+title = 'Cauchy stress component sigma11 vs F11'
 plt.figure()
 plt.plot(F_11_vals, sigma11_yeoh, 'o-')
 plt.title(title)
 plt.xlabel('F_11')
-plt.ylabel('sigma11')
-sfig(title)
-plt.show()
-
-title = 'Cauchy stress component sigma11 vs F11 - pure contraction'
-plt.figure()
-plt.plot(F_11_vals, sigma11_yeoh, 'o-')
-plt.title(title)
-plt.xlabel('F_11')
-plt.ylabel('sigma11')
+plt.ylabel('sigma11 [MPa]')
 sfig(title)
 plt.show()
 
@@ -734,10 +719,10 @@ def generate_fast_tri6():
     for i in range(6):
         dN_dX = dN_dX_list[i]
         
-        B[0, 2 * i]   = dN_dX[0]
+        B[0, 2 * i] = dN_dX[0]
         B[1, 2 * i + 1] = dN_dX[0]
         
-        B[2, 2 * i]   = dN_dX[1]
+        B[2, 2 * i] = dN_dX[1]
         B[3, 2 * i + 1] = dN_dX[1]
 
     return sp.lambdify([xi, eta] + x_nodes + y_nodes, [B, detJ], 'numpy')
@@ -745,7 +730,9 @@ def generate_fast_tri6():
 
 def precompute_element(X_ref, fast_func, thickness=1.0):
     # Gauss points
-    gps = [(1./6, 1./6, 1./6), (2./3, 1./6, 1./6), (1./6, 2./3, 1./6)]
+    gps = [(1./6, 1./6, 1./6), 
+           (2./3, 1./6, 1./6), 
+           (1./6, 2./3, 1./6)]
     
     # Flatten coordinates
     coords = list(X_ref[:, 0]) + list(X_ref[:, 1])
@@ -763,9 +750,13 @@ def precompute_element(X_ref, fast_func, thickness=1.0):
 
 
 def el6_yeoh(u, element_data):
-    # Pre-allocate output arrays
+    
     Ke = np.zeros((12, 12))
     fe = np.zeros(12)
+    
+    # storage for all integration points
+    F_all = []
+    P_all = []
     
     # Loop over pre-computed Gauss points
     for B, dv in element_data:
@@ -774,14 +765,23 @@ def el6_yeoh(u, element_data):
         F_vec[0] += 1.0
         F_vec[3] += 1.0
         
-        # Use lambdified functions
-        P = P_Yeoh_func(F_vec).flatten() 
+        # Constitutive Model calls
+        P_vec = P_Yeoh_func(F_vec).flatten() 
         dPvdFv = dPvdFv_Yeoh_func(F_vec)      
         
-        fe += (B.T @ P) * dv
+        # Numerical Integration
+        fe += (B.T @ P_vec) * dv
         Ke += (B.T @ dPvdFv @ B) * dv
         
-    return Ke, fe, P, dPvdFv
+        # Store state variables for this GP
+        F_all.append(F_vec)
+        P_all.append(P_vec)
+        
+    # Concatenate all GPs into a single flat array (Size 12)
+    F_out = np.concatenate(F_all)
+    P_out = np.concatenate(P_all)
+        
+    return Ke, fe, F_out, P_out
 
 # ------------------------------------------------------------------
 # Validation data
@@ -821,13 +821,13 @@ Ke_val, fe_val, F_res, P_res = el6_yeoh(u, element_data)
 printt('Validate functions')
 # ------------------------------------------------------------------
 print('deformation_gradient_2d:')
-print(F_res.T)
+displayvar('F', F_res.T, accuracy=3)
 print('\nPiola_Kirchoff_2d:')
-print(P_res.T)
+displayvar('P', P_res.T, accuracy=3)
 print('\nfe_int:')
-print(fe_val)
+displayvar('f', fe_val, accuracy=3)
 print('\nKe_int top (8x8):')
-print(Ke_val[0:8, 0:8])
+displayvar('K', Ke_val[0:8, 0:8], accuracy=3)
 
 #%%
 #===================================================================================================
@@ -839,12 +839,12 @@ new_subtask('Task 2 d) - Combine routines')
 import scipy.sparse as sps
 
 def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25):
+    
     # ------------------------------------------------------------------
     # Solver setup
     # ------------------------------------------------------------------
-    
     # Load mesh
-    Ex, Ey, Edof, dof_upper, dof_lower, ndof, nel, nnodes = read_toplogy_from_mat_file(filename)
+    Ex, Ey, Edof, dof_upper, dof_lower, ndof, nel, nnodes, dof_corner = read_toplogy_from_mat_file(filename)
     
     # Pre-processing
     Edof_indices = Edof[:, 1:].astype(np.int64) - 1
@@ -861,11 +861,17 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     tri6_func = generate_fast_tri6()
     print('Pre-computing element matrices')
     element_store = []
+    centroid_store = []
+    
+    xi_c, eta_c = 1.0/3.0, 1.0/3.0
     
     for el in range(nel):
         X_ref = np.vstack([Ex[el, :], Ey[el, :]]).T
+        coords = list(X_ref[:, 0]) + list(X_ref[:, 1])
         # Calculate B and detJ constants once
-        element_store.append(precompute_element(X_ref, tri6_func, thickness=h))
+        element_store.append(precompute_element(X_ref, tri6_func, h))
+        B_cent, _ = tri6_func(xi_c, eta_c, *coords)
+        centroid_store.append(B_cent)
     
     # Time stepping
     a = np.zeros(ndof)
@@ -874,7 +880,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     disp_history = [0.0]
 
     # ------------------------------------------------------------------
-    print(f'Starting Solver')
+    printt('Starting solver')
     # ------------------------------------------------------------------
     for step, u_app in enumerate(u_steps):
         if step == 0: continue 
@@ -886,18 +892,15 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
         # Dofs
         top_y_dofs = [d - 1 for d in dof_upper if d % 2 == 0]
         bot_y_dofs = [d - 1 for d in dof_lower if d % 2 == 0]
-        bot_x_dofs = [d - 1 for d in dof_lower if d % 2 == 1]
+        bot_x_dofs = dof_corner
 
         # Values
         bc_dofs.extend(bot_y_dofs)
         bc_vals.extend([0.0] * len(bot_y_dofs))
-        
+        bc_dofs.extend(bot_x_dofs)
+        bc_vals.extend([0.0] * len(bot_x_dofs))
         bc_dofs.extend(top_y_dofs)
         bc_vals.extend([u_app] * len(top_y_dofs))
-        
-        if bot_x_dofs:
-            bc_dofs.append(bot_x_dofs[0])
-            bc_vals.append(0.0)
             
         bc_dofs = np.array(bc_dofs, dtype=int)
         bc_vals = np.array(bc_vals)
@@ -926,7 +929,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
                 edof_idx = Edof_indices[el]
                 u_loc = a[edof_idx]
                 
-                Ke, fe = el6_yeoh(u_loc, element_store[el])
+                Ke, fe, _, _ = el6_yeoh(u_loc, element_store[el])
                 
                 # Assemble force
                 f_int[edof_idx] += fe
@@ -956,182 +959,121 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
             
             try:
                 da_free = spla.spsolve(K_free, r)
-            except Exception as e:
-                print(f"\n[Error] solver failed: {e}")
+            except Exception:
+                print(f"\nError: solver failed")
                 return a, disp_history, force_history
             
             a[free_dofs] += da_free
 
         if not converged:
-            print(f'\n[Warning] step {step} did not converge.')
+            print(f'\nWarning: step {step} did not converge.')
             break
         
         # ------------------------------------------------------------------
-        # Store reaction force
+        # Store results
         # ------------------------------------------------------------------
         Ry_top = np.sum(f_int[top_y_dofs])
         force_history.append(Ry_top)
         disp_history.append(u_app)
+        
+        # ------------------------------------------------------------------
+        # Stress plot
+        # ------------------------------------------------------------------
+        if step == n_steps:
+            polygons = []
+            stress_vals = []
+            
+            for el in range(nel):
+                # Deformed geometry
+                edof_idx = Edof_indices[el]
+                u_el = a[edof_idx]
+                ex, ey = Ex[el, :], Ey[el, :]
+                x_nodes = ex + u_el[0::2]
+                y_nodes = ey + u_el[1::2]
+                
+                # Corner nodes
+                polygons.append(np.column_stack([x_nodes[[0, 1, 2]], 
+                                                 y_nodes[[0, 1, 2]]]))
+                
+                # Stress at centroid
+                B_cent = centroid_store[el]
+                F_vec = B_cent @ u_el
+                F_vec[0] += 1.0
+                F_vec[3] += 1.0
+                
+                # Calculate Von Mises
+                F_mat = np.array([[F_vec[0], F_vec[2]], [F_vec[1], F_vec[3]]])
+                J = F_mat[0,0]*F_mat[1,1] - F_mat[0,1] * F_mat[1,0]
+                
+                P_vals = P_Yeoh_func(F_vec).flatten()
+                P_tensor = np.array([[P_vals[0], P_vals[2]], [P_vals[1], P_vals[3]]])
+                
+                Sigma = (1.0/J) * P_tensor @ F_mat.T
+                s11, s22, s12 = Sigma[0,0], Sigma[1,1], Sigma[0,1]
+                stress_vals.append(np.sqrt(s11**2 + s22**2 - s11*s22 + 3*s12**2))
+
+            title = f'Von Mises Stress\nDisplacement: {u_final} mm'
+            fig, ax = plt.subplots(figsize=(10, 8))
+            pc = PolyCollection(polygons, array=np.array(stress_vals), cmap='turbo', edgecolors='black', linewidths=0.2)
+            ax.add_collection(pc)
+            ax.autoscale()
+            ax.set_aspect('equal')
+            ax.set_title(title)
+            fig.colorbar(pc, ax=ax, label='Von Mises Stress [MPa]')
+            plt.show()
 
     return a, disp_history, force_history
 
-def plot_stress(a, filename, plot_title=''):
-    # Load mesh
-    Ex, Ey, Edof, _, _, _, _, _ = read_toplogy_from_mat_file(filename)
-    nel = Edof.shape[0]
-
-    # Compile/Get the fast element function
-    tri6_func = generate_fast_tri6()
-    
-    # Centroid coordinates
-    xi_c, eta_c = 1.0/3.0, 1.0/3.0
-    
-    Es = np.zeros((nel, 4))
-    polygons = []
-    
-    for el in range(nel):
-        edofs = Edof[el, 1:].astype(int) - 1
-        u_el = a[edofs]
-        
-        ex = Ex[el, :]
-        ey = Ey[el, :]
-        
-        # Flatten coords for the function call
-        coords = list(ex) + list(ey)
-        
-        # Get B-matrix and detJ at the centroid
-        B_cent, detJ_cent = tri6_func(xi_c, eta_c, *coords)
-        
-        # Compute kinematics
-        grad_u = B_cent @ u_el
-        F_vec = np.array([1.0, 0.0, 0.0, 1.0]) + grad_u
-        
-        # Reconstruct F Matrix (2x2) for stress push-forward
-        F_mat = np.array([
-            [F_vec[0], F_vec[2]],
-            [F_vec[1], F_vec[3]]
-        ])
-        
-        # Jacobian determinant
-        J = F_mat[0,0]*F_mat[1,1] - F_mat[0,1]*F_mat[1,0]
-        
-        # Get First Piola-Kirchhoff stress (vector)
-        P_out = P_Yeoh_func(F_vec)
-        P_vals = np.array(P_out).flatten()
-        
-        P_tensor = np.array([
-            [P_vals[0], P_vals[2]],
-            [P_vals[1], P_vals[3]]
-        ])
-        
-        # Compute Cauchy stress
-        Sigma = (1.0/J) * P_tensor @ F_mat.T
-        
-        s11 = Sigma[0,0]
-        s22 = Sigma[1,1]
-        s12 = Sigma[0,1]
-        
-        # Von Mises
-        s_vm = np.sqrt(s11**2 + s22**2 - s11*s22 + 3*s12**2)
-        
-        Es[el, :] = [s11, s22, s12, s_vm]
-        
-        # Deformed coordinates
-        x_nodes = ex + u_el[0::2]
-        y_nodes = ey + u_el[1::2]
-        
-        # Create polygon
-        poly_coords = np.column_stack([x_nodes[[0, 1, 2]], y_nodes[[0, 1, 2]]])
-        polygons.append(poly_coords)
-
-    # Plotting
-    title = 'Von Mises Stress' + plot_title
-    fig, ax = plt.subplots(figsize=(10, 8))
-    pc = PolyCollection(
-        polygons,
-        array=Es[:, 3], # Plot Von Mises
-        cmap='turbo',
-        edgecolors='black',
-        linewidths=0.2
-    )
-    ax.add_collection(pc)
-    ax.autoscale()
-    ax.set_aspect('equal')
-    ax.set_title(f'Von Mises Stress\n{plot_title}')
-    ax.set_xlabel('X [mm]')
-    ax.set_ylabel('Y [mm]')
-    cb = fig.colorbar(pc, ax=ax)
-    cb.set_label('Von Mises Stress [MPa]')
-    sfig(title)
-    plt.show()
-
 #%%
 # ------------------------------------------------------------------
-printt('Run solver - coarse mesh')
+printt('Run solver - coarse mesh - tension')
 # ------------------------------------------------------------------
 filename = 'topology_coarse_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
+a, disp_history, force_history = solve_task_2d(filename, n_steps=50, tol=1e-5, u_final=20, h=100)
 
-#%%
-# ------------------------------------------------------------------
-printt('Postprocess - coarse mesh')
-# ------------------------------------------------------------------
-title = 'Coarse mesh - Total Vertical Reaction Force vs Displacement'
+title = 'Coarse mesh - Total vertical reaction force vs displacement - tension'
 plt.figure()
 plt.plot(disp_history, force_history, '-o')
 plt.title(title)
-plt.xlabel('Displacement u_Gamma [m]')
+plt.xlabel('Displacement u_Gamma [mm]')
 plt.ylabel('Reaction Force [N]')
 plt.grid(True)
 sfig(title)
 plt.show()
 
-plot_stress(a, filename, plot_title='coarse')
 #%%
 # ------------------------------------------------------------------
-printt('Run solver - medium mesh')
+printt('Run solver - coarse mesh - compression')
+# ------------------------------------------------------------------
+filename = 'topology_coarse_6node.mat'
+
+a, disp_history, force_history = solve_task_2d(filename, n_steps=16, tol=1e-5, u_final=-13, h=100)
+
+title = 'Coarse mesh - Total vertical reaction force vs displacement - compression'
+plt.figure()
+plt.plot(disp_history, force_history, '-o')
+plt.title(title)
+plt.xlabel('Displacement u_Gamma [mm]')
+plt.ylabel('Reaction Force [N]')
+plt.grid(True)
+sfig(title)
+plt.show()
+
+#%%
+# ------------------------------------------------------------------
+printt('Run solver - medium mesh - tension')
 # ------------------------------------------------------------------
 filename = 'topology_medium_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
+a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
 
-#%%
-# ------------------------------------------------------------------
-printt('Postprocess - medium mesh')
-# ------------------------------------------------------------------
-title = 'Medium mesh - Total Vertical Reaction Force vs Displacement'
+title = 'Medium mesh - Total vertical reaction force vs displacement - tension'
 plt.figure()
 plt.plot(disp_history, force_history, '-o')
 plt.title(title)
-plt.xlabel('Displacement u_Gamma [m]')
+plt.xlabel('Displacement u_Gamma [mm]')
 plt.ylabel('Reaction Force [N]')
 plt.grid(True)
 sfig(title)
 plt.show()
-plot_stress(a, filename, plot_title='medium ')
-
-#%%
-# ------------------------------------------------------------------
-printt('Run solver - fine mesh')
-# ------------------------------------------------------------------
-filename = 'topology_fine_6node.mat'
-
-a, disp_history, force_history = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
-
-#%%
-# ------------------------------------------------------------------
-printt('Postprocess - fine mesh')
-# ------------------------------------------------------------------
-title = 'Fine mesh - Total Vertical Reaction Force vs Displacement'
-plt.figure()
-plt.plot(disp_history, force_history, '-o')
-plt.title(title)
-plt.xlabel('Displacement u_Gamma [m]')
-plt.ylabel('Reaction Force [N]')
-plt.grid(True)
-sfig(title)
-plt.show()
-plot_stress(a, filename, plot_title='fine')
-
-#%%
