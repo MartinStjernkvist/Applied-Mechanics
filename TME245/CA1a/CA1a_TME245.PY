@@ -100,17 +100,29 @@ new_subtask('Task 1 - Force vs displacement plot ')
 ####################################################################################################
 #===================================================================================================
 
-tens_time_vals = [0, 0.25, 0.5, 0.59375, 0.744375, 0.945312, 1]
-tens_u_vals = [i * 20 for i in tens_time_vals]
-tens_vals = [0, 3487.1, 6546.13, 7585.47, 9045.55, 11036.1, 11517.2]
+df = pd.read_excel('TENSION.xlsx', sheet_name='Sheet1')
+print("Columns found:", df.columns)
+time_vals = df['Time']
+tens_vals = df['Force']
 
-comp_time_vals = [0, 0.25, 0.5, 0.875, 1]
-comp_u_vals = [i * (-15) for i in comp_time_vals]
-comp_vals = [0, -2872.04, -5897.17, -10491.7, -11999.8] 
+df = pd.read_excel('COMPRESSION.xlsx', sheet_name='Sheet1')
+print("Columns found:", df.columns)
+comp_vals = df['Force']
+
+tens_u_vals = [i * 20 for i in time_vals]
+comp_u_vals = [i * (-15) for i in time_vals]
+
+# tens_time_vals = [0, 0.25, 0.5, 0.59375, 0.744375, 0.945312, 1]
+# tens_u_vals = [i * 20 for i in tens_time_vals]
+# tens_vals = [0, 3487.1, 6546.13, 7585.47, 9045.55, 11036.1, 11517.2]
+
+# comp_time_vals = [0, 0.25, 0.5, 0.875, 1]
+# comp_u_vals = [i * (-15) for i in comp_time_vals]
+# comp_vals = [0, -2872.04, -5897.17, -10491.7, -11999.8] 
 
 title = 'Reaction force vs displacement - tension (Abaqus)'
 plt.figure()
-plt.plot(tens_u_vals, tens_vals, 'o-')
+plt.plot(tens_u_vals, tens_vals)
 plt.xlabel('uΓ [mm]')
 plt.ylabel('vertical reaction force [N]')
 sfig(title)
@@ -118,12 +130,11 @@ plt.show()
 
 title = 'Reaction force vs displacement - compression (Abaqus)'
 plt.figure()
-plt.plot(comp_u_vals, comp_vals, 'o-')
+plt.plot(comp_u_vals, comp_vals)
 plt.xlabel('uΓ [mm]')
 plt.ylabel('vertical reaction force [N]')
 sfig(title)
 plt.show()
-
 
 #===================================================================================================
 ####################################################################################################
