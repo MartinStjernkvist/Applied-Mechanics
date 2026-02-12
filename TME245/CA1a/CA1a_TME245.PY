@@ -533,10 +533,12 @@ def solve_task_2a(target_displacement, plot_tag):
     sfig(title)
     plt.show()
     
+    return u_vals, force_history
+    
 printt('LC1 - tension')
-solve_task_2a(target_displacement = 20, plot_tag = 'tension')
+u_vals_tension, force_history_tension = solve_task_2a(target_displacement = 20, plot_tag = 'tension')
 printt('LC2 - compression')
-solve_task_2a(target_displacement = -15, plot_tag = 'compression')
+u_vals_compression, force_history_compression = solve_task_2a(target_displacement = -15, plot_tag = 'compression')
 
 #%%
 #===================================================================================================
@@ -1030,11 +1032,11 @@ printt('Run solver - coarse mesh - tension')
 # ------------------------------------------------------------------
 filename = 'topology_coarse_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=50, tol=1e-5, u_final=20, h=100)
+a_coarse_tension, disp_history_coarse_tension, force_history_coarse_tension = solve_task_2d(filename, n_steps=50, tol=1e-5, u_final=20, h=100)
 
 title = 'Coarse mesh - Total vertical reaction force vs displacement - tension'
 plt.figure()
-plt.plot(disp_history, force_history, '-o')
+plt.plot(disp_history_coarse_tension, force_history_coarse_tension, '-o')
 plt.title(title)
 plt.xlabel('Displacement u_Gamma [mm]')
 plt.ylabel('Reaction Force [N]')
@@ -1048,32 +1050,72 @@ printt('Run solver - coarse mesh - compression')
 # ------------------------------------------------------------------
 filename = 'topology_coarse_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=16, tol=1e-5, u_final=-13, h=100)
+a_coarse_compression, disp_history_coarse_compression, force_history_coarse_compression = solve_task_2d(filename, n_steps=16, tol=1e-5, u_final=-13, h=100)
 
 title = 'Coarse mesh - Total vertical reaction force vs displacement - compression'
 plt.figure()
-plt.plot(disp_history, force_history, '-o')
+plt.plot(disp_history_coarse_compression, force_history_coarse_compression, '-o')
 plt.title(title)
 plt.xlabel('Displacement u_Gamma [mm]')
 plt.ylabel('Reaction Force [N]')
 plt.grid(True)
 sfig(title)
 plt.show()
-
 #%%
 # ------------------------------------------------------------------
 printt('Run solver - medium mesh - tension')
 # ------------------------------------------------------------------
 filename = 'topology_medium_6node.mat'
 
-a, disp_history, force_history = solve_task_2d(filename, n_steps=100, tol=1e-5, u_final=20, h=100)
+a_medium, disp_history_medium, force_history_medium = solve_task_2d(filename, n_steps=150, tol=1e-5, u_final=20, h=100)
 
 title = 'Medium mesh - Total vertical reaction force vs displacement - tension'
 plt.figure()
-plt.plot(disp_history, force_history, '-o')
+plt.plot(disp_history_medium, force_history_medium, '-o')
 plt.title(title)
 plt.xlabel('Displacement u_Gamma [mm]')
 plt.ylabel('Reaction Force [N]')
 plt.grid(True)
 sfig(title)
 plt.show()
+#%%
+# ------------------------------------------------------------------
+printt('Comparison with task 2a)')
+# ------------------------------------------------------------------
+
+title = 'Comparison between 2a) and 2d) - tension'
+plt.figure()
+plt.plot(u_vals_tension, force_history_tension, 'o-', label='2a)')
+plt.plot(disp_history_coarse_tension, force_history_coarse_tension, '-o', alpha=0.7, label='2d)')
+plt.title(title)
+plt.xlabel('Displacement u_Gamma [mm]')
+plt.ylabel('Reaction Force [N]')
+plt.grid(True)
+plt.legend()
+sfig(title)
+plt.show()
+
+title = 'Comparison between 2a) and 2d) - compression'
+plt.figure()
+plt.plot(u_vals_compression, force_history_compression, 'o-', label='2a)')
+plt.plot(disp_history_coarse_compression, force_history_coarse_compression, '-o', alpha=0.7, label='2d)')
+plt.title(title)
+plt.xlabel('Displacement u_Gamma [mm]')
+plt.ylabel('Reaction Force [N]')
+plt.grid(True)
+plt.legend()
+sfig(title)
+plt.show()
+
+title = 'Comparison between coarse and medium mesh - tension'
+plt.figure()
+plt.plot(disp_history_coarse_compression, force_history_coarse_compression, 'o-', label='coarse')
+plt.plot(disp_history_medium, force_history_medium, '-o', alpha=0.7, label='medium')
+plt.title(title)
+plt.xlabel('Displacement u_Gamma [mm]')
+plt.ylabel('Reaction Force [N]')
+plt.grid(True)
+plt.legend()
+sfig(title)
+plt.show()
+#%%
