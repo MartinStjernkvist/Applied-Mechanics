@@ -67,8 +67,6 @@ p_o2__p_2 = interpolation(2.40000e+00, 1.46200e+01,
                           2.45000e+00, 1.58061e+01,
                           M_2)
 
-p_2__p_1 = (1 / p_o2__p_2) * p_o1__p_1
-
 print(f'M_12n: {M_12n:.4f}')
 print(f'p_2 / p_1: {p_o2__p_o1:.4f}')
 print(f'p_o2 / p_o1: {p_2__p_1:.4f}')
@@ -107,7 +105,7 @@ p_o3__p_3 = interpolation(2.85000e+00, 2.92862e+01,
                           2.90000e+00, 3.15941e+01,
                           M_3)
 
-p_3__p_1 = (1 / p_o3__p_3) * p_o1__p_1
+p_3__p_1 = (1 / p_o3__p_3) * p_o2__p_o1 * p_o1__p_1
 
 print(f'nu_2: {nu_2:.4f}')
 print(f'nu_3: {nu_3:.4f}')
@@ -191,7 +189,7 @@ p_o5__p_5 = interpolation(2.55000e+00, 1.84662e+01,
                           2.60000e+00, 1.99540e+01,
                           M_5)
 
-p_5__p_1 = (1 / p_o5__p_5) * p_o1__p_1
+p_5__p_1 = (1 / p_o5__p_5) * p_o4__p_o1 * p_o1__p_1
 
 print(f'nu_4: {nu_4:.4f}')
 print(f'nu_5: {nu_5:.4f}')
@@ -204,7 +202,7 @@ print(f'p_5 / p_1: {p_5__p_1:.4f}')
 printt('Drag & lift')
 # ------------------------------------------------------------------
 
-t = 2 * np.sin(delta) * (c / 2)
+t = 2 * np.tan(delta) * (c / 2)
 
 Axial = p_1 * (t / 2) * (p_2__p_1 + p_4__p_1 - p_3__p_1 - p_5__p_1)
 Normal = p_1 * (c / 2) * (p_4__p_1 + p_5__p_1 - p_2__p_1 - p_3__p_1)
@@ -249,8 +247,8 @@ M_LE = x_2 * N_2 - y_2 * A_2 + \
        x_4 * N_4 - y_4 * A_4 + \
        x_5 * N_5 - y_5 * A_5
 
-CoP = M_LE / Normal
+CoP_chord = M_LE / Normal
 print(f'M_LE: {M_LE:.2f}')
-print(f'CoP (chord): {CoP:.2f}')
+print(f'CoP (chord): {CoP_chord:.2f}')
 
 #%%
