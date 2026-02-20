@@ -149,8 +149,6 @@ p_o4__p_4 = interpolation(2.15000e+00, 9.88810e+00,
                           2.20000e+00, 1.06927e+01,
                           M_4)
 
-p_4__p_1 = (1 / p_o4__p_4) * p_o1__p_1
-
 print(f'M_14n: {M_14n:.4f}')
 print(f'p_4 / p_1: {p_o4__p_o1:.4f}')
 print(f'p_o4 / p_o1: {p_4__p_1:.4f}')
@@ -211,8 +209,8 @@ Lift = Normal * np.cos(alpha) - Axial * np.sin(alpha)
 Drag = Normal * np.sin(alpha) + Axial * np.cos(alpha)
 
 print(f'thickness: {t:.4f}')
-print(f'Axial pressure [Pa]: {Axial:.2f}')
-print(f'Normal pressure [Pa]: {Normal:.2f}')
+print(f'Axial: {Axial:.2f}')
+print(f'Normal: {Normal:.2f}')
 print(f'Lift: {Lift:.2f}')
 print(f'Drag: {Drag:.2f}')
 
@@ -241,7 +239,8 @@ y_4 = - (c / 4) * np.tan(delta)
 x_5 = + 3 * c / 4
 y_5 = - (c / 4) * np.tan(delta)
 
-
+# M = x * F_y - y * F_y
+# Sum contributions to Leading Edge (LE)
 M_LE = x_2 * N_2 - y_2 * A_2 + \
        x_3 * N_3 - y_3 * A_3 + \
        x_4 * N_4 - y_4 * A_4 + \
@@ -249,6 +248,32 @@ M_LE = x_2 * N_2 - y_2 * A_2 + \
 
 CoP_chord = M_LE / Normal
 print(f'M_LE: {M_LE:.2f}')
-print(f'CoP (chord): {CoP_chord:.2f}')
+print(f'CoP (chord): {CoP_chord:.5f}')
 
+#%%
+# ------------------------------------------------------------------
+printt('StarCCM boundary conditions')
+# ------------------------------------------------------------------
+
+# 2.50000e+00 1.70859e+01 7.59375e+00 2.25000e+00 2.63672e+00
+T_o1__T_1 = 2.25000e+00
+
+p_o_inf = p_1 * p_o1__p_1
+T_o_inf = T_1 * T_o1__T_1
+
+gamma = 1.4
+R = 287.0
+
+a_1 = np.sqrt(gamma * R * T_1)
+V_inf = M_1 * a_1
+
+V_inf_x = V_inf * np.cos(alpha)
+V_inf_y = V_inf * np.sin(alpha)
+
+print(f'p_o_inf: {p_o_inf}')
+print(f'T_o_inf: {T_o_inf}')
+print(f'V_inf_x: {V_inf_x}')
+print(f'V_inf_y: {V_inf_y}')
+print(f'CoP verify: x = {-0.1 + CoP_chord:.5f}')
+print(f'CoP StarCCM: {0.1 + (-0.01265):.5f}')
 #%%
