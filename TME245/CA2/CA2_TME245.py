@@ -20,7 +20,6 @@ import multiprocessing as mp
 import tkinter as tk
 from tkinter import simpledialog
 import json
-from __future__ import annotations
 from typing import List, Optional, Sequence, Tuple
 import plotly.graph_objects as go
 from IPython.display import Math, display
@@ -97,7 +96,8 @@ def displayvar(name: str, var, post: Optional[str] = None, accuracy: Optional[in
         display(Math(f"{name} = {sp.latex(var)}") )
     else:
         display(Math(f"{name} \\approx {sp.latex(sp.sympify(var).evalf(accuracy))}"))
-        
+
+#%%  
 #===================================================================================================
 ####################################################################################################
 ####################################################################################################
@@ -300,7 +300,7 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
         K_ww += (Bastn.T @ Dbar @ Bastn * detFisop * Hgp)
         
     return K_uu, K_ww, f_u, f_w
-
+#%%
 #===================================================================================================
 ####################################################################################################
 new_subtask('Task 1 e) - Small FE-program for plate analysis')
@@ -637,4 +637,312 @@ sum_fuy = f_global[uy_dof_mask].sum()
 print(f'Sum nodal w-forces = {sum_fw:.4f} N (expect {q_bar * plate_area:.3f})')
 print(f'\nSum nodal ux-forces = {sum_fuy:.3f} N (expect {fx_bar * plate_area:.3f}')
 
+#%%  
+#===================================================================================================
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+new_task('Task 2 - Buckling analysis (temperature elevation)')
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+#===================================================================================================
+
+# =============================================================================
+# Define inputs
+# =============================================================================
+delta_T  = 30.0 # degrees
+
+# Gauss points used in G^(R)
+_gp3 = np.sqrt(3.0 / 5.0)
+_xi_3x3 = np.array([
+    [-_gp3, -_gp3], [0.0, -_gp3], [_gp3, -_gp3],
+    [-_gp3,  0.0 ], [0.0,  0.0 ], [_gp3,  0.0 ],
+    [-_gp3,  _gp3], [0.0,  _gp3], [_gp3,  _gp3],
+])
+_w3 = np.array([5.0/9, 8.0/9, 5.0/9])
+_W_3x3 = np.outer(_w3, _w3).ravel()
+
+#===================================================================================================
+####################################################################################################
+new_subtask('Task 2 b) - Thermal in-plane load vector (element contribution)')
+####################################################################################################
+#===================================================================================================
+
+def f_thermal_element(ex, ey, h, E, nu, alpha, dT):
+    D_mat  = (E / (1.0 - nu**2)) * np.array([
+        [1,  nu,  0],
+        [nu,  1,  0],
+        [0,  0, (1 - nu) / 2]
+    ])
+    eps_th = alpha * dT * np.array([1, 1, 0])
+    sigma_th = D_mat @ eps_th
+
+    xe_nodes = np.column_stack((ex, ey))
+
+    H_v  = np.ones(4)
+    xi_v = np.array([
+        [-1/np.sqrt(3), -1/np.sqrt(3),  1/np.sqrt(3), 1/np.sqrt(3)],
+        [-1/np.sqrt(3),  1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3)]
+    ])
+
+    f_th = np.zeros((8, 1))
+    for gp in range(4):
+        xin = xi_v[:, gp]
+        B_u, detJ = Bu_and_detJ(xin, xe_nodes)
+        # Integrand
+        f_th += (B_u.T @ sigma_th).reshape(8, 1) * h * detJ * H_v[gp]
+
+    return f_th
+
+def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
+    
+    n1 = np.array([[ex[0]], [ey[0]]])
+    n2 = np.array([[ex[1]], [ey[1]]])
+    n3 = np.array([[ex[2]], [ey[2]]])
+    n4 = np.array([[ex[3]], [ey[3]]])
+
+    H_v  = np.ones(4)
+    xi_v = np.array([
+        [-1/np.sqrt(3), -1/np.sqrt(3),  1/np.sqrt(3), 1/np.sqrt(3)],
+        [-1/np.sqrt(3),  1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3)]
+    ])
+
+    K_K_ww = np.zeros((12, 12))
+    for gp in range(4):
+        xin = xi_v[:, gp].reshape(2, 1)
+        detFisop = float(detFisop_4node_func(xin, n1, n2, n3, n4))
+        _, Bastn, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
+        K_K_ww += Bastn.T @ Dbar @ Bastn * detFisop * H_v[gp]
+
+    G_e_R = np.zeros((12, 12))
+    for gp in range(9):
+        xin   = _xi_3x3[gp].reshape(2, 1)
+        W_gp  = _W_3x3[gp]
+        detFisop = float(detFisop_4node_func(xin, n1, n2, n3, n4))
+
+        dNdx, _, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
+
+        G_e_R += dNdx.T @ N_sec @ dNdx * detFisop * W_gp
+
+    return K_K_ww, G_e_R
+
+
+def inplane_stress_at_point(xin, xe_nodes, a_u_el, D_mat, alpha, dT):
+    B_u, _ = Bu_and_detJ(xin, xe_nodes)
+    eps    = B_u @ a_u_el
+    eps_th = alpha * dT * np.array([1.0, 1.0, 0.0])
+    sigma  = D_mat @ (eps - eps_th)
+    return sigma
+
+#===================================================================================================
+####################################################################################################
+new_subtask('Task 2 c) - Linearised pre-buckling FE program')
+####################################################################################################
+#===================================================================================================
+
+# =============================================================================
+# In-plane thermal problem
+# =============================================================================
+K_uu_global = lil_matrix((ndofs, ndofs))
+f_u_thermal  = np.zeros(ndofs)
+
+D_mat = hooke_plane_stress(Emod_al, nu_al)
+
+for el in range(nel):
+    ex = Coord[node_idx[el, :], 0]
+    ey = Coord[node_idx[el, :], 1]
+
+    # Element in-plane stiffness
+    K_uu_e, _, _, _ = kirchoff_plate_element(ex, ey, h_plate, Dbar, body_val=0.0)
+
+    # Element thermal load
+    f_th_e = f_thermal_element(ex, ey, h_plate, Emod_al, nu_al, alpha_al, delta_T)
+
+    # DOF mapping (in-plane only: ux, uy)
+    nodes = node_idx[el, :]
+    d_ip  = np.empty(8, dtype=int)
+    d_ip[0::2] = 5 * nodes + 0   # ux
+    d_ip[1::2] = 5 * nodes + 1   # uy
+
+    # Assemble
+    for i in range(8):
+        f_u_thermal[d_ip[i]] += f_th_e[i, 0]
+        for j in range(8):
+            K_uu_global[d_ip[i], d_ip[j]] += K_uu_e[i, j]
+
+K_uu_csr = K_uu_global.tocsr()
+
+# =============================================================================
+# In-plane boundary conditions for thermal problem
+# =============================================================================
+prescribed_ip = set()
+
+for n in clamped_nodes:
+    prescribed_ip.add(5 * n + 0) # ux
+    prescribed_ip.add(5 * n + 1) # uy
+
+for n in gliding_nodes:
+    prescribed_ip.add(5 * n + 1) # uy
+
+dof_C_ip = np.array(sorted(prescribed_ip), dtype=int)
+dof_F_ip = np.setdiff1d(np.arange(ndofs), dof_C_ip)
+
+K_FF_ip = K_uu_csr[np.ix_(dof_F_ip, dof_F_ip)]
+f_F_ip  = f_u_thermal[dof_F_ip] # a_C = 0 everywhere
+
+a_u_F = spla.spsolve(K_FF_ip, f_F_ip)
+
+a_u = np.zeros(ndofs)
+a_u[dof_F_ip] = a_u_F
+
+u_x_th = a_u[0::5]
+u_y_th = a_u[1::5]
+
+print(f'Max ux = {np.abs(u_x_th).max()*1e3:.4f} mm')
+print(f'Max uy = {np.abs(u_y_th).max()*1e3:.4f} mm')
+
+# =============================================================================
+# Compute N_sec for each element
+# =============================================================================
+N_sec_all = []
+
+xin_mid = np.array([[0.0], [0.0]])
+
+for el in range(nel):
+    ex = Coord[node_idx[el, :], 0]
+    ey = Coord[node_idx[el, :], 1]
+    xe_nodes = np.column_stack((ex, ey))
+
+    nodes  = node_idx[el, :]
+    d_ip   = np.empty(8, dtype=int)
+    d_ip[0::2] = 5 * nodes + 0
+    d_ip[1::2] = 5 * nodes + 1
+    a_u_el = a_u[d_ip]
+
+    # In-plane stress at midpoint (including thermal strain)
+    sigma = inplane_stress_at_point(xin_mid.ravel(), xe_nodes,
+                                    a_u_el, D_mat, alpha_al, delta_T)
+    sig_xx, sig_yy, sig_xy = sigma
+
+    N_sec = h_plate * np.array([
+        [sig_xx, sig_xy],
+        [sig_xy, sig_yy]
+    ])
+    N_sec_all.append(N_sec)
+
+# =============================================================================
+# Assemble K_K_ww and G^(R)
+# =============================================================================
+K_Kww_global = lil_matrix((ndofs, ndofs))
+G_R_global   = lil_matrix((ndofs, ndofs))
+
+for el in range(nel):
+    ex = Coord[node_idx[el, :], 0]
+    ey = Coord[node_idx[el, :], 1]
+
+    K_K_ww_e, G_e_R = kirchhoff_buckling_element(ex, ey, h_plate, Dbar, N_sec_all[el])
+
+    nodes  = node_idx[el, :]
+    d_oop  = np.empty(12, dtype=int)
+    d_oop[0::3] = 5 * nodes + 2 # w
+    d_oop[1::3] = 5 * nodes + 3 # theta_x
+    d_oop[2::3] = 5 * nodes + 4 # theta_y
+
+    for i in range(12):
+        for j in range(12):
+            K_Kww_global[d_oop[i], d_oop[j]] += K_K_ww_e[i, j]
+            G_R_global  [d_oop[i], d_oop[j]] += G_e_R   [i, j]
+
+K_Kww_csr = K_Kww_global.tocsr()
+G_R_csr   = G_R_global.tocsr()
+
+# =============================================================================
+# Eigenvalue problem
+# =============================================================================
+prescribed_oop = set()
+for n in clamped_nodes:
+    for d in [2, 3, 4]:
+        prescribed_oop.add(5 * n + d)
+for n in gliding_nodes:
+    prescribed_oop.add(5 * n + 2) # w
+    prescribed_oop.add(5 * n + 3) # theta_x
+    prescribed_oop.add(5 * n + 4) # theta_y
+
+dof_C_oop = np.array(sorted(prescribed_oop), dtype=int)
+dof_F_oop = np.setdiff1d(np.arange(ndofs), dof_C_oop)
+
+K_FF_bck = K_Kww_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
+G_FF_bck = G_R_csr  [np.ix_(dof_F_oop, dof_F_oop)].toarray()
+
+# Solve with eigh (symmetric) asking for the smallest eigenvalue of K w.r.t. -G.
+# If -G is positive semi-definite (compressive loads), the smallest positive
+# eigenvalue gives the load multiplier.
+neg_G = -G_FF_bck
+
+# Use scipy.linalg.eigh with subset_by_index to get only the first few eigenvalues
+n_eig = min(10, K_FF_bck.shape[0])
+eigvals, eigvecs = eigh(K_FF_bck, neg_G, subset_by_index=[0, n_eig - 1])
+
+# Filter for positive eigenvalues
+pos_mask = eigvals > 0
+if pos_mask.any():
+    lam_min = eigvals[pos_mask][0]
+    z_min   = eigvecs[:, pos_mask][:, 0]
+else:
+    pass
+
+print(f'\nSmallest positive eigenvalue (SF) = {lam_min:.4f}')
+    
+# =============================================================================
+# Plot buckling mode shape
+# =============================================================================
+z_full = np.zeros(ndofs)
+z_full[dof_F_oop] = z_min
+
+# Extract only out-of-plane DOFs per node for plotting
+w_mode = z_full[2::5]
+
+# Normalise for visualisation
+w_mode /= np.abs(w_mode).max() if np.abs(w_mode).max() > 0 else 1.0
+
+polygons_plot = Coord[node_idx]
+
+fig, ax = plt.subplots(figsize=(8, 5))
+el_w = w_mode[node_idx].mean(axis=1)
+pc = PolyCollection(polygons_plot, array=el_w, edgecolors='none')
+ax.add_collection(pc)
+ax.autoscale()
+ax.set_aspect('equal')
+ax.set_title(f'Buckling mode 1  (eigval_1 = {lam_min:.3f},  SF = {lam_min:.2f})')
+ax.set_xlabel('x [m]')
+ax.set_ylabel('y [m]')
+plt.colorbar(pc, ax=ax, label='Normalised w (buckling mode)')
+plt.tight_layout()
+plt.savefig('task2_buckling_mode.png', bbox_inches='tight')
+plt.show()
+
+# =============================================================================
+# Visualise in-plane thermal displacements
+# =============================================================================
+fig2, axes2 = plt.subplots(2,1, figsize=(8,8))
+fig2.suptitle(f'In-plane thermal displacements')
+
+for ax, (field, label) in zip(axes2,
+    [(u_x_th * 1e3, 'ux [mm]'), (u_y_th * 1e3, 'uy [mm]')]):
+    el_vals = field[node_idx].mean(axis=1)
+    pc = PolyCollection(polygons_plot, array=el_vals, edgecolors='none')
+    ax.add_collection(pc)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    ax.set_title(label)
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    plt.colorbar(pc, ax=ax)
+
+plt.tight_layout()
+plt.savefig('task2_thermal_displacements.png', bbox_inches='tight')
+plt.show()
 #%%
