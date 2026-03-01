@@ -847,10 +847,27 @@ L = 200.0  # [mm]
 H = 20.0   # [mm]
 h = 1.0    # Plate thickness [mm]
 q = 1e-3   # N/mm^2 load on plate
-
+# %
+# % Introduce 8 nodes and 3 elements
+# %
+# % 1 -----4------6-----8
+# % |      |     |      | 
+# % | 1    | 2   | 3    | H 
+# % |      |     |      | 
+# % 2------3------5-----7
+# %
+# % <---------L--------->
+# %
+# %
 nel = 3
 nnodes = 8
 nen = 4
+
+# % 1-3--10-12--16-18--22-24
+# % |      |      |      | 
+# % | 1    | 2    | 3    | H 
+# % |      |      |      | 
+# % 4-6 --7-9--13-15--19-21
 
 # Define Edof (Column 1 is element number, Columns 2-13 are DOFs)
 Edof = np.array([
@@ -888,7 +905,7 @@ ptype = 1 # plane stress
 D = hooke_plane_stress(Emod, nu)
 Dbar = (h**3 / 12) * D
 
-# Boundary conditions (Converting MATLAB 1-6 to Python 0-5)
+# Boundary conditions
 dof_C = np.arange(0, 6) # Prescribed dofs 0 to 5
 dof_F = np.setdiff1d(np.arange(ndofs), dof_C) # Free dofs
 a_C = np.zeros((6, 1))
@@ -901,7 +918,7 @@ for el in range(nel):
     # Pass Edof row, excluding the element number at index 0
     K, f_ext_area = assem(Edof[el, 1:], K, Ke, f_ext_area, fe_ext)
 
-# Convert to CSR format for efficient solving
+# Convert to CSR format
 K = K.tocsr()
 
 # Block partitioning and solving: K_FF * a_F = f_F - K_FC * a_C
