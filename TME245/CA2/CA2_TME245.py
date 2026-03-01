@@ -305,7 +305,10 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
         # =============================================================================
         B_u, detJ = Bu_and_detJ(xi_vec, xe_nodes)
         N_u = Nu_inplane(xi_vec)
-        f_body = np.array([[fx_bar], [0.0]])
+        
+        # f_body = np.array([[fx_bar], [0.0]])
+        fy_bar = q0 * np.cos(angle_roof) * np.sin(angle_roof)   # downslope (negative y if y up slope)
+        f_body = np.array([[0.0], [-fy_bar]])
 
         K_uu += B_u.T @ (h * D) @ B_u * detJ * Hgp
         f_u  += N_u.T @ f_body * detJ * Hgp
@@ -412,6 +415,7 @@ a = np.zeros(ndofs)  # 1D array
 D = hooke_plane_stress(Emod_al, nu_al)
 Dbar = (h_plate**3 / 12) * D
 
+"""
 # =============================================================================
 # Boundary conditions
 # =============================================================================
@@ -458,9 +462,43 @@ a_C = np.zeros(len(prescribed))  # 1D array
 print(f"\nBoundary conditions:")
 print(f"  Prescribed DOFs : {len(dof_C )}")
 print(f"  Free DOFs       : {len(dof_F)}")
-
+"""
 # body = np.ones((nel, 1)) * q
 body = q_bar
+
+# =============================================================================
+# Boundary conditions - FIXED
+# =============================================================================
+tol = 1e-10
+x_all = Coord[:, 0]
+y_all = Coord[:, 1]
+
+gliding_nodes = np.where(np.abs(y_all - ymin) < tol)[0]   # y=0 = lower edge
+clamped_nodes = np.where(
+    (np.abs(x_all - xmin) < tol) |
+    (np.abs(x_all - xmax) < tol) |
+    (np.abs(y_all - ymax) < tol)
+)[0]
+
+prescribed = set()
+
+# Clamped: all 5 DOFs
+for n in clamped_nodes:
+    for d in range(5):
+        prescribed.add(5 * n + d)
+
+# Gliding: only w, θy, θx (ux, uy free)
+for n in gliding_nodes:
+    prescribed.add(5 * n + 2)  # w
+    prescribed.add(5 * n + 3)  # θy
+    prescribed.add(5 * n + 4)  # θx
+
+dof_C = np.array(sorted(prescribed), dtype=int)
+dof_F = np.setdiff1d(np.arange(ndofs), dof_C)
+a_C = np.zeros(len(dof_C))
+
+print(f"Clamped nodes: {len(clamped_nodes)} | Gliding nodes: {len(gliding_nodes)}")
+print(f"Prescribed DOFs: {len(dof_C)} | Free DOFs: {len(dof_F)}")
 
 # =============================================================================
 # Setup and solve FE equations
