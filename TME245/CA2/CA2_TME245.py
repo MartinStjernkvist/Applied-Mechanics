@@ -304,7 +304,7 @@ new_subtask('Task 1 e) - Small FE-program for plate analysis')
 # Mesh parameters
 # =============================================================================
 xmin = 0
-xmax = 0.50
+xmax = 0.5
 ymin = 0
 ymax = 0.75
 nelx = 20
@@ -372,7 +372,7 @@ plt.show()
 # =============================================================================
 nel = mesh.shape[1]
 nnodes = Coord.shape[0]
-dofs_per_node = 5
+dofs_per_node = 5 # u_x, u_y, w, theta_y, theta_x
 ndofs = dofs_per_node * nnodes
 
 K_global = lil_matrix((ndofs, ndofs)) 
@@ -406,16 +406,13 @@ for n in clamped_nodes:
 
 # Gliding
 for n in gliding_nodes:
-    prescribed.add(5 * n + 2)  # w
-    prescribed.add(5 * n + 3)  # theta_y
-    prescribed.add(5 * n + 4)  # theta_x
+    prescribed.add(5 * n + 2) # w
+    prescribed.add(5 * n + 3) # theta_y
+    prescribed.add(5 * n + 4) # theta_x
 
 dof_C = np.array(sorted(prescribed), dtype=int)
 dof_F = np.setdiff1d(np.arange(ndofs), dof_C)
 a_C = np.zeros(len(dof_C))
-
-print(f'Clamped nodes: {len(clamped_nodes)} \nGliding nodes: {len(gliding_nodes)}')
-print(f'Prescribed DOFs: {len(dof_C)} \nFree DOFs: {len(dof_F)}')
 
 body = q_bar
 
@@ -472,7 +469,10 @@ a_F = np.atleast_1d(a_F).ravel()
 # =============================================================================
 # Calculate reaction forces
 # =============================================================================
-f_extC = K_CF @ a_F + K_CC @ a_C - f_global[dof_C]
+
+# Eq (7.146)
+r_C = K_CF @ a_F + K_CC @ a_C - f_global[dof_C]
+# displayvar('r_C', r_C)
 
 a[dof_F] = a_F
 a[dof_C] = a_C
@@ -531,7 +531,8 @@ plt.show()
 # =============================================================================
 def von_mises_plane_stress(sigma):
     s11, s22, s12 = sigma
-    return np.sqrt(s11**2 - s11 * s22 + s22**2 + 3.0 * s12**2)
+    sigma_vm = np.sqrt(s11**2 - s11 * s22 + s22**2 + 3.0 * s12**2)
+    return sigma_vm
 
 GP = 1.0 / np.sqrt(3.)
 xi_GP = np.array([[-GP,-GP], [GP,-GP], [GP,GP], [-GP,GP]])
@@ -555,19 +556,19 @@ def element_stress_at_z(ex, ey, a_u_el, a_w_el, h_pl, E, nu, z_coord):
 
         # Curvature
         _, Bast, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
-        kappa  = Bast @ a_w_el
+        kappa = Bast @ a_w_el
 
         # Total strain at depth z
         eps_z  = eps0 - z_coord * kappa
 
-        # Stress and von Mises
+        # Stress and von Mises (remark 7.16)
         sigma = D @ eps_z
         sigma_vM[i] = von_mises_plane_stress(sigma)
 
     return sigma_vM
 
 
-z_levels = [-h_plate/2.0, 0.0, h_plate/2.0]
+z_levels = [-h_plate / 2.0, 0, h_plate / 2.0]
 z_labels = ['z = -h/2 (bottom)', 'z = 0 (mid-plane)', 'z = +h/2 (top)']
 vM_contour = {}
 
@@ -577,14 +578,23 @@ for z in z_levels:
         ex = Coord[node_idx[el,:], 0]
         ey = Coord[node_idx[el,:], 1]
 
-        d_ip  = Edof_ip [el, 1:] - 1
-        d_oop = Edof_oop[el, 1:] - 1
+        nodes_el = node_idx[el, :]
+        d_ip = np.empty(8, dtype=int)
+        d_oop = np.empty(12, dtype=int)
+        
+        d_ip[0::2] = 5 * nodes_el + 0 # ux
+        d_ip[1::2] = 5 * nodes_el + 1 # uy
+        d_oop[0::3] = 5 * nodes_el + 2 # w
+        d_oop[1::3] = 5 * nodes_el + 3 # theta_y
+        d_oop[2::3] = 5 * nodes_el + 4 # theta_x
+        
+        # d_ip = Edof_ip[el, 1:] - 1
+        # d_oop = Edof_oop[el, 1:] - 1
 
-        a_u_el = a[d_ip ]
+        a_u_el = a[d_ip]
         a_w_el = a[d_oop]
 
-        svm = element_stress_at_z(ex, ey, a_u_el, a_w_el,
-                                   h_plate, Emod_al, nu_al, z)
+        svm = element_stress_at_z(ex, ey, a_u_el, a_w_el, h_plate, Emod_al, nu_al, z)
         el_avg_vM[el] = svm.mean()
 
     vM_contour[z] = el_avg_vM
@@ -607,7 +617,7 @@ for ax, (z, lbl) in zip(axes2, zip(z_levels, z_labels)):
     ax.add_collection(pc)
     ax.autoscale()
     ax.set_aspect('equal')
-    ax.set_title(f'z = {lbl}')
+    ax.set_title(lbl)
     ax.set_xlabel('x [m]')
     ax.set_ylabel('y [m]')
     plt.colorbar(pc, ax=ax)
@@ -666,10 +676,11 @@ new_subtask('Task 2 b) - Thermal in-plane load vector (element contribution)')
 
 def f_thermal_element(ex, ey, h, E, nu, alpha, dT):
     D_mat  = (E / (1.0 - nu**2)) * np.array([
-        [1,  nu,  0],
-        [nu,  1,  0],
-        [0,  0, (1 - nu) / 2]
+        [1, nu, 0],
+        [nu, 1, 0],
+        [0, 0, (1 - nu) / 2]
     ])
+    
     eps_th = alpha * dT * np.array([1, 1, 0])
     sigma_th = D_mat @ eps_th
 
@@ -698,8 +709,8 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
 
     H_v  = np.ones(4)
     xi_v = np.array([
-        [-1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3), 1/np.sqrt(3)],
-        [-1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3)]
+        [-1 / np.sqrt(3), -1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)],
+        [-1 / np.sqrt(3), 1 / np.sqrt(3), -1 / np.sqrt(3), 1 / np.sqrt(3)]
     ])
 
     K_K_ww = np.zeros((12, 12))
@@ -725,7 +736,7 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
 def inplane_stress_at_point(xin, xe_nodes, a_u_el, D_mat, alpha, dT):
     B_u, _ = Bu_and_detJ(xin, xe_nodes)
     eps = B_u @ a_u_el
-    eps_th = alpha * dT * np.array([1.0, 1.0, 0.0])
+    eps_th = alpha * dT * np.array([1, 1, 0])
     sigma = D_mat @ (eps - eps_th)
     return sigma
 
@@ -739,7 +750,7 @@ new_subtask('Task 2 c) - Linearised pre-buckling FE program')
 # In-plane thermal problem
 # =============================================================================
 K_uu_global = lil_matrix((ndofs, ndofs))
-f_u_thermal  = np.zeros(ndofs)
+f_u_thermal = np.zeros(ndofs)
 
 D_mat = hooke_plane_stress(Emod_al, nu_al)
 
@@ -748,16 +759,16 @@ for el in range(nel):
     ey = Coord[node_idx[el, :], 1]
 
     # Element in-plane stiffness
-    K_uu_e, _, _, _ = kirchoff_plate_element(ex, ey, h_plate, Dbar, body_val=0.0)
+    K_uu_e, _, _, _ = kirchoff_plate_element(ex, ey, h_plate, Dbar, body_val=0)
 
     # Element thermal load
     f_th_e = f_thermal_element(ex, ey, h_plate, Emod_al, nu_al, alpha_al, delta_T)
 
     # DOF mapping (in-plane only: ux, uy)
     nodes = node_idx[el, :]
-    d_ip  = np.empty(8, dtype=int)
-    d_ip[0::2] = 5 * nodes + 0   # ux
-    d_ip[1::2] = 5 * nodes + 1   # uy
+    d_ip = np.empty(8, dtype=int)
+    d_ip[0::2] = 5 * nodes + 0
+    d_ip[1::2] = 5 * nodes + 1
 
     # Assemble
     for i in range(8):
@@ -773,11 +784,11 @@ K_uu_csr = K_uu_global.tocsr()
 prescribed_ip = set()
 
 for n in clamped_nodes:
-    prescribed_ip.add(5 * n + 0) # ux
-    prescribed_ip.add(5 * n + 1) # uy
+    prescribed_ip.add(5 * n + 0) # u_x
+    prescribed_ip.add(5 * n + 1) # u_y
 
-for n in gliding_nodes:
-    prescribed_ip.add(5 * n + 1) # uy
+# for n in gliding_nodes:
+#     prescribed_ip.add(5 * n + 1) # uy
 
 dof_C_ip = np.array(sorted(prescribed_ip), dtype=int)
 dof_F_ip = np.setdiff1d(np.arange(ndofs), dof_C_ip)
@@ -867,7 +878,7 @@ dof_C_oop = np.array(sorted(prescribed_oop), dtype=int)
 dof_F_oop = np.setdiff1d(np.arange(ndofs), dof_C_oop)
 
 K_FF_bck = K_Kww_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
-G_FF_bck = G_R_csr  [np.ix_(dof_F_oop, dof_F_oop)].toarray()
+G_FF_bck = G_R_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
 
 # Solve with eigh (symmetric) asking for the smallest eigenvalue of K w.r.t. -G.
 # If -G is positive semi-definite (compressive loads), the smallest positive
@@ -908,7 +919,7 @@ pc = PolyCollection(polygons_plot, array=el_w, edgecolors='none')
 ax.add_collection(pc)
 ax.autoscale()
 ax.set_aspect('equal')
-ax.set_title(f'Buckling mode 1  (eigval_1 = {lam_min:.3f},  SF = {lam_min:.2f})')
+ax.set_title(f'Buckling mode 1  (eigval_1 = {lam_min:.3f}, SF = {lam_min:.2f})')
 ax.set_xlabel('x [m]')
 ax.set_ylabel('y [m]')
 plt.colorbar(pc, ax=ax, label='Normalised w (buckling mode)')
