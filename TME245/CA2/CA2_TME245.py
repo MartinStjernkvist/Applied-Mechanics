@@ -145,13 +145,7 @@ from kirchoff_funcs import bast_kirchoff_func
 from N_kirchoff_func import N_kirchoff_func
 
 def detFisop_4node_func(in1, in2, in3, in4, in5):
-    # in1 = xi = location of integration point (vector with 2 components)    
-    # in2 = xe1 = nodal coords of node 1 (vector with 2 components)    
-    # in3 = xe2 = nodal coords of node 2 (vector with 2 components)    
-    # in4 = xe3 = nodal coords of node 3 (vector with 2 components)
-    # in5 = xe4 = nodal coords of node 4 (vector with 2 components)
     
-    # Ensure inputs are 2D column vectors so [0, :] slicing works safely
     in1 = np.atleast_2d(in1).reshape(2, -1)
     in2 = np.atleast_2d(in2).reshape(2, -1)
     in3 = np.atleast_2d(in3).reshape(2, -1)
@@ -169,7 +163,6 @@ def detFisop_4node_func(in1, in2, in3, in4, in5):
     xi1 = in1[0, :]
     xi2 = in1[1, :]
 
-    # Derivatives of 4-node isoparametric shape functions w.r.t local coords (xi1, xi2)
     dN1_dxi1 = -0.25 * (1.0 - xi2)
     dN2_dxi1 =  0.25 * (1.0 - xi2)
     dN3_dxi1 =  0.25 * (1.0 + xi2)
@@ -194,47 +187,48 @@ def detFisop_4node_func(in1, in2, in3, in4, in5):
 
 
 def Bu_and_detJ(xin, xe_nodes):
-    """Extract scalars from xin (handles both 1D and 2D input)."""
+
     xin_flat = np.atleast_1d(np.squeeze(xin))
     xi1v, xi2v = xin_flat[0], xin_flat[1]
     
     dN_dxi = 0.25 * np.array([
-        [-(1.-xi2v),  (1.-xi2v), (1.+xi2v), -(1.+xi2v)],
-        [-(1.-xi1v), -(1.+xi1v),(1.+xi1v),  (1.-xi1v)]
+        [-(1 - xi2v), (1 - xi2v), (1 + xi2v), -(1 + xi2v)],
+        [-(1 - xi1v), -(1 + xi1v), (1 + xi1v), (1 -xi1v)]
     ])
+    
     J = dN_dxi @ xe_nodes
     detJ = float(np.linalg.det(J))
     dN_dx = np.linalg.inv(J) @ dN_dxi
 
     B_u = np.zeros((3, 8))
     for k in range(4):
-        B_u[0, 2*k  ] = dN_dx[0, k]
-        B_u[1, 2*k+1] = dN_dx[1, k]
-        B_u[2, 2*k  ] = dN_dx[1, k]
-        B_u[2, 2*k+1] = dN_dx[0, k]
+        B_u[0, 2 * k] = dN_dx[0, k]
+        B_u[1, 2 * k+1] = dN_dx[1, k]
+        B_u[2, 2 * k] = dN_dx[1, k]
+        B_u[2, 2 * k + 1] = dN_dx[0, k]
         
     return B_u, detJ
 
 
 def Nu_inplane(xin):
-    """Extract scalars from xin (handles both 1D and 2D input)."""
+    
     xin_flat = np.atleast_1d(np.squeeze(xin))
     xi1v, xi2v = xin_flat[0], xin_flat[1]
     
-    Nv = [0.25*(1.-xi1v)*(1.-xi2v),
-          0.25*(1.+xi1v)*(1.-xi2v),
-          0.25*(1.+xi1v)*(1.+xi2v),
-          0.25*(1.-xi1v)*(1.+xi2v)]
+    Nv = [0.25 * (1 - xi1v) * (1 - xi2v),
+          0.25 * (1 + xi1v) * (1 - xi2v),
+          0.25 * (1 + xi1v) * (1 + xi2v),
+          0.25 * (1 - xi1v) * (1 + xi2v)]
+    
     N_u = np.zeros((2, 8))
     for k, Nk in enumerate(Nv):
-        N_u[0, 2*k  ] = Nk
-        N_u[1, 2*k+1] = Nk
+        N_u[0, 2 * k] = Nk
+        N_u[1, 2 * k + 1] = Nk
         
     return N_u
 
 
 def hooke_plane_stress(E, nu):
-    """Constitutive matrix for plane stress."""
     return (E / (1 - nu**2)) * np.array([
         [1, nu, 0],
         [nu, 1, 0],
@@ -243,7 +237,6 @@ def hooke_plane_stress(E, nu):
 
 
 def assem(edof, K, Ke, f, fe):
-    """Assemble element stiffness and force into global matrices."""
     idx = edof - 1 # Convert to 0-based indexing
     for i in range(len(idx)):
         f[idx[i], 0] += fe[i, 0]
@@ -259,13 +252,13 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
     # Gauss points
     H_v = np.ones(4)
     xi_v = np.array([
-        [-1/np.sqrt(3), -1/np.sqrt(3),  1/np.sqrt(3), 1/np.sqrt(3)],
-        [-1/np.sqrt(3),  1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3)]
+        [-1 / np.sqrt(3), -1 / np.sqrt(3),  1 / np.sqrt(3), 1 / np.sqrt(3)],
+        [-1 / np.sqrt(3),  1 / np.sqrt(3), -1 / np.sqrt(3), 1 / np.sqrt(3)]
     ])
     
-    K_uu = np.zeros((8,  8))
+    K_uu = np.zeros((8, 8))
     K_ww = np.zeros((12, 12))
-    f_u  = np.zeros((8,  1))
+    f_u  = np.zeros((8, 1))
     f_w  = np.zeros((12, 1))
     
     n1 = np.array([[ex[0]], [ey[0]]])
@@ -273,13 +266,13 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
     n3 = np.array([[ex[2]], [ey[2]]])
     n4 = np.array([[ex[3]], [ey[3]]])
     
-    xe_nodes = np.column_stack((ex, ey))  # (4,2)
+    xe_nodes = np.column_stack((ex, ey))
     
     for gp in range(4):
         Hgp = H_v[gp]
         
-        xi_vec = xi_v[:, gp]  # shape (2,) with float scalars
-        xin = xi_vec.reshape(2, 1)  # shape (2, 1) for functions that expect 2D
+        xi_vec = xi_v[:, gp]
+        xin = xi_vec.reshape(2, 1)
         
         # In-plane membrane
         B_u, detJ = Bu_and_detJ(xi_vec, xe_nodes)
@@ -291,8 +284,8 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
         K_uu += B_u.T @ (h * D) @ B_u * detJ * Hgp
         f_u  += N_u.T @ f_body * detJ * Hgp
         
-        # Bending (Kirchhoff)
-        detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0] # Extract scalar
+        # Bending
+        detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0]
         N_w = N_kirchoff_func(xin, n1, n2, n3, n4)
         dNdx, Bastn, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
         
@@ -311,18 +304,18 @@ new_subtask('Task 1 e) - Small FE-program for plate analysis')
 # Mesh parameters
 # =============================================================================
 xmin = 0
-xmax = 0.75
+xmax = 0.50
 ymin = 0
-ymax = 0.50
-nelx = 15
-nely = 10
+ymax = 0.75
+nelx = 20
+nely = 30
 
 """
-xmin = 0;   xmax = 0.75;
-ymin = 0;   ymax = 0.50;
+xmin = 0;   xmax = 0.5;
+ymin = 0;   ymax = 0.75;
 
-nelx = 15;
-nely = 10;
+nelx = 20;
+nely = 30;
 
 [mesh, coord, Edof_ip, Edof_oop] = rectMesh(xmin, xmax, ymin, ymax, nelx, nely);
 
@@ -368,9 +361,9 @@ pc1 = PolyCollection(
 ax1.add_collection(pc1)
 ax1.autoscale()
 ax1.set_aspect('equal')
-ax1.set_title("Undeformed mesh")
-ax1.set_xlabel("x (m)")
-ax1.set_ylabel("y (m)")
+ax1.set_title('Undeformed mesh')
+ax1.set_xlabel('x (m)')
+ax1.set_ylabel('y (m)')
 plt.grid(True, alpha=0.3)
 plt.show()
 
@@ -383,8 +376,8 @@ dofs_per_node = 5
 ndofs = dofs_per_node * nnodes
 
 K_global = lil_matrix((ndofs, ndofs)) 
-f_global = np.zeros(ndofs)  # 1D array
-a = np.zeros(ndofs)  # 1D array
+f_global = np.zeros(ndofs)
+a = np.zeros(ndofs)
 
 # Consitutive matrix
 D = hooke_plane_stress(Emod_al, nu_al)
@@ -440,19 +433,19 @@ for el in range(nel):
     d_ip[0::2] = 5 * nodes + 0  # ux
     d_ip[1::2] = 5 * nodes + 1  # uy
     
-    # Map Bending DOFs
+    # Map bending DOFs
     d_oop = np.empty(12, dtype=int)
     d_oop[0::3] = 5 * nodes + 2  # w
     d_oop[1::3] = 5 * nodes + 3  # theta_y
     d_oop[2::3] = 5 * nodes + 4  # theta_x
     
-    # Assembly for Membrane
+    # Assembly for membrane
     for i in range(8):
         f_global[d_ip[i]] += f_u[i, 0]
         for j in range(8):
             K_global[d_ip[i], d_ip[j]] += K_uu[i, j]
             
-    # Assembly for Bending
+    # Assembly for bending
     for i in range(12):
         f_global[d_oop[i]] += f_w[i, 0]
         for j in range(12):
@@ -472,7 +465,7 @@ K_CC = K[np.ix_(dof_C, dof_C)]
 f_F = f_global[dof_F] - K_FC @ a_C
 
 a_F = spla.spsolve(K_FF, f_F)
-if a_F.ndim == 0:  # scalar case
+if a_F.ndim == 0:
     a_F = np.array([a_F])
 a_F = np.atleast_1d(a_F).ravel()
 
@@ -487,7 +480,7 @@ a[dof_C] = a_C
 # =============================================================================
 # Extract displacement fields
 # =============================================================================
-w_nodes  = a[2::5]    # out-of-plane deflection at every node
+w_nodes  = a[2::5]
 u_x_nodes = a[0::5]
 u_y_nodes = a[1::5]
 theta_y_nodes = a[3::5]
@@ -497,9 +490,9 @@ w_max = np.abs(w_nodes).max()
 
 print(f'w_max = {w_max * 1e3:.3f} mm')
 if w_max * 1e3 <= 25.0:
-    print('Deflection criterion: SATISFIED')
+    print('SATISFIED')
 else:
-    print('Deflection criterion: VIOLATED')
+    print('VIOLATED')
 
 # =============================================================================
 # Displacement contour plots
@@ -510,7 +503,7 @@ def element_average(nodal_field):
 polygons = Coord[node_idx]
 
 fig, axes = plt.subplots(3, 1, figsize=(8, 16))
-fig.suptitle(f"Displacements  (h = {h_plate * 1e3:.1f} mm, snow load)", fontsize=13)
+fig.suptitle(f'Displacements (h = {h_plate * 1e3:.1f} mm, snow load)')
 
 configs = [
     (w_nodes * 1e3, 'w [mm]', 'viridis'),
@@ -538,22 +531,22 @@ plt.show()
 # =============================================================================
 def von_mises_plane_stress(sigma):
     s11, s22, s12 = sigma
-    return np.sqrt(s11**2 - s11*s22 + s22**2 + 3.0*s12**2)
+    return np.sqrt(s11**2 - s11 * s22 + s22**2 + 3.0 * s12**2)
 
-_gp = 1.0 / np.sqrt(3.)
-_xi_gp = np.array([[-_gp,-_gp], [_gp,-_gp], [_gp,_gp], [-_gp,_gp]])
+GP = 1.0 / np.sqrt(3.)
+xi_GP = np.array([[-GP,-GP], [GP,-GP], [GP,GP], [-GP,GP]])
 
 def element_stress_at_z(ex, ey, a_u_el, a_w_el, h_pl, E, nu, z_coord):
         
     xe_nodes = np.column_stack((ex, ey))
-    n1=np.array([[ex[0]],[ey[0]]])
-    n2=np.array([[ex[1]],[ey[1]]])
-    n3=np.array([[ex[2]],[ey[2]]])
-    n4=np.array([[ex[3]],[ey[3]]])
+    n1=np.array([[ex[0]], [ey[0]]])
+    n2=np.array([[ex[1]], [ey[1]]])
+    n3=np.array([[ex[2]], [ey[2]]])
+    n4=np.array([[ex[3]], [ey[3]]])
 
     sigma_vM = np.zeros(4)
     for i in range(4):
-        xi1v, xi2v = _xi_gp[i]
+        xi1v, xi2v = xi_GP[i]
         xin = np.array([[xi1v],[xi2v]])
 
         # Membrane strain
@@ -574,8 +567,8 @@ def element_stress_at_z(ex, ey, a_u_el, a_w_el, h_pl, E, nu, z_coord):
     return sigma_vM
 
 
-z_levels   = [-h_plate/2.0, 0.0, h_plate/2.0]
-z_labels   = ['-h/2 (bottom)', 'z=0 (mid-plane)', '+h/2 (top)']
+z_levels = [-h_plate/2.0, 0.0, h_plate/2.0]
+z_labels = ['z = -h/2 (bottom)', 'z = 0 (mid-plane)', 'z = +h/2 (top)']
 vM_contour = {}
 
 for z in z_levels:
@@ -656,14 +649,14 @@ new_task('Task 2 - Buckling analysis (temperature elevation)')
 delta_T  = 30.0 # degrees
 
 # Gauss points used in G^(R)
-_gp3 = np.sqrt(3.0 / 5.0)
-_xi_3x3 = np.array([
-    [-_gp3, -_gp3], [0.0, -_gp3], [_gp3, -_gp3],
-    [-_gp3,  0.0 ], [0.0,  0.0 ], [_gp3,  0.0 ],
-    [-_gp3,  _gp3], [0.0,  _gp3], [_gp3,  _gp3],
+GP3 = np.sqrt(3.0 / 5.0)
+xi_GP3x3 = np.array([
+    [-GP3, -GP3], [0.0, -GP3], [GP3, -GP3],
+    [-GP3, 0.0], [0.0, 0.0], [GP3, 0.0 ],
+    [-GP3, GP3], [0.0, GP3], [GP3, GP3],
 ])
-_w3 = np.array([5.0/9, 8.0/9, 5.0/9])
-_W_3x3 = np.outer(_w3, _w3).ravel()
+W3 = np.array([5.0/9, 8.0/9, 5.0/9])
+W3X3 = np.outer(W3, W3).ravel()
 
 #===================================================================================================
 ####################################################################################################
@@ -692,7 +685,6 @@ def f_thermal_element(ex, ey, h, E, nu, alpha, dT):
     for gp in range(4):
         xin = xi_v[:, gp]
         B_u, detJ = Bu_and_detJ(xin, xe_nodes)
-        # Integrand
         f_th += (B_u.T @ sigma_th).reshape(8, 1) * h * detJ * H_v[gp]
 
     return f_th
@@ -706,8 +698,8 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
 
     H_v  = np.ones(4)
     xi_v = np.array([
-        [-1/np.sqrt(3), -1/np.sqrt(3),  1/np.sqrt(3), 1/np.sqrt(3)],
-        [-1/np.sqrt(3),  1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3)]
+        [-1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3), 1/np.sqrt(3)],
+        [-1/np.sqrt(3), 1/np.sqrt(3), -1/np.sqrt(3), 1/np.sqrt(3)]
     ])
 
     K_K_ww = np.zeros((12, 12))
@@ -719,8 +711,8 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
 
     G_e_R = np.zeros((12, 12))
     for gp in range(9):
-        xin   = _xi_3x3[gp].reshape(2, 1)
-        W_gp  = _W_3x3[gp]
+        xin   = xi_GP3x3[gp].reshape(2, 1)
+        W_gp  = W3X3[gp]
         detFisop = float(detFisop_4node_func(xin, n1, n2, n3, n4))
 
         dNdx, _, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
@@ -732,9 +724,9 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
 
 def inplane_stress_at_point(xin, xe_nodes, a_u_el, D_mat, alpha, dT):
     B_u, _ = Bu_and_detJ(xin, xe_nodes)
-    eps    = B_u @ a_u_el
+    eps = B_u @ a_u_el
     eps_th = alpha * dT * np.array([1.0, 1.0, 0.0])
-    sigma  = D_mat @ (eps - eps_th)
+    sigma = D_mat @ (eps - eps_th)
     return sigma
 
 #===================================================================================================
