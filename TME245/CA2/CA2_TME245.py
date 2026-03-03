@@ -502,7 +502,7 @@ def element_average(nodal_field):
 
 polygons = Coord[node_idx]
 
-fig, axes = plt.subplots(3, 1, figsize=(8, 16))
+fig, axes = plt.subplots(1, 3, figsize=(16, 8))
 fig.suptitle(f'Displacements (h = {h_plate * 1e3:.1f} mm, snow load)')
 
 configs = [
@@ -602,7 +602,7 @@ for z in z_levels:
 # =============================================================================
 # Von Mises contour plots
 # =============================================================================
-fig2, axes2 = plt.subplots(3,1, figsize=(8, 16))
+fig2, axes2 = plt.subplots(1, 3, figsize=(16, 8))
 fig2.suptitle(
     f'Von Mises effective stress [MPa]  (h = {h_plate * 1e3:.1f} mm, snow load)')
 
@@ -786,6 +786,11 @@ prescribed_ip = set()
 for n in clamped_nodes:
     prescribed_ip.add(5 * n + 0) # u_x
     prescribed_ip.add(5 * n + 1) # u_y
+
+for n in range(nnodes):                     # add this block
+    prescribed_ip.add(5 * n + 2)            # w
+    prescribed_ip.add(5 * n + 3)            # θ_y
+    prescribed_ip.add(5 * n + 4)            # θ_x
 
 # for n in gliding_nodes:
 #     prescribed_ip.add(5 * n + 1) # uy
