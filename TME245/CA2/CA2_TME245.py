@@ -716,7 +716,8 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
     K_K_ww = np.zeros((12, 12))
     for gp in range(4):
         xin = xi_v[:, gp].reshape(2, 1)
-        detFisop = float(detFisop_4node_func(xin, n1, n2, n3, n4))
+        
+        detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0]
         _, Bastn, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
         K_K_ww += Bastn.T @ Dbar @ Bastn * detFisop * H_v[gp]
 
@@ -724,10 +725,9 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
     for gp in range(9):
         xin   = xi_GP3x3[gp].reshape(2, 1)
         W_gp  = W3X3[gp]
-        detFisop = float(detFisop_4node_func(xin, n1, n2, n3, n4))
-
+        
+        detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0]
         dNdx, _, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
-
         G_e_R += dNdx.T @ N_sec @ dNdx * detFisop * W_gp
 
     return K_K_ww, G_e_R
@@ -880,7 +880,15 @@ for n in gliding_nodes:
     prescribed_oop.add(5 * n + 4) # theta_y
 
 dof_C_oop = np.array(sorted(prescribed_oop), dtype=int)
-dof_F_oop = np.setdiff1d(np.arange(ndofs), dof_C_oop)
+# dof_F_oop = np.setdiff1d(np.arange(ndofs), dof_C_oop)
+
+all_oop_dofs = np.sort(np.concatenate([
+    np.arange(2, ndofs, 5), # w
+    np.arange(3, ndofs, 5), # theta_y
+    np.arange(4, ndofs, 5), # theta_x
+]))
+dof_F_oop = np.setdiff1d(all_oop_dofs, dof_C_oop)
+
 
 K_FF_bck = K_Kww_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
 G_FF_bck = G_R_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
