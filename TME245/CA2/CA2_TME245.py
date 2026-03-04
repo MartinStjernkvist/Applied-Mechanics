@@ -67,13 +67,12 @@ h_snow = 0.25 # m
 angle_roof = np.deg2rad(15) # rad
 W_roof = 2 # m
 L_roof = 3 # m
-h_plate = 0.001
+h_plate = 3e-3 # m
 
 # Material properties aluminium
 Emod_al = 80e9 # Pa
 nu_al = 0.2
 sigma_yield_al = 200e6 # Pa
-alpha_al = 20e-6 # 1/K  
 
 rho_snow = 500 # kmg/m^3
 q0 = rho_snow * g * h_snow
@@ -219,7 +218,7 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
     xe_nodes = np.column_stack((ex, ey))
     
     for gp in range(4):
-        Hgp = 1
+        Hgp = H_v[gp]
         
         xi_vec = xi_v[:, gp]
         xin = xi_vec.reshape(2, 1)
@@ -314,17 +313,17 @@ ax1.set_aspect('equal')
 ax1.set_title('Undeformed mesh')
 ax1.set_xlabel('x (m)')
 ax1.set_ylabel('y (m)')
-plt.grid(True, alpha=0.3)
 plt.show()
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Initialize sparse global matrices
+# Initialize matrices
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 nel = mesh.shape[1]
 nnodes = Coord.shape[0]
 dofs_per_node = 5 # u_x, u_y, w, theta_y, theta_x
 ndofs = dofs_per_node * nnodes
 
+# Sparse global matrices
 K_global = lil_matrix((ndofs, ndofs)) 
 f_global = np.zeros(ndofs)
 a = np.zeros(ndofs)
@@ -377,8 +376,8 @@ for el in range(nel):
     
     # Map membrane DOFs
     d_ip = np.empty(8, dtype=int)
-    d_ip[0::2] = 5 * nodes + 0  # ux
-    d_ip[1::2] = 5 * nodes + 1  # uy
+    d_ip[0::2] = 5 * nodes + 0 # ux
+    d_ip[1::2] = 5 * nodes + 1 # uy
     
     # Map bending DOFs
     d_oop = np.empty(12, dtype=int)
@@ -452,8 +451,10 @@ def element_average(nodal_field):
 
 polygons = Coord[node_idx]
 
+title = 'Displacement'
+
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'Displacement')
+fig.suptitle(title)
 el_vals = element_average(w_nodes * 1e3)
 pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -467,7 +468,7 @@ sfig('task1_displacements_w.png')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'Displacement')
+fig.suptitle(title)
 el_vals = element_average(u_x_nodes * 1e3)
 pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -481,7 +482,7 @@ sfig('task1_displacements_ux.png')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'Displacement')
+fig.suptitle(title)
 el_vals = element_average(u_y_nodes * 1e3)
 pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -546,11 +547,11 @@ for z in z_levels:
         d_ip = np.empty(8, dtype=int)
         d_oop = np.empty(12, dtype=int)
         
-        d_ip[0::2] = 5 * nodes_el + 0 # ux
-        d_ip[1::2] = 5 * nodes_el + 1 # uy
-        d_oop[0::3] = 5 * nodes_el + 2 # w
-        d_oop[1::3] = 5 * nodes_el + 3 # theta_y
-        d_oop[2::3] = 5 * nodes_el + 4 # theta_x
+        d_ip[0::2] = 5 * nodes_el + 0
+        d_ip[1::2] = 5 * nodes_el + 1
+        d_oop[0::3] = 5 * nodes_el + 2
+        d_oop[1::3] = 5 * nodes_el + 3
+        d_oop[2::3] = 5 * nodes_el + 4
 
         a_u_el = a[d_ip]
         a_w_el = a[d_oop]
@@ -564,8 +565,10 @@ for z in z_levels:
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Von Mises contour plots
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+title = 'Von Mises stress [MPa]'
+
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'Von Mises effective stress [MPa]')
+fig.suptitle(title)
 el_vals = vM_contour[z_levels[0]] / 1e6
 pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -579,7 +582,7 @@ sfig('task1_stress_vonMises_bottom.png')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'Von Mises effective stress [MPa]')
+fig.suptitle(title)
 el_vals = vM_contour[z_levels[1]] / 1e6
 pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -593,7 +596,7 @@ sfig('task1_stress_vonMises_middle.png')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'Von Mises effective stress [MPa]')
+fig.suptitle(title)
 el_vals = vM_contour[z_levels[2]] / 1e6
 pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -633,6 +636,7 @@ new_task('Task 2 - Buckling analysis (temperature elevation)')
 # Define inputs
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 delta_T  = 30.0 # degrees
+alpha_al = 20e-6 # 1/K  
 
 # Gauss points used in G^(R)
 GP3 = np.sqrt(3.0 / 5.0)
@@ -896,8 +900,10 @@ plt.colorbar(pc, ax=ax, label='Normalised w (buckling mode)')
 sfig('task2_buckling_mode.png')
 plt.show()
 
+title = 'In-plane thermal displacement'
+
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'In-plane thermal displacements')
+fig.suptitle(title)
 field = u_x_th * 1e3
 el_vals = field[node_idx].mean(axis=1)
 pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
@@ -912,7 +918,7 @@ sfig('task2_thermal_displacements_uxth.png')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(f'In-plane thermal displacements')
+fig.suptitle(title)
 field = u_y_th * 1e3
 el_vals = field[node_idx].mean(axis=1)
 pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
