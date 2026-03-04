@@ -38,7 +38,7 @@ plt.rc('ytick', labelsize=SMALL_SIZE)
 plt.rc('legend', fontsize=SMALL_SIZE)    
 plt.rc('figure', titlesize=BIGGER_SIZE)
 
-plt.rc('figure', figsize=(8,6))
+plt.rc('figure', figsize=(8,4))
 
 script_dir = Path(__file__).parent
 
@@ -67,8 +67,8 @@ h_snow = 0.25 # m
 angle_roof = np.deg2rad(15) # rad
 W_roof = 2 # m
 L_roof = 3 # m
-
-rho_snow = 500 # kg/m^3
+h_plate = 3e-3 # m
+rho_snow = 500 # kmg/m^3
 
 # Material properties aluminium
 Emod_al = 80e9 # Pa
@@ -83,10 +83,7 @@ xi_v = np.array([
         [-GP, -GP, GP, GP],
         [-GP, GP, -GP, GP]
         ])
-
-# Variable
-h_plate = 4e-3 # m
-
+        
 #===================================================================================================
 ####################################################################################################
 new_subtask('Task 1 d) - Code implementation')
@@ -238,30 +235,30 @@ new_subtask('Task 1 e) - FE-program for plate analysis')
 # Mesh parameters
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 xmin = 0;
-xmax = 0.25;
+xmax = 0.5;
 ymin = 0;
-ymax = 0.25 / np.cos(angle_roof);
+ymax = 0.75 / np.cos(angle_roof);
 nelx = 20;
-nely = 20;
+nely = 30;
 
 print(f'ymax = {ymax}')
 
 """
 xmin = 0;
-xmax = 0.25;
+xmax = 0.5;
 ymin = 0;
-ymax = 0.25881904510252074;
+ymax = ...;
 nelx = 20;
-nely = 20;
+nely = 30;
 
 [mesh, coord, Edof_ip, Edof_oop] = rectMesh(xmin, xmax, ymin, ymax, nelx, nely);
 
-save('undeformedv3','-v7');
+save('testfil','-v7');
 """
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Read matlab file
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-data = sio.loadmat('undeformedv3.mat', 
+data = sio.loadmat('testfil.mat', 
                    squeeze_me=True,
                    struct_as_record=False)
 
@@ -288,7 +285,7 @@ Ey = Coord[node_idx, 1]
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 polygons = np.dstack((Ex, Ey))
 
-fig1, ax1 = plt.subplots()
+fig1, ax1 = plt.subplots(figsize=(8, 6))
 pc1 = PolyCollection(
     polygons,
     facecolors='none',
@@ -419,7 +416,7 @@ a[dof_C] = a_C
 
 u_x_nodes = a[0::5]
 u_y_nodes = a[1::5]
-w_nodes = a[2::5]
+w_nodes  = a[2::5]
 theta_y_nodes = a[3::5]
 theta_x_nodes = a[4::5]
 
@@ -440,7 +437,7 @@ def element_average(nodal_field):
 polygons = Coord[node_idx]
 
 def plot_displacement(field, tag, title, cbar_label):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 6))
     fig.suptitle('Displacement')
     el_vals = element_average(field)
     pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
@@ -483,14 +480,14 @@ def element_stress_at_z(ex, ey, a_u_el, a_w_el, z_coord):
 
         # Membrane strain
         B_u, _ = Bu_and_detJ(xin, xe_nodes)
-        eps0 = B_u @ a_u_el
+        eps0   = B_u @ a_u_el
 
         # Curvature
         _, Bast, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
         kappa = Bast @ a_w_el
 
         # Total strain at depth z
-        eps_z = eps0 - z_coord * kappa
+        eps_z  = eps0 - z_coord * kappa
 
         # Stress and von Mises (remark 7.16)
         sigma = D @ eps_z
@@ -531,7 +528,7 @@ for z in z_levels:
 # Von Mises contour plots
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 def plot_von_mises(field, tag, title):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 6))
     fig.suptitle('Von Mises stress')
     el_vals = vM_contour[field] / 1e6
     pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
@@ -831,7 +828,7 @@ w_mode /= np.abs(w_mode).max() if np.abs(w_mode).max() > 0 else 1
 
 polygons_plot = Coord[node_idx]
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(8, 6))
 el_w = w_mode[node_idx].mean(axis=1)
 pc = PolyCollection(polygons_plot, array=el_w, cmap='coolwarm', edgecolors='none')
 ax.add_collection(pc)
@@ -845,7 +842,7 @@ sfig('task2_buckling_mode.png')
 plt.show()
 
 def plot_thermal_displacement(field, tag, title, cbar_label):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 6))
     fig.suptitle('In-plane thermal displacement')
     el_vals = field[node_idx].mean(axis=1)
     pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
