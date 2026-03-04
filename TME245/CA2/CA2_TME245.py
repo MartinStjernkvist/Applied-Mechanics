@@ -184,14 +184,16 @@ def Nu_inplane(xin):
 
 
 def hooke_plane_stress(E, nu):
+    
     return (E / (1 - nu**2)) * np.array([
         [1, nu, 0],
         [nu, 1, 0],
         [0, 0, (1 - nu) / 2]
     ])
-
+    
 
 def assem(edof, K, Ke, f, fe):
+    
     idx = edof - 1 # Convert to 0-based indexing
     for i in range(len(idx)):
         f[idx[i], 0] += fe[i, 0]
@@ -245,7 +247,7 @@ def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
 #%%
 #===================================================================================================
 ####################################################################################################
-new_subtask('Task 1 e) - Small FE-program for plate analysis')
+new_subtask('Task 1 e) - FE-program for plate analysis')
 ####################################################################################################
 #===================================================================================================
 
@@ -447,58 +449,36 @@ else:
 # Displacement contour plots
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 def element_average(nodal_field):
+    
     return nodal_field[node_idx].mean(axis=1)
 
 polygons = Coord[node_idx]
 
-title = 'Displacement'
+def plot_displacement(field, tag, title, cbar_label):
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.suptitle('Displacement')
+    el_vals = element_average(field)
+    pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
+    ax.add_collection(pc)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    ax.set_title(title)
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    plt.colorbar(pc, ax=ax, label=cbar_label)
+    sfig('task1_displacements' + tag + '.png')
+    plt.show()
 
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-el_vals = element_average(w_nodes * 1e3)
-pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('w [mm]')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task1_displacements_w.png')
-plt.show()
 
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-el_vals = element_average(u_x_nodes * 1e3)
-pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('ux [mm]')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task1_displacements_ux.png')
-plt.show()
-
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-el_vals = element_average(u_y_nodes * 1e3)
-pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('uy [mm]')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task1_displacements_uy.png')
-plt.show()
+plot_displacement(w_nodes * 1e3, '_w', 'z-direction', 'w [mm]')
+plot_displacement(u_x_nodes * 1e3, '_ux', 'x-direction', 'ux [mm]')
+plot_displacement(u_y_nodes * 1e3, '_uy', 'y-direction', 'uy [mm]')
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Stress computation at integration points
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 def von_mises_plane_stress(sigma):
+    
     s11, s22, s12 = sigma
     sigma_vm = np.sqrt(s11**2 - s11 * s22 + s22**2 + 3.0 * s12**2)
     return sigma_vm
@@ -565,49 +545,25 @@ for z in z_levels:
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Von Mises contour plots
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-title = 'Von Mises stress [MPa]'
 
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-el_vals = vM_contour[z_levels[0]] / 1e6
-pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('z = -h/2 (bottom)')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task1_stress_vonMises_bottom.png')
-plt.show()
+def plot_von_mises(field, tag, title):
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.suptitle('Von Mises stress')
+    el_vals = vM_contour[field] / 1e6
+    pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
+    ax.add_collection(pc)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    ax.set_title(title)
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    plt.colorbar(pc, ax=ax, label='Von Mises stress [MPa]')
+    sfig('task1_stress_vonMises' + tag + '.png')
+    plt.show()
 
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-el_vals = vM_contour[z_levels[1]] / 1e6
-pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('z = 0 (middle)')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task1_stress_vonMises_middle.png')
-plt.show()
-
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-el_vals = vM_contour[z_levels[2]] / 1e6
-pc = PolyCollection(polygons, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('z = h/2 (top)')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task1_stress_vonMises_top.png')
-plt.show()
+plot_von_mises(z_levels[0], '_bottom', 'z = -h/2 (bottom)')
+plot_von_mises(z_levels[1], '_middle', 'z = 0 (middle)')
+plot_von_mises(z_levels[2], '_top', 'z = h/2 (bottom)')
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Load vector verification
@@ -650,31 +606,11 @@ W3X3 = np.outer(W3, W3).ravel()
 
 #===================================================================================================
 ####################################################################################################
-new_subtask('Task 2 b) - Thermal in-plane load vector (element contribution)')
+new_subtask('Task 2 a) - Kirchoff plate bending element for linearised pre-buckling')
 ####################################################################################################
 #===================================================================================================
 
-def f_thermal_element(ex, ey, h, E, nu, alpha, dT):
-    D_mat  = (E / (1.0 - nu**2)) * np.array([
-        [1, nu, 0],
-        [nu, 1, 0],
-        [0, 0, (1 - nu) / 2]
-    ])
-    
-    eps_th = alpha * dT * np.array([1, 1, 0])
-    sigma_th = D_mat @ eps_th
-
-    xe_nodes = np.column_stack((ex, ey))
-
-    f_th = np.zeros((8, 1))
-    for gp in range(4):
-        xin = xi_v[:, gp]
-        B_u, detJ = Bu_and_detJ(xin, xe_nodes)
-        f_th += (B_u.T @ sigma_th).reshape(8, 1) * h * detJ * H_v[gp]
-
-    return f_th
-
-def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
+def kirchhoff_buckling_element(ex, ey, Dbar, N_sec):
     
     n1 = np.array([[ex[0]], [ey[0]]])
     n2 = np.array([[ex[1]], [ey[1]]])
@@ -687,6 +623,8 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
         
         detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0]
         _, Bastn, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
+        
+        # ...
         K_K_ww += Bastn.T @ Dbar @ Bastn * detFisop * H_v[gp]
 
     G_e_R = np.zeros((12, 12))
@@ -696,12 +634,36 @@ def kirchhoff_buckling_element(ex, ey, h, Dbar, N_sec):
         
         detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0]
         dNdx, _, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
+        
+        # ...
         G_e_R += dNdx.T @ N_sec @ dNdx * detFisop * W_gp
 
     return K_K_ww, G_e_R
 
+#===================================================================================================
+####################################################################################################
+new_subtask('Task 2 b) - Thermal in-plane load vector (element contribution)')
+####################################################################################################
+#===================================================================================================
+
+def f_thermal_element(ex, ey, h, D, alpha, dT):
+    
+    eps_th = alpha * dT * np.array([1, 1, 0])
+    sigma_th = D @ eps_th
+
+    xe_nodes = np.column_stack((ex, ey))
+
+    f_th = np.zeros((8, 1))
+    for gp in range(4):
+        xin = xi_v[:, gp]
+        B_u, detJ = Bu_and_detJ(xin, xe_nodes)
+        f_th += (B_u.T @ sigma_th).reshape(8, 1) * h * detJ * H_v[gp]
+
+    return f_th
+
 
 def inplane_stress_at_point(xin, xe_nodes, a_u_el, D_mat, alpha, dT):
+    
     B_u, _ = Bu_and_detJ(xin, xe_nodes)
     eps = B_u @ a_u_el
     eps_th = alpha * dT * np.array([1, 1, 0])
@@ -710,17 +672,15 @@ def inplane_stress_at_point(xin, xe_nodes, a_u_el, D_mat, alpha, dT):
 
 #===================================================================================================
 ####################################################################################################
-new_subtask('Task 2 c) - Linearised pre-buckling FE program')
+new_subtask('Task 2 c) - FE program for linearised pre-buckling')
 ####################################################################################################
 #===================================================================================================
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# In-plane thermal problem
+# Initialize matrices
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 K_uu_global = lil_matrix((ndofs, ndofs))
 f_u_thermal = np.zeros(ndofs)
-
-D_mat = hooke_plane_stress(Emod_al, nu_al)
 
 for el in range(nel):
     ex = Coord[node_idx[el, :], 0]
@@ -730,7 +690,7 @@ for el in range(nel):
     K_uu_e, _, _, _ = kirchoff_plate_element(ex, ey, h_plate, Dbar, body_val=0)
 
     # Element thermal load
-    f_th_e = f_thermal_element(ex, ey, h_plate, Emod_al, nu_al, alpha_al, delta_T)
+    f_th_e = f_thermal_element(ex, ey, h_plate, D, alpha_al, delta_T)
 
     # DOF mapping (in-plane only)
     nodes = node_idx[el, :]
@@ -747,7 +707,7 @@ for el in range(nel):
 K_uu_csr = K_uu_global.tocsr()
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# In-plane boundary conditions for thermal problem
+# Boundary conditions for thermal problem
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 prescribed_ip = set()
 
@@ -797,7 +757,7 @@ for el in range(nel):
 
     # In-plane stress at midpoint (including thermal strain)
     sigma = inplane_stress_at_point(xin_mid.ravel(), xe_nodes,
-                                    a_u_el, D_mat, alpha_al, delta_T)
+                                    a_u_el, D, alpha_al, delta_T)
     sig_xx, sig_yy, sig_xy = sigma
 
     N_sec = h_plate * np.array([
@@ -816,7 +776,7 @@ for el in range(nel):
     ex = Coord[node_idx[el, :], 0]
     ey = Coord[node_idx[el, :], 1]
 
-    K_K_ww_e, G_e_R = kirchhoff_buckling_element(ex, ey, h_plate, Dbar, N_sec_all[el])
+    K_K_ww_e, G_e_R = kirchhoff_buckling_element(ex, ey, Dbar, N_sec_all[el])
 
     nodes  = node_idx[el, :]
     d_oop  = np.empty(12, dtype=int)
@@ -833,7 +793,7 @@ K_Kww_csr = K_Kww_global.tocsr()
 G_R_csr   = G_R_global.tocsr()
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Eigenvalue problem
+# Solve for eigenvalues
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 prescribed_oop = set()
 for n in clamped_nodes:
@@ -896,39 +856,25 @@ ax.set_aspect('equal')
 ax.set_title(f'Buckling mode 1 (eigen value = {lam_min:.3f})')
 ax.set_xlabel('x [m]')
 ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax, label='Normalised w (buckling mode)')
+plt.colorbar(pc, ax=ax, label='Normalised w [mm]')
 sfig('task2_buckling_mode.png')
 plt.show()
 
-title = 'In-plane thermal displacement'
-
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-field = u_x_th * 1e3
-el_vals = field[node_idx].mean(axis=1)
-pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('ux [mm]')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task2_thermal_displacements_uxth.png')
-plt.show()
-
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle(title)
-field = u_y_th * 1e3
-el_vals = field[node_idx].mean(axis=1)
-pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
-ax.add_collection(pc)
-ax.autoscale()
-ax.set_aspect('equal')
-ax.set_title('uy [mm]')
-ax.set_xlabel('x [m]')
-ax.set_ylabel('y [m]')
-plt.colorbar(pc, ax=ax)
-sfig('task2_thermal_displacements_uxth.png')
-plt.show()
+def plot_thermal_displacement(field, tag, title, cbar_label):
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.suptitle('In-plane thermal displacement')
+    el_vals = field[node_idx].mean(axis=1)
+    pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
+    ax.add_collection(pc)
+    ax.autoscale()
+    ax.set_aspect('equal')
+    ax.set_title(title)
+    ax.set_xlabel('x [m]')
+    ax.set_ylabel('y [m]')
+    plt.colorbar(pc, ax=ax, label=cbar_label)
+    sfig('task2_thermal_displacements' + tag + '.png')
+    plt.show()
+    
+plot_thermal_displacement(u_x_th * 1e3, '_uxth', 'x-direction', 'ux [mm]')
+plot_thermal_displacement(u_y_th * 1e3, '_uyth', 'y-direction', 'uy [mm]')
 #%%
