@@ -2,13 +2,53 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
+import math
+import pandas as pd
+import sys
+import os
 import scipy.sparse.linalg as spla
+
+import gmsh
+import scipy.io
+from matplotlib.widgets import Slider
+from matplotlib.gridspec import GridSpec
+from numpy import random
+import time
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+import multiprocessing as mp
+import tkinter as tk
+from tkinter import simpledialog
+import json
+from typing import List, Optional, Sequence, Tuple
+import plotly.graph_objects as go
+from IPython.display import Math, display
+from typing import Union, Dict
+from typing import Literal 
 from scipy.linalg import eigh
+from plotly.express.colors import sample_colorscale
+from IPython.display import display, Math
+from mpl_toolkits.mplot3d import axes3d
+from mpl_toolkits.mplot3d import Axes3D
+from numpy.random import rand
+from IPython.display import HTML
+from matplotlib import animation
 import scipy.io as sio
+from scipy.optimize import fsolve
+from matplotlib import rcParams
+import matplotlib.ticker as ticker
+from scipy.sparse import coo_matrix, csr_matrix
+import matplotlib.cm as cm
 from pathlib import Path
+
 from matplotlib.collections import PolyCollection
 from scipy.sparse import lil_matrix
 import scipy.sparse.linalg as spla
+
+# Add parent directory to sys.path
+parent_dir = os.path.abspath(os.path.join(os.getcwd(),'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
 def new_task(string):
     print_string = '\n' + '=' * 80 + '\n' + '=' * 80 + '\n' + str(string) + '\n' + '=' * 80 + '\n' + '=' * 80 + '\n'
@@ -43,10 +83,19 @@ plt.rc('figure', figsize=(8,4))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file = script_dir / "figures_v2" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     print('figure name: ', fig_name)
+
+
+def displayvar(name: str, var, post: Optional[str] = None, accuracy: Optional[int] = None) -> None:
+    if isinstance(var, np.ndarray):
+        var = sp.Matrix(var)
+    if accuracy is None:
+        display(Math(f"{name} = {sp.latex(var)}") )
+    else:
+        display(Math(f"{name} \\approx {sp.latex(sp.sympify(var).evalf(accuracy))}"))
 
 #%%  
 #===================================================================================================
@@ -61,9 +110,9 @@ new_task('Task 1 - Linear elastic plate analysis using MATLAB or Python')
 ####################################################################################################
 #===================================================================================================
         
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Define inputs
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 g = 9.81
 
 # Geometry
@@ -203,11 +252,10 @@ def assem(edof, K, Ke, f, fe):
         for j in range(len(idx)):
             K[idx[i], idx[j]] += Ke[i, j]
     return K, f
-
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    
+# =============================================================================
 # Plate element function
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
+# =============================================================================
 def kirchoff_plate_element(ex, ey, h, Dbar, body_val):
     
     K_uu = np.zeros((8, 8))
@@ -254,9 +302,9 @@ new_subtask('Task 1 e) - Small FE-program for plate analysis')
 ####################################################################################################
 #===================================================================================================
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Mesh parameters
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 xmin = 0
 xmax = 0.5
 ymin = 0
@@ -275,9 +323,9 @@ nely = 30;
 
 save('testfil','-v7');
 """
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Read matlab file
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 data = sio.loadmat('testfil.mat', 
                    squeeze_me=True,
                    struct_as_record=False)
@@ -300,9 +348,9 @@ node_idx = (mesh.T - 1).astype(int)
 Ex = Coord[node_idx, 0]
 Ey = Coord[node_idx, 1]
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Plot undeformed mesh
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 polygons = np.dstack((Ex, Ey))
 
 fig1, ax1 = plt.subplots(figsize=(8, 6))
@@ -321,9 +369,9 @@ ax1.set_ylabel('y (m)')
 plt.grid(True, alpha=0.3)
 plt.show()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Initialize sparse global matrices
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 nel = mesh.shape[1]
 nnodes = Coord.shape[0]
 dofs_per_node = 5 # u_x, u_y, w, theta_y, theta_x
@@ -337,9 +385,9 @@ a = np.zeros(ndofs)
 D = hooke_plane_stress(Emod_al, nu_al)
 Dbar = (h_plate**3 / 12) * D
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Boundary conditions - FIXED
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 tol = 1e-10
 x_all = Coord[:, 0]
 y_all = Coord[:, 1]
@@ -370,9 +418,9 @@ a_C = np.zeros(len(dof_C))
 
 body = q_bar
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Setup and solve FE equations
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 for el in range(nel):
     
     K_uu, K_ww, f_u, f_w = kirchoff_plate_element(Ex[el, :], Ey[el, :], h_plate, Dbar, body)
@@ -405,9 +453,9 @@ for el in range(nel):
 # Convert to CSR format
 K = K_global.tocsr()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Block partitioning and solve for free displacements
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 K_FF = K[np.ix_(dof_F, dof_F)]
 K_FC = K[np.ix_(dof_F, dof_C)]
 K_CF = K[np.ix_(dof_C, dof_F)]
@@ -420,9 +468,9 @@ if a_F.ndim == 0:
     a_F = np.array([a_F])
 a_F = np.atleast_1d(a_F).ravel()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Calculate reaction forces
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 
 # Eq (7.146)
 r_C = K_CF @ a_F + K_CC @ a_C - f_global[dof_C]
@@ -430,9 +478,9 @@ r_C = K_CF @ a_F + K_CC @ a_C - f_global[dof_C]
 a[dof_F] = a_F
 a[dof_C] = a_C
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Extract displacement fields
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 w_nodes  = a[2::5]
 u_x_nodes = a[0::5]
 u_y_nodes = a[1::5]
@@ -448,9 +496,9 @@ else:
     print('VIOLATED')
 
 #%%
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Displacement contour plots
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 def element_average(nodal_field):
     return nodal_field[node_idx].mean(axis=1)
 
@@ -498,9 +546,32 @@ plt.colorbar(pc, ax=ax)
 sfig('task1_displacements_uy.png')
 plt.show()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# fig, axes = plt.subplots(1, 3, figsize=(16, 8))
+# fig.suptitle(f'Displacements (h = {h_plate * 1e3:.1f} mm, snow load)')
+
+# configs = [
+#     (w_nodes * 1e3, 'w [mm]', 'coolwarm'),
+#     (u_x_nodes * 1e3, 'ux [mm]', 'coolwarm'),
+#     (u_y_nodes * 1e3, 'uy [mm]', 'coolwarm'),
+# ]
+
+# for ax, (field, label, cmap) in zip(axes, configs):
+#     el_vals = element_average(field)
+#     pc = PolyCollection(polygons, array=el_vals, cmap=cmap, edgecolors='none')
+#     ax.add_collection(pc)
+#     ax.autoscale()
+#     ax.set_aspect('equal')
+#     ax.set_title(label)
+#     ax.set_xlabel('x [m]')
+#     ax.set_ylabel('y [m]')
+#     plt.colorbar(pc, ax=ax)
+# plt.tight_layout()
+# plt.savefig('task1_displacements.png', bbox_inches='tight')
+# plt.show()
+
+# =============================================================================
 # Stress computation at integration points
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 def von_mises_plane_stress(sigma):
     s11, s22, s12 = sigma
     sigma_vm = np.sqrt(s11**2 - s11 * s22 + s22**2 + 3.0 * s12**2)
@@ -565,9 +636,32 @@ for z in z_levels:
     vM_contour[z] = el_avg_vM
 
 #%%
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Von Mises contour plots
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
+# fig2, axes2 = plt.subplots(1, 3, figsize=(16, 8))
+# fig2.suptitle(
+#     f'Von Mises effective stress [MPa]  (h = {h_plate * 1e3:.1f} mm, snow load)')
+
+# sigma_max_overall = 0.0
+
+# for ax, (z, lbl) in zip(axes2, z_levels):
+#     el_vals = vM_contour[z] / 1e6 # Pa → MPa
+#     sigma_max_overall = max(sigma_max_overall, el_vals.max())
+
+#     pc = PolyCollection(polygons, array=el_vals,
+#                         cmap='coolwarm', edgecolors='none')
+#     ax.add_collection(pc)
+#     ax.autoscale()
+#     ax.set_aspect('equal')
+#     ax.set_xlabel('x [m]')
+#     ax.set_ylabel('y [m]')
+#     plt.colorbar(pc, ax=ax)
+# plt.tight_layout()
+# plt.savefig('task1_stress_vonMises.png', bbox_inches='tight')
+# plt.show()
+
+
 fig, ax = plt.subplots(figsize=(8, 6))
 fig.suptitle(f'Von Mises effective stress [MPa]')
 el_vals = vM_contour[z_levels[0]] / 1e6
@@ -610,9 +704,9 @@ plt.colorbar(pc, ax=ax)
 sfig('task1_stress_vonMises_top.png')
 plt.show()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Load vector verification
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 plate_area = xmax * ymax
 
 w_dof_mask  = np.arange(2, ndofs, 5)
@@ -637,9 +731,9 @@ new_task('Task 2 - Buckling analysis (temperature elevation)')
 ####################################################################################################
 #===================================================================================================
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Define inputs
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 delta_T  = 30.0 # degrees
 
 # Gauss points used in G^(R)
@@ -718,9 +812,9 @@ new_subtask('Task 2 c) - Linearised pre-buckling FE program')
 ####################################################################################################
 #===================================================================================================
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # In-plane thermal problem
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 K_uu_global = lil_matrix((ndofs, ndofs))
 f_u_thermal = np.zeros(ndofs)
 
@@ -750,9 +844,9 @@ for el in range(nel):
 
 K_uu_csr = K_uu_global.tocsr()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # In-plane boundary conditions for thermal problem
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 prescribed_ip = set()
 
 for n in clamped_nodes:
@@ -778,12 +872,12 @@ a_u[dof_F_ip] = a_u_F
 u_x_th = a_u[0::5]
 u_y_th = a_u[1::5]
 
-print(f'Max ux = {np.abs(u_x_th).max() * 1e3:.4f} mm')
-print(f'Max uy = {np.abs(u_y_th).max() * 1e3:.4f} mm')
+print(f'Max ux = {np.abs(u_x_th).max()*1e3:.4f} mm')
+print(f'Max uy = {np.abs(u_y_th).max()*1e3:.4f} mm')
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Compute N_sec for each element
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 N_sec_all = []
 
 xin_mid = np.array([[0.0], [0.0]])
@@ -810,9 +904,9 @@ for el in range(nel):
     ])
     N_sec_all.append(N_sec)
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Assemble K_K_ww and G^(R)
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 K_Kww_global = lil_matrix((ndofs, ndofs))
 G_R_global   = lil_matrix((ndofs, ndofs))
 
@@ -836,9 +930,9 @@ for el in range(nel):
 K_Kww_csr = K_Kww_global.tocsr()
 G_R_csr   = G_R_global.tocsr()
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Eigenvalue problem
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 prescribed_oop = set()
 for n in clamped_nodes:
     for d in [2, 3, 4]:
@@ -877,9 +971,9 @@ else:
 
 print(f'\nSmallest positive eigenvalue (SF) = {lam_min:.4f}')
     
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 # Plot buckling mode shape
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# =============================================================================
 z_full = np.zeros(ndofs)
 z_full[dof_F_oop] = z_min
 
@@ -893,22 +987,45 @@ polygons_plot = Coord[node_idx]
 
 fig, ax = plt.subplots(figsize=(8, 6))
 el_w = w_mode[node_idx].mean(axis=1)
-pc = PolyCollection(polygons_plot, array=el_w, cmap='coolwarm', edgecolors='none')
+pc = PolyCollection(polygons_plot, array=el_w, edgecolors='none')
 ax.add_collection(pc)
 ax.autoscale()
 ax.set_aspect('equal')
-ax.set_title(f'Buckling mode 1 (eigen value = {lam_min:.3f})')
+ax.set_title(f'Buckling mode 1 (eigval_1 = {lam_min:.3f}, SF = {lam_min:.2f})')
 ax.set_xlabel('x [m]')
 ax.set_ylabel('y [m]')
 plt.colorbar(pc, ax=ax, label='Normalised w (buckling mode)')
 sfig('task2_buckling_mode.png')
 plt.show()
 
+# =============================================================================
+# Visualise in-plane thermal displacements
+# =============================================================================
+
+# fig2, axes2 = plt.subplots(2,1, figsize=(8,8))
+# fig2.suptitle(f'In-plane thermal displacements')
+
+# for ax, (field, label) in zip(axes2,
+#     [(u_x_th * 1e3, 'ux [mm]'), (u_y_th * 1e3, 'uy [mm]')]):
+#     el_vals = field[node_idx].mean(axis=1)
+#     pc = PolyCollection(polygons_plot, array=el_vals, edgecolors='none')
+#     ax.add_collection(pc)
+#     ax.autoscale()
+#     ax.set_aspect('equal')
+#     ax.set_title(label)
+#     ax.set_xlabel('x [m]')
+#     ax.set_ylabel('y [m]')
+#     plt.colorbar(pc, ax=ax)
+
+# plt.tight_layout()
+# plt.savefig('task2_thermal_displacements.png', bbox_inches='tight')
+# plt.show()
+
 fig, ax = plt.subplots(figsize=(8, 6))
 fig.suptitle(f'In-plane thermal displacements')
 field = u_x_th * 1e3
 el_vals = field[node_idx].mean(axis=1)
-pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
+pc = PolyCollection(polygons_plot, array=el_vals, edgecolors='none')
 ax.add_collection(pc)
 ax.autoscale()
 ax.set_aspect('equal')
@@ -923,7 +1040,7 @@ fig, ax = plt.subplots(figsize=(8, 6))
 fig.suptitle(f'In-plane thermal displacements')
 field = u_y_th * 1e3
 el_vals = field[node_idx].mean(axis=1)
-pc = PolyCollection(polygons_plot, array=el_vals, cmap='coolwarm', edgecolors='none')
+pc = PolyCollection(polygons_plot, array=el_vals, edgecolors='none')
 ax.add_collection(pc)
 ax.autoscale()
 ax.set_aspect('equal')
