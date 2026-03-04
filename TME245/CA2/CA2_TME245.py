@@ -79,11 +79,9 @@ q0 = rho_snow * g * h_snow
 q_bar  = q0 * np.cos(angle_roof)**2
 fx_bar = q0 * np.cos(angle_roof) * np.sin(angle_roof)
 
-print(f'\nPlate thickness: {h_plate*1e3:.1f} mm')
-
+# Gauss point data
 GP = 1.0 / np.sqrt(3.)
 xi_GP = np.array([[-GP,-GP], [GP,-GP], [GP,GP], [-GP,GP]])
-
 H_v  = np.ones(4)
 xi_v = np.array([
         [-1 / np.sqrt(3), -1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)],
@@ -190,16 +188,6 @@ def hooke_plane_stress(E, nu):
         [nu, 1, 0],
         [0, 0, (1 - nu) / 2]
     ])
-    
-
-def assem(edof, K, Ke, f, fe):
-    
-    idx = edof - 1 # Convert to 0-based indexing
-    for i in range(len(idx)):
-        f[idx[i], 0] += fe[i, 0]
-        for j in range(len(idx)):
-            K[idx[i], idx[j]] += Ke[i, j]
-    return K, f
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Plate element function
@@ -254,19 +242,14 @@ new_subtask('Task 1 e) - FE-program for plate analysis')
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Mesh parameters
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-xmin = 0
-xmax = 0.5
-ymin = 0
-ymax = 0.75
-nelx = 20
-nely = 30
-
-"""
-xmin = 0;   xmax = 0.5;
-ymin = 0;   ymax = 0.75;
-
+xmin = 0;
+xmax = 0.5;
+ymin = 0;
+ymax = 0.75;
 nelx = 20;
 nely = 30;
+
+"""
 
 [mesh, coord, Edof_ip, Edof_oop] = rectMesh(xmin, xmax, ymin, ymax, nelx, nely);
 
@@ -418,18 +401,11 @@ if a_F.ndim == 0:
 a_F = np.atleast_1d(a_F).ravel()
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Calculate reaction forces
+# Extract displacement fields
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-# Eq (7.146)
-r_C = K_CF @ a_F + K_CC @ a_C - f_global[dof_C]
-
 a[dof_F] = a_F
 a[dof_C] = a_C
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# Extract displacement fields
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 w_nodes  = a[2::5]
 u_x_nodes = a[0::5]
 u_y_nodes = a[1::5]
@@ -441,8 +417,6 @@ w_max = np.abs(w_nodes).max()
 print(f'w_max = {w_max * 1e3:.3f} mm')
 if w_max * 1e3 <= 25.0:
     print('SATISFIED')
-else:
-    print('VIOLATED')
 
 #%%
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
