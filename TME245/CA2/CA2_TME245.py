@@ -579,7 +579,7 @@ ax.set_title('z = -h/2 (bottom)')
 ax.set_xlabel('x [m]')
 ax.set_ylabel('y [m]')
 plt.colorbar(pc, ax=ax)
-plt.savefig('task1_stress_vonMises_bottom.png', bbox_inches='tight')
+sfig('task1_stress_vonMises_bottom.png')
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 6))
