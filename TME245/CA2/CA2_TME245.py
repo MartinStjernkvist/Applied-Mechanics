@@ -274,7 +274,6 @@ Coord = data['coord']
 Edof_ip = data['Edof_ip']
 Edof_oop = data['Edof_oop']
 
-# Convert from sparse to dense if needed
 from scipy.sparse import issparse
 if issparse(Edof_ip):
     Edof_ip = Edof_ip.toarray()
@@ -376,9 +375,9 @@ for el in range(nel):
     
     # Map bending DOFs
     d_oop = np.empty(12, dtype=int)
-    d_oop[0::3] = 5 * nodes + 2  # w
-    d_oop[1::3] = 5 * nodes + 3  # theta_y
-    d_oop[2::3] = 5 * nodes + 4  # theta_x
+    d_oop[0::3] = 5 * nodes + 2 # w
+    d_oop[1::3] = 5 * nodes + 3 # theta_y
+    d_oop[2::3] = 5 * nodes + 4 # theta_x
     
     # Assembly for membrane
     for i in range(8):
@@ -470,10 +469,10 @@ def von_mises_plane_stress(sigma):
 def element_stress_at_z(ex, ey, a_u_el, a_w_el, z_coord):
         
     xe_nodes = np.column_stack((ex, ey))
-    n1=np.array([[ex[0]], [ey[0]]])
-    n2=np.array([[ex[1]], [ey[1]]])
-    n3=np.array([[ex[2]], [ey[2]]])
-    n4=np.array([[ex[3]], [ey[3]]])
+    n1 = np.array([[ex[0]], [ey[0]]])
+    n2 = np.array([[ex[1]], [ey[1]]])
+    n3 = np.array([[ex[2]], [ey[2]]])
+    n4 = np.array([[ex[3]], [ey[3]]])
 
     sigma_vM = np.zeros(4)
     for i in range(4):
@@ -553,14 +552,14 @@ plot_von_mises(z_levels[2], '_top', 'z = h/2 (bottom)')
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 plate_area = xmax * ymax
 
-w_dof_mask  = np.arange(2, ndofs, 5)
+w_dof_mask = np.arange(2, ndofs, 5)
 uy_dof_mask = np.arange(1, ndofs, 5)
 
-sum_fw  = f_global[w_dof_mask].sum()
+sum_fw = f_global[w_dof_mask].sum()
 sum_fuy = f_global[uy_dof_mask].sum()
 
-print(f'Sum nodal w-forces = {sum_fw:.4f} N (expect {q_body * plate_area:.3f})')
-print(f'\nSum nodal uy-forces = {sum_fuy:.3f} N (expect {-fy_bar * plate_area:.3f}')
+print(f'Sum nodal w-forces = {sum_fw:.3f} N (expect {q_body * plate_area:.3f})')
+print(f'Sum nodal uy-forces = {sum_fuy:.3f} N (expect {-fy_bar * plate_area:.3f}')
 
 #%%  
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -738,7 +737,7 @@ for el in range(nel):
     ey = Coord[node_idx[el, :], 1]
     xe_nodes = np.column_stack((ex, ey))
 
-    nodes  = node_idx[el, :]
+    nodes = node_idx[el, :]
     d_ip = np.empty(8, dtype=int)
     d_ip[0::2] = 5 * nodes + 0
     d_ip[1::2] = 5 * nodes + 1
