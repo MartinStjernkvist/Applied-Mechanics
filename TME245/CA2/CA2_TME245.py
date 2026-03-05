@@ -11,7 +11,7 @@ from scipy.sparse import lil_matrix
 import scipy.sparse.linalg as spla
 
 def new_task(string):
-    print_string = '\n' + '=' * 80 + '\n' + '=' * 80 + '\n' + str(string) + '\n' + '=' * 80 + '\n' + '=' * 80 + '\n'
+    print_string = '\n' + '@' * 80 + '\n' + '@' * 80 + '\n' + str(string) + '\n' + '@' * 80 + '\n' + '@' * 80 + '\n'
     return print(print_string)
 
 def new_subtask(string):
@@ -20,9 +20,9 @@ def new_subtask(string):
 
 def printt(string):
     print()
-    print('=' * 40)
+    print('*' * 80)
     print(string)
-    print('=' * 40)
+    print('*' * 80)
     print()
 
 SMALL_SIZE = 10
@@ -126,11 +126,11 @@ def detFisop_4node_func(in1, in2, in3, in4, in5):
     dN4_dxi2 = 0.25 * (1 - xi1)
     
     # Jacobian matrix components
-    dx_dxi1 = dN1_dxi1 * xe11 + dN2_dxi1 * xe21 + dN3_dxi1 * xe31 + dN4_dxi1 * xe41
-    dy_dxi1 = dN1_dxi1 * xe12 + dN2_dxi1 * xe22 + dN3_dxi1 * xe32 + dN4_dxi1 * xe42
+    dx_dxi1 = (dN1_dxi1 * xe11) + (dN2_dxi1 * xe21) + (dN3_dxi1 * xe31) + (dN4_dxi1 * xe41)
+    dy_dxi1 = (dN1_dxi1 * xe12) + (dN2_dxi1 * xe22) + (dN3_dxi1 * xe32) + (dN4_dxi1 * xe42)
     
-    dx_dxi2 = dN1_dxi2 * xe11 + dN2_dxi2 * xe21 + dN3_dxi2 * xe31 + dN4_dxi2 * xe41
-    dy_dxi2 = dN1_dxi2 * xe12 + dN2_dxi2 * xe22 + dN3_dxi2 * xe32 + dN4_dxi2 * xe42
+    dx_dxi2 = (dN1_dxi2 * xe11) + (dN2_dxi2 * xe21) + (dN3_dxi2 * xe31) + (dN4_dxi2 * xe41)
+    dy_dxi2 = (dN1_dxi2 * xe12) + (dN2_dxi2 * xe22) + (dN3_dxi2 * xe32) + (dN4_dxi2 * xe42)
     
     # Determinant of the Jacobian
     detFisop = dx_dxi1 * dy_dxi2 - dx_dxi2 * dy_dxi1
@@ -289,12 +289,7 @@ Ey = Coord[node_idx, 1]
 polygons = np.dstack((Ex, Ey))
 
 fig1, ax1 = plt.subplots()
-pc1 = PolyCollection(
-    polygons,
-    facecolors='none',
-    edgecolors='k',
-    linewidths=1.2
-)
+pc1 = PolyCollection(polygons, facecolors='none', edgecolors='k', linewidths=1.2)
 ax1.add_collection(pc1)
 ax1.autoscale()
 ax1.set_aspect('equal')
@@ -346,7 +341,7 @@ for n in clamped_nodes:
 # Gliding
 for n in gliding_nodes:
     prescribed.add(5 * n + 2) # w
-    # prescribed.add(5 * n + 3) # theta_y
+    prescribed.add(5 * n + 3) # theta_y
     prescribed.add(5 * n + 4) # theta_x
 
 dof_C = np.array(sorted(prescribed), dtype=int)
@@ -585,7 +580,7 @@ xi_GP3x3 = np.array([
     [-GP3, 0], [0, 0], [GP3, 0],
     [-GP3, GP3], [0, GP3], [GP3, GP3],
 ])
-W3 = np.array([5/9, 8/9, 5/9])
+W3 = np.array([5 / 9, 8 / 9, 5 / 9])
 W3X3 = np.outer(W3, W3).ravel()
 
 #===================================================================================================
@@ -613,8 +608,8 @@ def kirchhoff_buckling_element(ex, ey, Dbar, N_sec):
 
     G_e_R = np.zeros((12, 12))
     for gp in range(9):
-        xin   = xi_GP3x3[gp].reshape(2, 1)
-        W_gp  = W3X3[gp]
+        xin = xi_GP3x3[gp].reshape(2, 1)
+        W_gp = W3X3[gp]
         
         detFisop = detFisop_4node_func(xin, n1, n2, n3, n4)[0]
         dNdx, _, _ = bast_kirchoff_func(xin, n1, n2, n3, n4)
@@ -708,7 +703,7 @@ dof_C_ip = np.array(sorted(prescribed_ip), dtype=int)
 dof_F_ip = np.setdiff1d(np.arange(ndofs), dof_C_ip)
 
 K_FF_ip = K_uu_csr[np.ix_(dof_F_ip, dof_F_ip)]
-f_F_ip  = f_u_thermal[dof_F_ip]
+f_F_ip = f_u_thermal[dof_F_ip]
 
 a_u_F = spla.spsolve(K_FF_ip, f_F_ip)
 
@@ -734,14 +729,13 @@ for el in range(nel):
     xe_nodes = np.column_stack((ex, ey))
 
     nodes  = node_idx[el, :]
-    d_ip   = np.empty(8, dtype=int)
+    d_ip = np.empty(8, dtype=int)
     d_ip[0::2] = 5 * nodes + 0
     d_ip[1::2] = 5 * nodes + 1
     a_u_el = a_u[d_ip]
 
     # In-plane stress at midpoint (including thermal strain)
-    sigma = inplane_stress_at_point(xin_mid.ravel(), xe_nodes,
-                                    a_u_el, D, alpha_al, delta_T)
+    sigma = inplane_stress_at_point(xin_mid.ravel(), xe_nodes, a_u_el, D, alpha_al, delta_T)
     sig_xx, sig_yy, sig_xy = sigma
 
     N_sec = h_plate * np.array([
@@ -754,7 +748,7 @@ for el in range(nel):
 # Assemble K_K_ww and G^(R)
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 K_Kww_global = lil_matrix((ndofs, ndofs))
-G_R_global   = lil_matrix((ndofs, ndofs))
+G_R_global = lil_matrix((ndofs, ndofs))
 
 for el in range(nel):
     ex = Coord[node_idx[el, :], 0]
@@ -762,8 +756,8 @@ for el in range(nel):
 
     K_K_ww_e, G_e_R = kirchhoff_buckling_element(ex, ey, Dbar, N_sec_all[el])
 
-    nodes  = node_idx[el, :]
-    d_oop  = np.empty(12, dtype=int)
+    nodes = node_idx[el, :]
+    d_oop = np.empty(12, dtype=int)
     d_oop[0::3] = 5 * nodes + 2 # w
     d_oop[1::3] = 5 * nodes + 3 # theta_y
     d_oop[2::3] = 5 * nodes + 4 # theta_x
@@ -771,14 +765,16 @@ for el in range(nel):
     for i in range(12):
         for j in range(12):
             K_Kww_global[d_oop[i], d_oop[j]] += K_K_ww_e[i, j]
-            G_R_global  [d_oop[i], d_oop[j]] += G_e_R   [i, j]
+            G_R_global[d_oop[i], d_oop[j]] += G_e_R[i, j]
 
 K_Kww_csr = K_Kww_global.tocsr()
-G_R_csr   = G_R_global.tocsr()
+G_R_csr = G_R_global.tocsr()
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Solve for eigenvalues
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+# Boundary conditions
 prescribed_oop = set()
 for n in clamped_nodes:
     for d in [2, 3, 4]:
@@ -796,11 +792,10 @@ all_oop_dofs = np.sort(np.concatenate([
 ]))
 dof_F_oop = np.setdiff1d(all_oop_dofs, dof_C_oop)
 
-
 K_FF_bck = K_Kww_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
 G_FF_bck = G_R_csr[np.ix_(dof_F_oop, dof_F_oop)].toarray()
 
-# Solve with eigh (symmetric) asking for the smallest eigenvalue of K w.r.t. -G.
+# Solve for the smallest eigenvalue
 neg_G = -G_FF_bck
 
 # subset_by_index to get only the first few eigenvalues
@@ -811,7 +806,7 @@ eigvals, eigvecs = eigh(K_FF_bck, neg_G, subset_by_index=[0, n_eig - 1])
 pos_mask = eigvals > 0
 if pos_mask.any():
     lam_min = eigvals[pos_mask][0]
-    z_min   = eigvecs[:, pos_mask][:, 0]
+    z_min = eigvecs[:, pos_mask][:, 0]
 else:
     pass
 
