@@ -43,7 +43,7 @@ plt.rc('figure', figsize=(8,6))
 script_dir = Path(__file__).parent
 
 def sfig(fig_name):
-    fig_output_file = script_dir / "figures" / fig_name
+    fig_output_file = script_dir / "figures_v2" / fig_name
     fig_output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(fig_output_file, dpi=dpi, bbox_inches='tight')
     print('figure name: ', fig_name)
@@ -89,7 +89,8 @@ xi_v = np.array([
         ])
 
 # Variable
-h_plate = 4e-3 # m
+# h_plate = 4e-3 # m
+h_plate = 8e-3 # m
 
 #===================================================================================================
 ####################################################################################################
@@ -242,9 +243,9 @@ new_subtask('Task 1 e) - FE-program for plate analysis')
 # Mesh parameters
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 xmin = 0;
-xmax = 0.25;
+xmax = 0.5;
 ymin = 0;
-ymax = 0.25 / np.cos(angle_roof);
+ymax = 0.5 / np.cos(angle_roof);
 nelx = 20;
 nely = 20;
 
@@ -262,10 +263,23 @@ nely = 20;
 
 save('undeformedv3','-v7');
 """
+
+"""
+xmin = 0;
+xmax = 0.5;
+ymin = 0;
+ymax = 0.5176380902050415;
+nelx = 20;
+nely = 20;
+
+[mesh, coord, Edof_ip, Edof_oop] = rectMesh(xmin, xmax, ymin, ymax, nelx, nely);
+
+save('undeformedv4','-v7');
+"""
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Read matlab file
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-data = sio.loadmat('undeformedv3.mat', 
+data = sio.loadmat('undeformedv4.mat', 
                    squeeze_me=True,
                    struct_as_record=False)
 
