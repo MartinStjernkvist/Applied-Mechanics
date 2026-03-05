@@ -726,8 +726,15 @@ dof_F_ip = np.setdiff1d(np.arange(ndofs), dof_C_ip)
 K_FF_ip = K_uu_csr[np.ix_(dof_F_ip, dof_F_ip)]
 f_F_ip = f_u_thermal[dof_F_ip]
 
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# Solve system
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 a_u_F = spla.spsolve(K_FF_ip, f_F_ip)
 
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# Extract results
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 a_u = np.zeros(ndofs)
 a_u[dof_F_ip] = a_u_F
 
@@ -794,7 +801,6 @@ G_R_csr = G_R_global.tocsr()
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Solve for eigenvalues
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
 # Boundary conditions
 prescribed_oop = set()
 for n in clamped_nodes:
@@ -828,8 +834,6 @@ pos_mask = eigvals > 0
 if pos_mask.any():
     lam_min = eigvals[pos_mask][0]
     z_min = eigvecs[:, pos_mask][:, 0]
-else:
-    pass
 
 printt(f'\nSmallest positive eigenvalue (SF) = {lam_min:.4f}')
     
