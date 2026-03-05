@@ -77,7 +77,11 @@ sigma_yield_al = 200e6 # Pa
 
 # Gauss point data
 GP = 1 / np.sqrt(3)
-xi_GP = np.array([[-GP,-GP], [GP,-GP], [GP,GP], [-GP,GP]])
+xi_GP = np.array([[-GP, -GP], 
+                  [GP, -GP], 
+                  [GP, GP], 
+                  [-GP, GP]
+                  ])
 H_v  = np.ones(4)
 xi_v = np.array([
         [-GP, -GP, GP, GP],
@@ -576,9 +580,15 @@ alpha_al = 20e-6 # 1/K
 # Gauss points used in G^(R)
 GP3 = np.sqrt(3 / 5)
 xi_GP3x3 = np.array([
-    [-GP3, -GP3], [0, -GP3], [GP3, -GP3],
-    [-GP3, 0], [0, 0], [GP3, 0],
-    [-GP3, GP3], [0, GP3], [GP3, GP3],
+    [-GP3, -GP3], 
+    [0, -GP3], 
+    [GP3, -GP3],
+    [-GP3, 0], 
+    [0, 0], 
+    [GP3, 0],
+    [-GP3, GP3], 
+    [0, GP3], 
+    [GP3, GP3],
 ])
 W3 = np.array([5 / 9, 8 / 9, 5 / 9])
 W3X3 = np.outer(W3, W3).ravel()
