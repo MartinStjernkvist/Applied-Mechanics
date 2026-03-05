@@ -353,8 +353,6 @@ a_C = np.zeros(len(dof_C))
 
 # Loads
 q0 = rho_snow * g * h_snow
-# q_body = q0 * np.cos(angle_roof) * np.cos(angle_roof)
-# fy_bar = q0 * np.sin(angle_roof) * np.cos(angle_roof)
 q_body = q0 * np.cos(angle_roof)
 fy_bar = q0 * np.sin(angle_roof)
 f_body = np.array([[0], [-fy_bar]])
@@ -790,7 +788,7 @@ for n in clamped_nodes:
         prescribed_oop.add(5 * n + d)
 for n in gliding_nodes:
     prescribed_oop.add(5 * n + 2)
-    # prescribed_oop.add(5 * n + 3)
+    prescribed_oop.add(5 * n + 3)
     prescribed_oop.add(5 * n + 4)
 
 dof_C_oop = np.array(sorted(prescribed_oop), dtype=int)
