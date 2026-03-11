@@ -2,44 +2,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
-import math
 import pandas as pd
 import sys
 import os
 import scipy.sparse.linalg as spla
 
-import gmsh
-import scipy.io
-from matplotlib.widgets import Slider
-from matplotlib.gridspec import GridSpec
-from numpy import random
-import time
-from scipy.interpolate import interp1d
-from scipy.optimize import curve_fit
-import multiprocessing as mp
-import tkinter as tk
-from tkinter import simpledialog
-import json
 from __future__ import annotations
 from typing import List, Optional, Sequence, Tuple
-import plotly.graph_objects as go
 from IPython.display import Math, display
-from typing import Union, Dict
-from typing import Literal 
-from scipy.linalg import eigh
-from plotly.express.colors import sample_colorscale
 from IPython.display import display, Math
-from mpl_toolkits.mplot3d import axes3d
-from mpl_toolkits.mplot3d import Axes3D
-from numpy.random import rand
-from IPython.display import HTML
-from matplotlib import animation
 import scipy.io as sio
-from scipy.optimize import fsolve
-from matplotlib import rcParams
-import matplotlib.ticker as ticker
 from scipy.sparse import coo_matrix, csr_matrix
-import matplotlib.cm as cm
 from pathlib import Path
 
 from matplotlib.collections import PolyCollection
@@ -390,7 +363,6 @@ body = np.zeros(nelem)
 
 def solve_task_2a(target_displacement, plot_tag):
 
-    disp_history = []
     force_history = []
     u_vals = []
     a = np.zeros(ndofs)
