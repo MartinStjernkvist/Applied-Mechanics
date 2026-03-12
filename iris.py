@@ -83,7 +83,7 @@ def y(x):
 # Vektorer som ska plottas
 # ::::::::::::::::::::::::::::::::::::::::
 
-x_vals = np.linspace(0, 100, 100)
+x_vals = np.linspace(0, 100, 20)
 y_vals = y(x_vals)
 
 # ::::::::::::::::::::::::::::::::::::::::
@@ -91,13 +91,30 @@ y_vals = y(x_vals)
 # ::::::::::::::::::::::::::::::::::::::::
 
 plt.figure()
-plt.plot(x_vals, y_vals)
-figgg('figurnamn')
+plt.plot(x_vals, y_vals, color='blue', label='plot')
+plt.scatter(x_vals, y_vals, color='red', label='scatter')
+plt.title('titel')
+plt.xlabel('x')
+plt.ylabel('y')
+figgg('figurnamn') # figurfunktion, ange endast namn på figuren, sparas en .png fil
 
 # ::::::::::::::::::::::::::::::::::::::::
 # Printa resultat
 # ::::::::::::::::::::::::::::::::::::::::
 
 print(f'värdet för x = 5 (avrundat till 2 decimaler): {y(x=5):.2f}')
+
+# ::::::::::::::::::::::::::::::::::::::::
+# For loop
+# ::::::::::::::::::::::::::::::::::::::::
+
+for i in range(len(x_vals)):
+    x_val = x_vals[i]
+    y_val = x_val**3
+    
+    # printa enbart var 5:e värde
+    if i // 5 == 0:
+        print(f'y_val (avrundat till 2 decimaler och tiopotenser) {y_val:.2e}')
+
 
 #%%
