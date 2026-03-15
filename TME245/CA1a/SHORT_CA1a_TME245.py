@@ -86,8 +86,8 @@ new_subtask('Task 1 - Force vs displacement plot ')
 #===================================================================================================
 
 df = pd.read_excel('TENSION (1).xlsx', sheet_name='Sheet1')
-time_vals  = df.iloc[:, 0]
-tens_vals  = df.iloc[:, 1]
+time_vals = df.iloc[:, 0]
+tens_vals = df.iloc[:, 1]
 print('time values:\n', time_vals)
 print('force values tension:\n', tens_vals)
 
@@ -197,7 +197,9 @@ def assemble_K_fint_coo(a, Edof, rows, cols, ndof, nel, Ex, Ey, D, body, thickne
     for el in range(nel):
         edof = Edof[el, 1:].astype(np.int64) - 1
         ae   = a[edof]
+        
         fe, Ke, *_ = my_element(ae, el, Be_matrix, Ae_matrix, D, body, thickness)
+        
         f_ext[edof] += fe
         data[p:p + nnz_per_el] = Ke.ravel()
         p += nnz_per_el
@@ -283,8 +285,8 @@ def solve_task_2a(target_displacement, plot_tag):
         t = step / n_steps
         current_u_gamma = t * target_displacement
 
-        dof_lower_y    = dof_lower[dof_lower % 2 == 1]
-        dof_C          = np.concatenate([dof_lower_y, dof_corner])
+        dof_lower_y     = dof_lower[dof_lower % 2 == 1]
+        dof_C           = np.concatenate([dof_lower_y, dof_corner])
         prescribed_dofs = dof_upper[dof_upper % 2 == 1]
 
         bc_dofs = np.concatenate([dof_C, prescribed_dofs])
@@ -318,9 +320,7 @@ def solve_task_2a(target_displacement, plot_tag):
         u_vals.append(current_u_gamma)
         force_history.append(Ry_sum)
 
-    # ------------------------------------------------------------------
     # Deformed mesh
-    # ------------------------------------------------------------------
     def_polygons = np.zeros((nelem, 3, 2))
     for el in range(nelem):
         edofs = Edof[el, 1:] - 1
@@ -335,9 +335,7 @@ def solve_task_2a(target_displacement, plot_tag):
     ax2.autoscale()
     ax2.set_title("Deformed mesh")
 
-    # ------------------------------------------------------------------
     # Stress plot
-    # ------------------------------------------------------------------
     Es = np.zeros((nelem, 3))
     for el in range(nelem):
         Be = Be_func_cst(
@@ -353,9 +351,7 @@ def solve_task_2a(target_displacement, plot_tag):
     ax3.set_title("sigma xx")
     fig2.colorbar(pc3, ax=ax3)
 
-    # ------------------------------------------------------------------
     # Force-displacement plot
-    # ------------------------------------------------------------------
     title = 'vertical reaction force vs uΓ - ' + plot_tag
     plt.figure()
     plt.plot(u_vals, force_history, 'X-')
@@ -388,17 +384,26 @@ D1, D2, D3    = 0.02, 0.01, 0.01
 
 def yeoh_functions():
     Fv = sp.Matrix(sp.symbols('Fv0:4', real=True))
-    F  = sp.Matrix([[Fv[0], Fv[2], 0], [Fv[1], Fv[3], 0], [0, 0, 1]])
+    F  = sp.Matrix([[Fv[0], Fv[2], 0], 
+                    [Fv[1], Fv[3], 0], 
+                    [0,     0,     1]])
+    
     C  = F.T * F
     J  = F.det()
     I1 = J**(-sp.Rational(2, 3)) * sp.trace(C) - 3
 
-    U0 = (c10*I1 + c20*I1**2 + c30*I1**3
-          + (1/D1)*(J-1)**2 + (1/D2)*(J-1)**4 + (1/D3)*(J-1)**6)
+    U0 = (c10*I1 
+          + c20*I1**2 
+          + c30*I1**3
+          + (1/D1)*(J-1)**2 
+          + (1/D2)*(J-1)**4 
+          + (1/D3)*(J-1)**6)
 
     Pv     = sp.diff(U0, Fv)
     dPvdFv = Pv.jacobian(Fv)
-    P      = sp.Matrix([[Pv[0], Pv[2], 0], [Pv[1], Pv[3], 0], [0, 0, 0]])
+    P      = sp.Matrix([[Pv[0], Pv[2], 0], 
+                        [Pv[1], Pv[3], 0], 
+                        [0,     0,     0]])
     S      = F.inv() * P
     Sv_out = sp.Matrix([S[0,0], S[1,1], S[0,1], S[1,0]])
 
@@ -408,7 +413,10 @@ def yeoh_functions():
 
 def neohooke_functions():
     Fv   = sp.Matrix(sp.symbols('Fv0:4', real=True))
-    F    = sp.Matrix([[Fv[0], Fv[2], 0], [Fv[1], Fv[3], 0], [0, 0, 1]])
+    F    = sp.Matrix([[Fv[0], Fv[2], 0], 
+                      [Fv[1], Fv[3], 0], 
+                      [0,     0,     1]])
+    
     C    = F.T * F
     J    = F.det()
     invC = sp.simplify(C.inv())
@@ -417,7 +425,7 @@ def neohooke_functions():
     Pv   = sp.Matrix([P[0,0], P[1,1], P[0,1], P[1,0]])
     Sv_out = sp.Matrix([S[0,0], S[1,1], S[0,1], S[1,0]])
 
-    return (sp.lambdify([Fv], Pv,             modules="numpy", cse=True),
+    return (sp.lambdify([Fv], Pv,              modules="numpy", cse=True),
             sp.lambdify([Fv], Pv.jacobian(Fv), modules="numpy", cse=True),
             sp.lambdify([Fv], Sv_out,          modules="numpy", cse=True))
 
@@ -427,7 +435,7 @@ P_Neo_func,  dPvdFv_Neo_func,  S_Neo_func  = neohooke_functions()
 sigma11_yeoh, sigma11_neo = [], []
 
 for f11 in F_11_vals:
-    F_vec_input = [f11, 0.0, 0.0, 1.0]
+    F_vec_input = [f11, 0, 0, 1]
     J = f11
 
     s11_yeoh = S_Yeoh_func(F_vec_input)[0][0]
@@ -461,7 +469,7 @@ def generate_fast_tri6():
     x_nodes = [sp.symbols(f'x{i}') for i in range(6)]
     y_nodes = [sp.symbols(f'y{i}') for i in range(6)]
 
-    L  = 1.0 - xi - eta
+    L  = 1 - xi - eta
     Ns = [L*(2*L-1), xi*(2*xi-1), eta*(2*eta-1),
           4*xi*L, 4*xi*eta, 4*eta*L]
 
@@ -500,20 +508,32 @@ def el6_yeoh(u, element_data):
 
     for B, dv in element_data:
         F_vec = B @ u
-        F_vec[0] += 1.0
-        F_vec[3] += 1.0
+        F_vec[0] += 1
+        F_vec[3] += 1
+        
         P_vec  = P_Yeoh_func(F_vec).flatten()
         dPvdFv = dPvdFv_Yeoh_func(F_vec)
         fe += (B.T @ P_vec) * dv
         Ke += (B.T @ dPvdFv @ B) * dv
+        
         F_all.append(F_vec)
         P_all.append(P_vec)
 
     return Ke, fe, np.concatenate(F_all), np.concatenate(P_all)
 
 # Validation data
-X_ref = np.array([[0.0,0.0],[3.0,0.0],[0.0,2.0],[1.5,0.0],[1.5,1.0],[0.0,1.0]])
-x_curr = np.array([[6.0,0.7],[7.0,2.3],[4.5,1.8],[6.4,1.2],[5.6,2.0],[5.2,1.1]])
+X_ref = np.array([[0.0,0.0],
+                  [3.0,0.0],
+                  [0.0,2.0],
+                  [1.5,0.0],
+                  [1.5,1.0],
+                  [0.0,1.0]])
+x_curr = np.array([[6.0,0.7],
+                   [7.0,2.3],
+                   [4.5,1.8],
+                   [6.4,1.2],
+                   [5.6,2.0],
+                   [5.2,1.1]])
 u = (x_curr - X_ref).flatten()
 
 tri6_func    = generate_fast_tri6()
@@ -537,27 +557,28 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
     Ex, Ey, Edof, dof_upper, dof_lower, ndof, nel, nnodes, dof_corner = \
         read_toplogy_from_mat_file(filename)
 
-    Edof_indices             = Edof[:, 1:].astype(np.int64) - 1
+    Edof_indices               = Edof[:, 1:].astype(np.int64) - 1
     rows_pattern, cols_pattern = precompute_pattern(Edof)
-    nnz_per_el               = 12 * 12
-    data                     = np.empty(nel * nnz_per_el, dtype=float)
+    nnz_per_el                 = 12 * 12
+    data                       = np.empty(nel * nnz_per_el, dtype=float)
 
     tri6_func = generate_fast_tri6()
     print('Pre-computing element matrices')
 
-    xi_c, eta_c = 1.0/3.0, 1.0/3.0
+    xi_c, eta_c = 1/3, 1/3
     element_store, centroid_store = [], []
     for el in range(nel):
         X_ref  = np.vstack([Ex[el, :], Ey[el, :]]).T
         coords = list(X_ref[:, 0]) + list(X_ref[:, 1])
         element_store.append(precompute_element(X_ref, tri6_func, h))
+        
         B_cent, _ = tri6_func(xi_c, eta_c, *coords)
         centroid_store.append(B_cent)
 
     a             = np.zeros(ndof)
     u_steps       = np.linspace(0, u_final, n_steps + 1)
-    force_history = [0.0]
-    disp_history  = [0.0]
+    force_history = [0]
+    disp_history  = [0]
 
     printt('Starting solver')
     for step, u_app in enumerate(u_steps):
@@ -569,7 +590,7 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
         dof_corner_0 = dof_corner  # already 1-indexed from .mat
 
         bc_dofs = np.array(bot_y_dofs + list(dof_corner_0) + top_y_dofs, dtype=int)
-        bc_vals = np.array([0.0] * (len(bot_y_dofs) + len(dof_corner_0))
+        bc_vals = np.array([0] * (len(bot_y_dofs) + len(dof_corner_0))
                            + [u_app] * len(top_y_dofs))
 
         a[bc_dofs] = bc_vals
@@ -582,7 +603,9 @@ def solve_task_2d(filename, n_steps=50, tol=1e-6, u_final=20, h=100, max_iter=25
 
             for el in range(nel):
                 edof_idx = Edof_indices[el]
+                
                 Ke, fe, _, _ = el6_yeoh(a[edof_idx], element_store[el])
+                
                 f_int[edof_idx] += fe
                 idx = el * nnz_per_el
                 data[idx:idx + nnz_per_el] = Ke.ravel()
